@@ -2098,9 +2098,9 @@ export default function CameraView({
           
           setHasCompletedTest(true); // A test has been completed
           
-          // Show the new intermediate popup instead of ResultsModal directly
-          setShowStopTestIntermediatePopup(true); 
-          // setShowResultsModal(true); // Old: Directly show results
+          // Go directly to Test Results modal, skip intermediate popup
+          setShowResultsModal(true);
+          // setShowStopTestIntermediatePopup(true); // Skip intermediate popup
         }, 1000); // Simulate processing time
       }, 500); // Delay before processing
     }

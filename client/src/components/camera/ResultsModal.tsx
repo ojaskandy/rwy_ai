@@ -732,6 +732,32 @@ export default function ResultsModal({
           <div className="bg-black/30 p-4 rounded-lg mt-4">
             <h4 className="text-white font-medium mb-2">Share Your Progress</h4>
             <div className="flex justify-center space-x-4">
+              {recordedVideo && (
+                <button 
+                  onClick={() => {
+                    // Show the recording video in a modal
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4';
+                    modal.innerHTML = `
+                      <div class="bg-gray-900 p-6 rounded-xl shadow-2xl w-full max-w-3xl border border-red-700/50">
+                        <div class="flex justify-between items-center mb-4">
+                          <h3 class="text-xl font-semibold text-white">Movement Recording</h3>
+                          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                        </div>
+                        <video src="${recordedVideo}" controls autoplay class="w-full rounded-lg max-h-[70vh] mb-4 border border-gray-700"></video>
+                        <div class="flex justify-end">
+                          <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Close</button>
+                        </div>
+                      </div>
+                    `;
+                    document.body.appendChild(modal);
+                  }}
+                  className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full flex items-center justify-center w-12 h-12"
+                  title="View Recording"
+                >
+                  <span className="material-icons">play_arrow</span>
+                </button>
+              )}
               <button 
                 onClick={() => {
                   // Generate a text summary
