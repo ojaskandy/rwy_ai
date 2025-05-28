@@ -1986,7 +1986,14 @@ export default function CameraView({
           const url = URL.createObjectURL(blob);
           console.log("Blob created, URL:", url);
           setRecordedVideo(url);
-          setShowRecordingPopup(true); // Show the popup
+          
+          // If this is a test recording, skip the popup and go directly to results
+          if (isRecordingReference) {
+            // Don't show the recording popup for test recordings
+            console.log("Test recording completed, skipping popup and going to results");
+          } else {
+            setShowRecordingPopup(true); // Only show popup for regular recordings
+          }
           
           // Stop all tracks on the captured stream
           stream.getTracks().forEach(track => track.stop());
