@@ -63,18 +63,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener("resize", checkMobileDevice);
   }, []);
   
-  // Simulated login mutation
+  // Real login mutation that calls the server
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       console.log('Login attempt:', credentials);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include', // Include cookies for session
+      });
       
-      // Simple mock validation
-      if (credentials.username.length >= 3 && credentials.password.length >= 6) {
-        return { id: 1, username: credentials.username };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
       }
-      throw new Error('Invalid credentials');
+      
+      return await response.json();
     },
     onSuccess: (data: User) => {
       setUser(data);
@@ -90,14 +97,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
   
-  // Simulated register mutation
+  // Real register mutation that calls the server
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
       console.log('Register attempt:', credentials);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include',
+      });
       
-      return { id: 1, username: credentials.username };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Registration failed');
+      }
+      
+      return await response.json();
     },
     onSuccess: (data: User) => {
       setUser(data);
