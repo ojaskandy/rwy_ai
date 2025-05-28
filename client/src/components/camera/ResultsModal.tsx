@@ -429,7 +429,7 @@ export default function ResultsModal({
   fastDtwResults,
 }: ResultsModalProps) {
   const [showCopyToast, setShowCopyToast] = useState(false);
-  const [activeTab, setActiveTab] = useState<'user' | 'instructor' | 'routine'>('user');
+  const [activeTab, setActiveTab] = useState<'user' | 'instructor' | 'routine'>('routine');
   const [routineAnalysisLoading, setRoutineAnalysisLoading] = useState(false);
   const [routineAnalysisResults, setRoutineAnalysisResults] = useState<any>(null);
   const [dtwProcessingClicked, setDtwProcessingClicked] = useState(false);
@@ -642,14 +642,25 @@ export default function ResultsModal({
               </div>
 
               {!routineAnalysisResults && !routineAnalysisLoading && (
-                <div className="text-center py-10">
+                <div className="text-center py-12">
+                  <div className="mb-6">
+                    <div className="inline-block p-4 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-full mb-4">
+                      <span className="material-icons text-4xl text-green-400">analytics</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Ready to Analyze Your Performance</h3>
+                    <p className="text-gray-300 text-sm max-w-md mx-auto">Get detailed insights into your movement technique and compare it against the instructor's form</p>
+                  </div>
                   <button 
                     onClick={handleProcessDtw}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg text-lg transition-all duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 glow-on-hover"
+                    className="relative bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-8 rounded-xl shadow-2xl text-lg transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-green-500/25 focus:outline-none focus:ring-4 focus:ring-green-500/50 group overflow-hidden"
                   >
-                    Process Results
+                    <span className="relative z-10 flex items-center">
+                      <span className="material-icons mr-2 group-hover:rotate-12 transition-transform duration-300">rocket_launch</span>
+                      Process Results
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                   </button>
-                   <p className="text-gray-400 text-xs mt-2">Click to perform DTW analysis on recorded angle data.</p>
+                   <p className="text-gray-400 text-xs mt-3">Advanced DTW analysis • Joint-by-joint comparison • Performance scoring</p>
                 </div>
               )}
 
