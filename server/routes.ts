@@ -420,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { data, error } = await resend.emails.send({
-        from: 'CoachT <onboarding@resend.dev>',
+        from: 'CoachT <onboarding@coacht.xyz>',
         to: [email],
         subject: 'Your CoachT Setup Guide is Here!',
         html: `
