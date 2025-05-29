@@ -407,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           status: 'skipped',
           source: 'mobile_landing',
-          responseData: { reason: 'Resend API not configured' }
+          responseData: { reason: 'Resend API not configured', name }
         });
       } catch (dbErr) {
         console.error("Failed to update email record in database:", dbErr);
@@ -465,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           status: error ? 'failed' : 'sent',
           source: 'mobile_landing',
-          responseData: error ? { error: error.message } : data
+          responseData: error ? { error: error.message, name } : { ...data, name }
         });
       } catch (dbErr) {
         console.error("Failed to save email response to database:", dbErr);
@@ -489,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           status: 'error',
           source: 'mobile_landing',
-          responseData: { error: err.message }
+          responseData: { error: err.message, name }
         });
       } catch (dbErr) {
         console.error("Failed to save email error to database:", dbErr);
