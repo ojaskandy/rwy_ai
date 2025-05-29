@@ -2,16 +2,22 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, CheckCircle, AlertTriangle, Loader2, Send } from 'lucide-react';
+import { Mail, CheckCircle, AlertTriangle, Loader2, Send, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MobileLandingPage = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+      setStatus('error');
+      setMessage('Please enter your name.');
+      return;
+    }
     if (!email || !email.includes('@')) {
       setStatus('error');
       setMessage('Please enter a valid email address.');
@@ -26,7 +32,7 @@ const MobileLandingPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ name: name.trim(), email }),
       });
 
       const result = await response.json();
@@ -41,6 +47,7 @@ const MobileLandingPage = () => {
         setMessage(result.message || 'Guide sent! Check your inbox.');
       }
       
+      setName('');
       setEmail('');
     } catch (error) {
       console.error('Submit Error:', error);
@@ -107,6 +114,18 @@ const MobileLandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
         >
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 h-12 md:h-14 text-sm md:text-base bg-gray-800/70 border-gray-700 focus:border-red-500 focus:ring-red-500 placeholder-gray-500 rounded-xl shadow-lg"
+              disabled={status === 'loading'}
+            />
+          </div>
+          
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input

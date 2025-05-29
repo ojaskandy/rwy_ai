@@ -378,10 +378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // New endpoint for sending the setup guide email
   app.post("/api/send-guide", async (req: Request, res: Response, next: NextFunction) => {
-    const { email } = req.body;
+    const { name, email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+    if (!name || !email) {
+      return res.status(400).json({ message: "Name and email are required" });
     }
 
     // Always save the email request to the database regardless of Resend API status
@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         status: 'requested',
         source: 'mobile_landing',
-        responseData: { timestamp: new Date().toISOString() }
+        responseData: { timestamp: new Date().toISOString(), name }
       });
     } catch (dbErr) {
       console.error("Failed to save email record to database:", dbErr);
@@ -421,23 +421,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { data, error } = await resend.emails.send({
         from: 'CoachT <onboarding@coacht.xyz>',
-        reply_to: ['okandy@uw.edu'],
+        replyTo: ['okandy@uw.edu'],
         to: [email],
-        subject: 'Your CoachT Setup Guide is Here!',
+        subject: 'Welcome to CoachT - Your Training Journey Starts Here!',
         html: `
-          <h1>Welcome to CoachT!</h1>
-          <p>Thanks for your interest! We\'re excited to help you elevate your training.</p>
-          <p>To get the best experience and access all features, please use CoachT on a <strong>laptop or desktop computer</strong>.</p>
-          <p><strong>Here\'s a quick guide to get started:</strong></p>
-          <ul>
-            <li>Ensure you have a stable internet connection.</li>
-            <li>Use a modern browser like Chrome or Firefox.</li>
-            <li>Allow camera access when prompted.</li>
-            <li>Explore the different modes: Practice, Test, and Routine.</li>
-          </ul>
-          <p>If you have any questions, don\'t hesitate to reach out to our support team.</p>
-          <p>Happy Training!</p>
-          <p>The CoachT Team</p>
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Hey ${name},</h2>
+            
+            <p>I'm Ojas — founder of CoachT. We're excited to have you onboard.</p>
+            
+            <p>We know Taekwondo can get expensive fast — private lessons, long form corrections, hours spent on the same mistakes.<br>
+            What if you could coach yourself through those moments and save your energy for the fun stuff — like weapons and sparring?</p>
+            
+            <p>That's where CoachT comes in.</p>
+            
+            <h3>Here's how to get started:</h3>
+            <p><strong>Create your account</strong></p>
+            
+            <p><strong>Practice Library:</strong> Browse and train from an ever-growing list of martial arts moves.<br>
+            → Missing a move or spot a bug? Hit the Feedback button or email us at okandy@uw.edu — we'd love to hear from you.</p>
+            
+            <p><strong>Start Live Routine:</strong><br>
+            Upload any expert's video (from YouTube, your instructor, etc.) by clicking the red + button.<br>
+            Then perform the form live.<br>
+            When you're done, download or review your screen recording, and hit the green "Process Results" button to get instant feedback on your form.</p>
+            
+            <p>CoachT is early — and built with your input.<br>
+            We're here to help you grow, and we're building this together.</p>
+            
+            <p>Welcome again — let's get started.</p>
+            
+            <p>— Ojas<br>
+            Founder, CoachT<br>
+            📩 onboarding@coacht.xyz<br>
+            🔗 coacht.xyz</p>
+          </div>
         `
       });
 
