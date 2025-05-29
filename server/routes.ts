@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.saveEmailRecord({
         email,
         status: 'requested',
-        source: 'mobile_landing',
+        source: 'early',
         responseData: { timestamp: new Date().toISOString(), name }
       });
     } catch (dbErr) {
@@ -406,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.saveEmailRecord({
           email,
           status: 'skipped',
-          source: 'mobile_landing',
+          source: 'early',
           responseData: { reason: 'Resend API not configured', name }
         });
       } catch (dbErr) {
@@ -470,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.saveEmailRecord({
           email,
           status: error ? 'failed' : 'sent',
-          source: 'mobile_landing',
+          source: 'early',
           responseData: error ? { error: error.message, name } : { ...data, name }
         });
       } catch (dbErr) {
@@ -494,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.saveEmailRecord({
           email,
           status: 'error',
-          source: 'mobile_landing',
+          source: 'early',
           responseData: { error: err.message, name }
         });
       } catch (dbErr) {

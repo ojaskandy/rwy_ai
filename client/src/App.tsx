@@ -46,8 +46,8 @@ function Router() {
       {/* Early access signup page */}
       <Route path="/early-access" component={EarlyAccess} />
       
-      {/* Mobile Landing Page route */}
-      <Route path="/mobile-landing" component={MobileLandingPage} />
+      {/* Early access landing page for mobile users */}
+      <Route path="/early" component={MobileLandingPage} />
       
       {/* 404 page */}
       <Route component={NotFound} />
