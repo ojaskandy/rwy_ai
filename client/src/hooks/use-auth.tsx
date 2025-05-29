@@ -21,6 +21,7 @@ type AuthContextType = {
   user: User | null;
   loginMutation: any;
   registerMutation: any;
+  logoutMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
   isMobileDevice: boolean;
@@ -134,11 +135,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
   });
+
+  // Real logout mutation that calls the server
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+    },
+    onSuccess: () => {
+      setUser(null);
+      console.log('Logout successful');
+    },
+    onError: (error: Error) => {
+      console.error('Logout failed:', error.message);
+    }
+  });
   
   const value = {
     user,
     loginMutation,
     registerMutation,
+    logoutMutation,
     showMobileWarning,
     setShowMobileWarning,
     isMobileDevice
