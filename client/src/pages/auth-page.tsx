@@ -313,6 +313,18 @@ export default function AuthPage() {
                   </CardContent>
                   
                   <CardFooter className="flex flex-col gap-4">
+                    {/* Display login error */}
+                    {loginMutation.isError && (
+                      <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3">
+                        <div className="flex items-center">
+                          <span className="material-icons text-red-400 mr-2">error</span>
+                          <span className="text-red-300 text-sm">
+                            {loginMutation.error?.message || 'Invalid username or password'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <Button 
                       type="submit"
                       form="login-form"

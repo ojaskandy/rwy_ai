@@ -94,6 +94,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setShowMobileWarning(true);
         sessionStorage.setItem('mobileWarningShown', 'true');
       }
+    },
+    onError: (error: Error) => {
+      console.error('Login failed:', error.message);
+      // Error will be handled by the form component
     }
   });
   
