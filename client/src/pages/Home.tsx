@@ -399,13 +399,13 @@ export default function Home() {
   // Render main component
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
-      {/* Enhanced Header with belt display, app title and user menu */}
-      <header className="bg-gradient-to-r from-black to-red-950/90 border-b border-red-900/30 px-6 py-3 flex justify-between items-center shadow-md">
-        <div className="flex items-center gap-4">
+      {/* Mobile-optimized Header */}
+      <header className="bg-gradient-to-r from-black to-red-950/90 border-b border-red-900/30 px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/welcome" className="cursor-pointer">
-            <h1 className="text-2xl font-bold gradient-heading flex items-center group z-50 relative">
+            <h1 className="text-lg sm:text-2xl font-bold gradient-heading flex items-center group z-50 relative">
               <motion.span 
-                className="material-icons text-red-600 mr-2"
+                className="material-icons text-red-600 mr-1 sm:mr-2 text-base sm:text-lg"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
               >
@@ -415,14 +415,16 @@ export default function Home() {
             </h1>
           </Link>
           
-          <div className="h-8 w-px bg-red-900/30 mx-2"></div>
+          <div className="hidden sm:block h-8 w-px bg-red-900/30 mx-2"></div>
           
-          {/* Current time */}
-          <CurrentTime className="ml-2" showSeconds={false} />
+          {/* Current time - hidden on mobile */}
+          <div className="hidden md:block">
+            <CurrentTime className="ml-2" showSeconds={false} />
+          </div>
         </div>
 
-        {/* Belt Display - moved to header */}
-        <div className="flex-1 mx-4 max-w-lg">
+        {/* Belt Display - responsive */}
+        <div className="flex-1 mx-2 sm:mx-4 max-w-lg">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -438,10 +440,10 @@ export default function Home() {
           </motion.div>
         </div>
         
-        <div className="flex items-center space-x-3">
-          {/* Animated Session timer with pulsing effect */}
+        <div className="flex items-center space-x-1 sm:space-x-3">
+          {/* Animated Session timer - mobile optimized */}
           <motion.div 
-            className="relative group"
+            className="relative group hidden sm:block"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
@@ -449,23 +451,20 @@ export default function Home() {
             <div className="absolute inset-0 bg-red-500/10 rounded-md scale-105 animate-pulse -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </motion.div>
           
-          {/* Profile button */}
+          {/* Profile button - mobile optimized */}
           <Link href="/profile">
             <motion.div 
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }} 
-              className="relative group" // Added relative group for badge positioning
+              className="relative group"
             >
               <Button 
                 variant="outline" 
-                className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
+                className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-2 sm:px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
               >
-                <User className="h-4 w-4 text-white mr-2" />
-                <span className="text-sm text-white font-medium">Profile</span>
+                <User className="h-4 w-4 text-white sm:mr-2" />
+                <span className="hidden sm:inline text-sm text-white font-medium">Profile</span>
               </Button>
-              {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
-                In Development
-              </span> */}
             </motion.div>
           </Link>
             
@@ -474,10 +473,10 @@ export default function Home() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   variant="outline" 
-                  className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3"
+                  className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-2 sm:px-3"
                 >
-                  <Settings className="h-4 w-4 text-white mr-2" />
-                  <span className="text-sm text-white font-medium">Menu</span>
+                  <Settings className="h-4 w-4 text-white sm:mr-2" />
+                  <span className="hidden sm:inline text-sm text-white font-medium">Menu</span>
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
@@ -508,62 +507,65 @@ export default function Home() {
         </div>
       </header>
       
-      {/* Navigation buttons bar */}
-      <div className="bg-black/70 border-b border-red-900/30 px-6 py-2 flex justify-center items-center shadow-md">
-        <div className="w-full max-w-4xl flex justify-between">
-          <div className="flex items-center gap-3">
+      {/* Mobile-optimized Navigation buttons bar */}
+      <div className="bg-black/70 border-b border-red-900/30 px-3 sm:px-6 py-2 flex justify-center items-center shadow-md overflow-x-auto">
+        <div className="w-full max-w-4xl flex justify-between min-w-fit">
+          <div className="flex items-center gap-2 sm:gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-8 sm:h-10 rounded-full px-2 sm:px-4 py-1 sm:py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors whitespace-nowrap"
               onClick={() => setShowHowItWorksDialog(true)}
             >
-              <HelpCircle className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">How it Works</span>
+              <HelpCircle className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline font-medium text-sm">How it Works</span>
+              <span className="sm:hidden font-medium text-xs ml-1">Help</span>
             </motion.button>
             
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-8 sm:h-10 rounded-full px-2 sm:px-4 py-1 sm:py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors whitespace-nowrap"
               onClick={() => setShowLeaderboardDialog(true)}
             >
-              <BarChart className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">Leaderboard</span>
+              <BarChart className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline font-medium text-sm">Leaderboard</span>
+              <span className="sm:hidden font-medium text-xs ml-1">Stats</span>
             </motion.button>
 
             <Link href="/welcome">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+                className="h-8 sm:h-10 rounded-full px-2 sm:px-4 py-1 sm:py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors whitespace-nowrap"
               >
-                <HomeIcon className="h-4 w-4 mr-2" />
-                <span className="font-medium text-sm">View Welcome Page</span>
+                <HomeIcon className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline font-medium text-sm">View Welcome Page</span>
+                <span className="sm:hidden font-medium text-xs ml-1">Home</span>
               </motion.button>
             </Link>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-8 sm:h-10 rounded-full px-2 sm:px-4 py-1 sm:py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors whitespace-nowrap"
               onClick={handleFeedbackSubmit}
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">Feedback</span>
+              <MessageSquare className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline font-medium text-sm">Feedback</span>
             </motion.button>
             
             <Button 
               variant="outline" 
               size="icon" 
               onClick={toggleDarkMode} 
-              className="h-10 w-10 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
             >
               {isDarkMode ? 
-                <Sun className="h-5 w-5 text-white" /> : 
-                <Moon className="h-5 w-5 text-white" />
+                <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-white" /> : 
+                <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               }
             </Button>
           </div>
@@ -578,42 +580,39 @@ export default function Home() {
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
             // New layout for the home screen
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-x-8 items-start max-w-screen-xl mx-auto w-full h-full">
-              {/* Left Column: Welcome Text and Actions - Centered */}
-              <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-16 md:mt-24`}>
+              {/* Mobile-optimized Left Column: Welcome Text and Actions */}
+              <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-6 sm:space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-8 sm:mt-16 md:mt-24 px-4 sm:px-0`}>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-center w-full">
-                  <h1 className="text-4xl md:text-5xl font-bold text-white">
+                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
                     Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
                   </h1>
-                  <p className="text-sky-200 mt-3 text-lg md:text-xl">
+                  <p className="text-sky-200 mt-2 sm:mt-3 text-base sm:text-lg md:text-xl">
                     Track progress. Perfect your form.
                   </p>
                 </motion.div>
 
                 <motion.div 
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 relative group w-full max-w-2xl"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pt-2 sm:pt-4 relative group w-full max-w-2xl"
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 >
-                  <div className="relative group"> {/* Wrapper for badge */}
+                  <div className="relative group">
                     <motion.button 
                       onClick={handlePermissionRequest}
-                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
-                      <Play className="mr-2 h-5 w-5" />
-                      Start Live Routine
+                      <Play className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="whitespace-nowrap">Start Live Routine</span>
                     </motion.button>
-                    {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
-                      In Development
-                    </span> */}
                   </div>
                 
                   <Link href="/practice">
                     <motion.button
-                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
-                      <Dumbbell className="mr-2 h-5 w-5" />
-                      Practice Library
+                      <Dumbbell className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="whitespace-nowrap">Practice Library</span>
                     </motion.button>
                   </Link>
 
@@ -763,23 +762,23 @@ export default function Home() {
                 />
               )}
 
-              {/* Camera Settings Panel */}
+              {/* Mobile-optimized Camera Settings Panel */}
               {sourceType === 'camera' && hasPermission && !isLoading && (
-                <div className="absolute bottom-4 left-4 bg-black/90 border border-red-900/40 rounded-lg p-3 shadow-lg z-20">
+                <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-black/90 border border-red-900/40 rounded-lg p-3 sm:p-4 shadow-lg z-20 max-w-[calc(100vw-1rem)] sm:max-w-none">
                   <h3 className={`text-sm font-semibold mb-2 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
                     Camera Options
                   </h3>
                   
                   <div className="space-y-3">
-                    {/* Skeleton Color Selection */}
+                    {/* Mobile-friendly Skeleton Color Selection */}
                     <div>
-                      <label className="text-xs text-gray-400 block mb-1">Skeleton Color</label>
-                      <div className="flex space-x-2">
+                      <label className="text-xs text-gray-400 block mb-2">Skeleton Color</label>
+                      <div className="flex space-x-3 sm:space-x-2">
                         {['red', 'blue', 'green', 'purple', 'orange'].map((color) => (
                           <button
                             key={color}
                             onClick={() => setSkeletonColorChoice(color as typeof skeletonColorChoice)}
-                            className={`w-6 h-6 rounded-full border ${skeletonColorChoice === color ? 'border-white border-2' : 'border-gray-600'}`}
+                            className={`w-8 h-8 sm:w-6 sm:h-6 rounded-full border ${skeletonColorChoice === color ? 'border-white border-2' : 'border-gray-600'} transition-all duration-200 hover:scale-110 active:scale-95`}
                             style={{ backgroundColor: 
                               color === 'red' ? '#ef4444' : 
                               color === 'blue' ? '#3b82f6' : 
