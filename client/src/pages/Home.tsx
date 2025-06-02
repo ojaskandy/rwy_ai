@@ -483,6 +483,7 @@ export default function Home() {
             <DropdownMenuContent align="end" className="w-40 border border-red-600 bg-gray-900">
               <DropdownMenuItem 
                 className="cursor-pointer flex items-center text-white hover:bg-red-700/30"
+                onClick={() => setShowCustomizeDialog(true)}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
@@ -586,8 +587,8 @@ export default function Home() {
                   <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
                     Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
                   </h1>
-                  <p className="text-sky-200 mt-2 sm:mt-3 text-base sm:text-lg md:text-xl">
-                    Track progress. Perfect your form.
+                  <p className="text-red-200 mt-2 sm:mt-3 text-base sm:text-lg md:text-xl">
+                    Perfect your Taekwondo form with AI guidance
                   </p>
                 </motion.div>
 
@@ -649,8 +650,8 @@ export default function Home() {
                     variant="outline"
                     className={`px-6 py-3 text-base transition-all duration-300 ease-in-out rounded-lg ${getButtonClasses(buttonTheme, 'outline')}`}
                   >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Customize Screen
+                    <Palette className="mr-2 h-4 w-4" />
+                    Theme Settings
                   </Button>
                 </motion.div>
               </div>
@@ -968,16 +969,25 @@ export default function Home() {
             </div>
           </div>
           
-          <DialogFooter className="mt-4 pt-4 border-t border-red-600/30 flex-shrink-0">
-            <Button 
-              onClick={() => {
-                setShowHowItWorksDialog(false);
-                localStorage.setItem('hasSeenWelcomeGuide', 'true');
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold rounded-lg transition-colors w-full"
-            >
-              Got it, Let's Train!
-            </Button>
+          <DialogFooter className="mt-6 pt-4 border-t border-red-600/30 flex-shrink-0 bg-gradient-to-br from-gray-950 to-black">
+            <div className="flex gap-3 w-full">
+              <Button 
+                onClick={() => setShowHowItWorksDialog(false)}
+                variant="outline"
+                className="border-red-600/50 text-red-400 hover:bg-red-600/10 hover:border-red-400 px-6 py-3 text-base font-medium rounded-lg transition-colors"
+              >
+                Close
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowHowItWorksDialog(false);
+                  localStorage.setItem('hasSeenWelcomeGuide', 'true');
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-base font-semibold rounded-lg transition-colors flex-1"
+              >
+                Got it, Let's Train!
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
