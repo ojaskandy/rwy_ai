@@ -17,6 +17,9 @@ import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
 import RootRedirector from "@/pages/RootRedirector";
 import MobileLandingPage from "@/pages/MobileLanding";
+import Challenges from "@/pages/Challenges";
+import Workouts from "@/pages/Workouts";
+import MaxPunchesChallenge from "@/pages/MaxPunchesChallenge";
 
 function Router() {
   return (
@@ -40,6 +43,15 @@ function Router() {
       {/* User profile page */}
       <ProtectedRoute path="/profile" component={Profile} />
       
+      {/* Challenges page */}
+      <ProtectedRoute path="/challenges" component={Challenges} />
+
+      {/* Workouts page */}
+      <ProtectedRoute path="/workouts" component={Workouts} />
+
+      {/* Max Punches Challenge page */}
+      <ProtectedRoute path="/challenges/max-punches" component={MaxPunchesChallenge} />
+
       {/* Authentication page */}
       <Route path="/auth" component={AuthPage} />
       

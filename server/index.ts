@@ -63,7 +63,7 @@ app.use((req, res, next) => {
   }
 
   // Use port 5000 for deployment
-  const port = process.env.PORT || 5000;
+  const port = process.env.PORT || 5173;
   server.listen({
     port,
     host: "0.0.0.0" // Listen on all interfaces to make it accessible in deployment

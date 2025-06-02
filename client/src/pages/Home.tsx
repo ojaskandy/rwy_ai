@@ -13,7 +13,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Sword, Target
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -614,6 +614,26 @@ export default function Home() {
                     >
                       <Dumbbell className="mr-2 h-5 w-5" />
                       Practice Library
+                    </motion.button>
+                  </Link>
+
+                  <Link href="/challenges">
+                    <motion.button
+                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Target className="mr-2 h-5 w-5" />
+                      Challenges
+                    </motion.button>
+                  </Link>
+
+                  <Link href="/workouts">
+                    <motion.button
+                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Dumbbell className="mr-2 h-5 w-5" />
+                      Workouts
                     </motion.button>
                   </Link>
                 </motion.div>
