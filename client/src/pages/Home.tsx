@@ -580,9 +580,9 @@ export default function Home() {
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
             // New layout for the home screen
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-x-8 items-start max-w-screen-xl mx-auto w-full h-full">
-              {/* Mobile-optimized Left Column: Welcome Text and Actions */}
-              <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-6 sm:space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-8 sm:mt-16 md:mt-24 px-4 sm:px-0`}>
+            <div className="flex-1 flex items-center justify-center max-w-screen-xl mx-auto w-full h-full">
+              {/* Centered Column: Welcome Text and Actions */}
+              <div className="space-y-6 sm:space-y-8 flex flex-col items-center mt-8 sm:mt-16 md:mt-24 px-4 sm:px-0 w-full max-w-lg">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-center w-full">
                   <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
                     Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
@@ -611,7 +611,7 @@ export default function Home() {
                   <div className="relative group">
                     <motion.button 
                       onClick={handlePermissionRequest}
-                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
                       whileTap={{ scale: 0.97 }}
                     >
                       <Play className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -622,7 +622,7 @@ export default function Home() {
                   {/* Practice Library */}
                   <Link href="/practice">
                     <motion.button
-                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
                       whileTap={{ scale: 0.97 }}
                     >
                       <Dumbbell className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -633,11 +633,11 @@ export default function Home() {
                   {/* Workouts */}
                   <Link href="/workouts">
                     <motion.button
-                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
                       whileTap={{ scale: 0.97 }}
                     >
-                      <Dumbbell className="mr-2 h-5 w-5" />
-                      Workouts
+                      <Dumbbell className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="whitespace-nowrap">Workouts</span>
                     </motion.button>
                   </Link>
                 </motion.div>
@@ -656,83 +656,7 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              {/* Right Column: Session Log - Collapsible */}
-              <motion.div 
-                className={`bg-gray-950/70 border shadow-xl h-full flex flex-col fixed top-[220px] right-0 md:right-4 lg:right-8 transition-all duration-300 ease-in-out z-20 ${isSessionPanelExpanded ? 'lg:col-span-3 w-[350px] p-6' : 'lg:col-span-1 w-[70px] p-3 items-center'} ${buttonTheme === 'sky' ? 'border-sky-800/40' : buttonTheme === 'crimson' ? 'border-red-800/40' : buttonTheme === 'emerald' ? 'border-emerald-800/40' : 'border-amber-800/40'} rounded-xl`}
-                initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
-                layout // Animate layout changes
-              >
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setIsSessionPanelExpanded(!isSessionPanelExpanded)} 
-                  className={`absolute -left-10 top-2 hover:bg-opacity-20 ${buttonTheme === 'sky' ? 'text-sky-400 hover:text-sky-300 hover:bg-sky-700/20' : buttonTheme === 'crimson' ? 'text-red-400 hover:text-red-300 hover:bg-red-700/20' : buttonTheme === 'emerald' ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-700/20' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-700/20'} ${isSessionPanelExpanded ? 'rounded-l-md rounded-r-none' : 'rounded-md'}`}
-                  title={isSessionPanelExpanded ? "Collapse Panel" : "Expand Panel"}
-                >
-                  {isSessionPanelExpanded ? <PanelRightClose className="h-6 w-6" /> : <PanelRightOpen className="h-6 w-6" />}
-                </Button>
 
-                {/* Current Session Info */}
-                <div className={`mb-6 pb-6 border-b ${!isSessionPanelExpanded ? 'hidden' : 'block'} ${buttonTheme === 'sky' ? 'border-sky-800/50' : buttonTheme === 'crimson' ? 'border-red-800/50' : buttonTheme === 'emerald' ? 'border-emerald-800/50' : 'border-amber-800/50'}`}>
-                  <h2 className={`text-2xl font-semibold mb-3 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    <Clock className="mr-3 h-6 w-6" />
-                    Current Session
-                  </h2>
-                  <p className="text-gray-300">
-                    Time on this page: <CurrentPageTimer />
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This timer resets if you refresh or leave the page.
-                  </p>
-                </div>
-
-                {/* Recordings Log */}
-                <div className={`${!isSessionPanelExpanded ? 'hidden' : 'block'} flex-1 overflow-hidden`}>
-                  <h2 className={`text-2xl font-semibold mb-5 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    <ListChecks className="mr-3 h-7 w-7" />
-                    Recent Recordings
-                  </h2>
-                  <div className={`overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 ${isSessionPanelExpanded ? 'max-h-[calc(100vh-480px)]' : 'max-h-0'} ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}`}>
-                    {isLoadingRecordings && (
-                      <div className="flex items-center justify-center py-10">
-                        <Loader2 className={`h-10 w-10 animate-spin ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
-                      {isSessionPanelExpanded && <p className="ml-4 text-gray-400 text-lg">Loading...</p>}
-                      </div>
-                    )}
-                    {recordingsError && (
-                      <p className="text-red-400 text-center py-5">Error: {recordingsError.message}</p>
-                    )}
-                    {!isLoadingRecordings && recordings && recordings.length > 0 && (
-                      <ul className="space-y-3">
-                        {recordings.slice().reverse().map(rec => (
-                          <li key={rec.id} className={`bg-gray-900 p-3 rounded-lg border border-gray-800 hover:shadow-md transition-all duration-200 ease-in-out transform ${buttonTheme === 'sky' ? 'hover:border-sky-600/60 hover:shadow-sky-700/20' : buttonTheme === 'crimson' ? 'hover:border-red-600/60 hover:shadow-red-700/20' : buttonTheme === 'emerald' ? 'hover:border-emerald-600/60 hover:shadow-emerald-700/20' : 'hover:border-amber-600/60 hover:shadow-amber-700/20'}`}>
-                            <p className="text-sm text-white font-medium truncate">
-                              {rec.title || `Practice Recording ${rec.id}`}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {format(new Date(rec.createdAt), "MMM d, yyyy 'at' h:mm a")}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {!isLoadingRecordings && (!recordings || recordings.length === 0) && !recordingsError && (
-                      <p className="text-gray-500 italic text-center py-10 text-sm">No recordings yet.</p>
-                    )}
-                  </div>
-                </div>
-                 {/* Collapsed State Icons */}
-                {!isSessionPanelExpanded && (
-                  <div className="flex flex-col items-center space-y-6 mt-6">
-                    <span title="Current Session">
-                      <Clock className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
-                    </span>
-                    <span title="Recent Recordings">
-                      <ListChecks className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
-                    </span>
-                  </div>
-                )}
-              </motion.div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
