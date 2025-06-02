@@ -821,105 +821,155 @@ export default function Home() {
           localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Mark as seen when closed
         }
       }}>
-        <DialogContent className={`bg-gray-950 border text-white max-w-3xl ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
-          <DialogHeader>
-            <DialogTitle className={`text-3xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
-              <HelpCircle className="mr-3 h-7 w-7" /> 
-              How CoachT Works
-            </DialogTitle>
-            <DialogDescription className="text-gray-400 mt-1">
-              Welcome to CoachT! Here's a quick guide to get you started.
+        <DialogContent className="bg-gradient-to-br from-gray-950 to-black border border-red-600/30 text-white max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader className="pb-4 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-3xl font-bold flex items-center text-red-400">
+                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center mr-3">
+                  <HelpCircle className="h-5 w-5 text-white" />
+                </div>
+                How CoachT Works
+              </DialogTitle>
+              <button
+                onClick={() => setShowHowItWorksDialog(false)}
+                className="p-2 hover:bg-red-600/20 rounded-full transition-colors"
+              >
+                <X className="h-6 w-6 text-red-400 hover:text-red-300" />
+              </button>
+            </div>
+            <DialogDescription className="text-gray-300 text-base mt-2">
+              Master Taekwondo with AI-powered training. Here's your complete guide.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 text-gray-300 h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-gray-800 ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}">
-            <Accordion type="single" collapsible className="space-y-4">
-              <AccordionItem value="item-1" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Play className="mr-2 h-5 w-5" />
-                    Start Live Routine
+          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-red-600">
+            <div className="space-y-6">
+              
+              {/* Step 1: Start Live Training */}
+              <div className="bg-gradient-to-r from-red-900/20 to-red-800/10 border border-red-600/30 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-lg">1</span>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    This is your main training ground! Clicking 'Start Live Routine' will activate your camera for real-time AI pose tracking.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>Permissions:</strong> Your browser will ask for camera access. Please allow it for CoachT to see your movements.</li>
-                    <li><strong>Real-time Feedback:</strong> Once active, CoachT analyzes your form and provides instant visual cues and (soon!) audio feedback.</li>
-                    <li><strong>During the Routine:</strong> You'll have options to record your session, pause, and adjust settings (like skeleton visibility) directly on the screen.</li>
-                    <li><strong>Goal:</strong> Focus on matching the target poses and refining your technique based on the AI's guidance.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-red-400 mb-3 flex items-center">
+                      <Play className="mr-3 h-6 w-6" />
+                      Start Live Training
+                    </h3>
+                    <p className="text-gray-200 text-lg mb-4">
+                      Click "Start Live Routine" to begin AI-powered pose tracking with your camera.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-red-300 mb-2">🎥 Camera Setup</h4>
+                        <p className="text-sm text-gray-300">Allow camera access when prompted. Position yourself 3-6 feet from your device.</p>
+                      </div>
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-red-300 mb-2">⚡ Real-Time Analysis</h4>
+                        <p className="text-sm text-gray-300">AI tracks your movements and provides instant visual feedback on your form.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-              <AccordionItem value="item-2" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Dumbbell className="mr-2 h-5 w-5" />
-                    Practice Library
+              {/* Step 2: Practice Library */}
+              <div className="bg-gradient-to-r from-blue-900/20 to-blue-800/10 border border-blue-600/30 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-lg">2</span>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    The 'Practice Library' is where you can explore and master individual Taekwondo moves or other exercises.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>Browse Moves:</strong> Navigate through categories to find specific techniques, forms, or drills.</li>
-                    <li><strong>Detailed View:</strong> Each move has a dedicated page with reference visuals, key joint angle data, and (eventually) video demonstrations.</li>
-                    <li><strong>Focused Practice:</strong> Launch a targeted practice session for any move directly from its library page. This works similarly to the 'Start Live Routine' but focuses on that single move.</li>
-                    <li><strong>Reference Poses:</strong> For developers or advanced users, you can contribute by saving your own reference poses for moves.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-blue-400 mb-3 flex items-center">
+                      <Dumbbell className="mr-3 h-6 w-6" />
+                      Practice Library
+                    </h3>
+                    <p className="text-gray-200 text-lg mb-4">
+                      Explore and master individual Taekwondo techniques with guided practice sessions.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-300 mb-2">📚 Browse Techniques</h4>
+                        <p className="text-sm text-gray-300">Navigate categories to find specific moves, forms, and drills organized by skill level.</p>
+                      </div>
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-300 mb-2">🎯 Focused Training</h4>
+                        <p className="text-sm text-gray-300">Practice individual moves with detailed reference poses and angle analysis.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-              <AccordionItem value="item-3" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <MessageSquare className="mr-2 h-5 w-5" />
-                    Providing Feedback
+              {/* Step 3: Get Feedback */}
+              <div className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-600/30 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-lg">3</span>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    Your input is invaluable for making CoachT better! Use the 'Feedback' button (usually in the top navigation or menu) to share your thoughts.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>How it Works:</strong> Clicking 'Feedback' will typically open your default email client with a pre-filled subject line.</li>
-                    <li><strong>What to Share:</strong> Tell us about your experience, any bugs you encounter, features you'd love to see, or general suggestions.</li>
-                    <li><strong>Be Specific:</strong> The more detail you provide, the better we can understand and address your feedback.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-purple-400 mb-3 flex items-center">
+                      <MessageSquare className="mr-3 h-6 w-6" />
+                      Get Instant Feedback
+                    </h3>
+                    <p className="text-gray-200 text-lg mb-4">
+                      Receive real-time analysis and improve your technique with AI-powered guidance.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-300 mb-2">🎯 Real-Time Scoring</h4>
+                        <p className="text-sm text-gray-300">See your form accuracy instantly with joint angle analysis and pose comparison.</p>
+                      </div>
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-300 mb-2">📧 Share Feedback</h4>
+                        <p className="text-sm text-gray-300">Help improve CoachT by sharing your experience and suggestions with our team.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-              <AccordionItem value="item-4" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Info className="mr-2 h-5 w-5" />
-                    General Tips for Best Results
+              {/* Pro Tips Section */}
+              <div className="bg-gradient-to-r from-amber-900/20 to-amber-800/10 border border-amber-600/30 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Info className="h-6 w-6 text-white" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <ul className="list-disc pl-6 space-y-2 text-sm">
-                    <li>Position yourself 6-8 feet from the camera for full-body tracking.</li>
-                    <li>Ensure your entire body is visible within the camera frame.</li>
-                    <li>Train in a well-lit area with a contrasting background if possible.</li>
-                    <li>Wear clothing that doesn't blend in too much with your surroundings.</li>
-                    <li>Start with slower movements to help the AI calibrate and for you to get used to the feedback.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-amber-400 mb-3">
+                      Pro Tips for Best Results
+                    </h3>
+                    <div className="grid gap-3">
+                      <div className="flex items-center space-x-3 bg-black/30 rounded-lg p-3">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                        <p className="text-gray-200">Position yourself 6-8 feet from camera for full-body tracking</p>
+                      </div>
+                      <div className="flex items-center space-x-3 bg-black/30 rounded-lg p-3">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                        <p className="text-gray-200">Train in well-lit area with contrasting background</p>
+                      </div>
+                      <div className="flex items-center space-x-3 bg-black/30 rounded-lg p-3">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                        <p className="text-gray-200">Wear clothing that contrasts with your surroundings</p>
+                      </div>
+                      <div className="flex items-center space-x-3 bg-black/30 rounded-lg p-3">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                        <p className="text-gray-200">Start with slower movements to help AI calibration</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <DialogFooter className="mt-2">
+          <DialogFooter className="mt-4 pt-4 border-t border-red-600/30 flex-shrink-0">
             <Button 
               onClick={() => {
                 setShowHowItWorksDialog(false);
-                localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Explicitly set on click too
+                localStorage.setItem('hasSeenWelcomeGuide', 'true');
               }}
-              className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold rounded-lg transition-colors w-full"
             >
               Got it, Let's Train!
             </Button>
