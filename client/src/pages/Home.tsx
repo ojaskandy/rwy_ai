@@ -1033,7 +1033,7 @@ export default function Home() {
             </div>
           </div>
           <DialogFooter className="mt-2">
-            <Button onClick={() => setShowCustomizeDialog(false)} className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}>Done</Button>
+            <Button onClick={() => setShowCustomizeDialog(false)} className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-6 py-2 text-base font-semibold rounded-lg transition-colors">Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
