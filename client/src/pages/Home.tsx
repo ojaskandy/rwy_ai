@@ -599,7 +599,7 @@ export default function Home() {
                   {/* Challenges - with glow effect */}
                   <Link href="/challenges">
                     <motion.button
-                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
                       <Target className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -611,7 +611,7 @@ export default function Home() {
                   <div className="relative group">
                     <motion.button 
                       onClick={handlePermissionRequest}
-                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
                       <Play className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -622,7 +622,7 @@ export default function Home() {
                   {/* Practice Library */}
                   <Link href="/practice">
                     <motion.button
-                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
                       <Dumbbell className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -633,7 +633,7 @@ export default function Home() {
                   {/* Workouts */}
                   <Link href="/workouts">
                     <motion.button
-                      className="w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-500/50 hover:shadow-red-500/70"
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
                       whileTap={{ scale: 0.97 }}
                     >
                       <Dumbbell className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -1033,7 +1033,7 @@ export default function Home() {
             </div>
           </div>
           <DialogFooter className="mt-2">
-            <Button onClick={() => setShowCustomizeDialog(false)} className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-6 py-2 text-base font-semibold rounded-lg transition-colors">Done</Button>
+            <Button onClick={() => setShowCustomizeDialog(false)} className={`px-6 py-2 text-base font-semibold ${getButtonClasses(buttonTheme, 'primary')}`}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
