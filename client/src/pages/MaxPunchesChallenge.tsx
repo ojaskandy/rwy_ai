@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
+import DraggableControls from '@/components/DraggableControls';
+import { ArrowLeft } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 // Define an interface for Keypoint
 interface Keypoint {
@@ -39,11 +42,11 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
   const [paddlePosition, setPaddlePosition] = useState<{ x: number; y: number } | null>(null);
   const [hitCount, setHitCount] = useState(0);
   const [isPaddleHit, setIsPaddleHit] = useState(false);
-  const lastHitTimeRef = useRef<number>(0);
+  const lastHitTimeRef = useRef<{ left: number; right: number }>({ left: 0, right: 0 });
   const paddleWidth = 80; // Diameter of the ball
   const paddleHeight = 80; // Diameter of the ball (kept for hitbox consistency)
   const HIT_COOLDOWN_MS = 50;
-  // REMOVED: const ARM_LENGTH_OFFSET = 75;
+  const [targetImage, setTargetImage] = useState<HTMLImageElement | null>(null);
 
   // New state for preparation phase
   const [prepTimer, setPrepTimer] = useState(0);
@@ -65,6 +68,19 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
 
   const frameSkipRate = 3;
   const frameCountRef = useRef(0);
+  const [, navigate] = useLocation();
+
+  // For draggable timer reset
+  const [timerPosition, setTimerPosition] = useState({ x: window.innerWidth - 120, y: 80 });
+  const lastTapRef = useRef(0);
+
+  const MIN_VELOCITY_THRESHOLD = 0.3; // More lenient detection
+
+  // Add refs to track wrist positions, times, and cooldowns for both hands
+  const prevWristRef = useRef<{
+    left: { x: number; y: number; time: number } | null;
+    right: { x: number; y: number; time: number } | null;
+  }>({ left: null, right: null });
 
   useEffect(() => {
     const setupPoseDetection = async () => {
@@ -129,9 +145,18 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
     }
   }, []);
 
+  // Preload target image
+  useEffect(() => {
+    const img = new Image();
+    // IMPORTANT: Make sure you have a target.png image in your public/assets/images/ directory
+    img.src = '/assets/images/target.png';
+    img.onload = () => setTargetImage(img);
+    img.onerror = () => console.error("Failed to load target image from /assets/images/target.png");
+  }, []);
+
   const detectAndDrawPose = async () => {
     frameCountRef.current = (frameCountRef.current + 1) % frameSkipRate;
-    if (frameCountRef.current !== 0 && (isPreparing || isActive)) { // Ensure loop continues if preparing or active
+    if (frameCountRef.current !== 0 && (isPreparing || isActive)) {
       animationFrameId.current = requestAnimationFrame(detectAndDrawPose);
       return;
     }
@@ -196,21 +221,26 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
             }
           });
 
-          // Draw Paddle (Red Glowing Ball) and Detect Hits (if active and position is set)
+          // Draw Paddle (Image or Red Glowing Ball) and Detect Hits
           if (isActive && paddlePosition) {
             ctx.save();
             const paddleRadius = paddleWidth / 2;
-            const ballColor = getRgbForColor('red'); // Use the helper for red
 
-            // Glow effect for the ball
-            ctx.shadowColor = isPaddleHit ? 'rgba(255, 255, 100, 0.9)' : `rgba(${ballColor.r}, ${ballColor.g}, ${ballColor.b}, 0.7)`;
-            ctx.shadowBlur = isPaddleHit ? 30 : 20;
-
-            // Draw the ball
-            ctx.fillStyle = `rgb(${ballColor.r}, ${ballColor.g}, ${ballColor.b})`;
-            ctx.beginPath();
-            ctx.arc(paddlePosition.x + paddleRadius, paddlePosition.y + paddleRadius, paddleRadius, 0, 2 * Math.PI);
-            ctx.fill();
+            if (targetImage) {
+              // Draw the image
+              ctx.shadowColor = isPaddleHit ? 'rgba(255, 255, 100, 0.9)' : 'rgba(255, 87, 34, 0.7)';
+              ctx.shadowBlur = isPaddleHit ? 35 : 25;
+              ctx.drawImage(targetImage, paddlePosition.x, paddlePosition.y, paddleWidth, paddleHeight);
+            } else {
+              // Fallback to drawing the red ball if image hasn't loaded
+              const ballColor = getRgbForColor('red');
+              ctx.shadowColor = isPaddleHit ? 'rgba(255, 255, 100, 0.9)' : `rgba(${ballColor.r}, ${ballColor.g}, ${ballColor.b}, 0.7)`;
+              ctx.shadowBlur = isPaddleHit ? 30 : 20;
+              ctx.fillStyle = `rgb(${ballColor.r}, ${ballColor.g}, ${ballColor.b})`;
+              ctx.beginPath();
+              ctx.arc(paddlePosition.x + paddleRadius, paddlePosition.y + paddleRadius, paddleRadius, 0, 2 * Math.PI);
+              ctx.fill();
+            }
             ctx.restore();
 
             // Hit detection (hitbox remains a square around the ball's center for now)
@@ -224,34 +254,50 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
             poses.forEach((pose: any) => {
               if (pose.keypoints && pose.keypoints.length > 0) {
                 const keypoints: Keypoint[] = pose.keypoints;
-                const leftWrist = keypoints.find(kp => kp.name === 'left_wrist');
-                const rightWrist = keypoints.find(kp => kp.name === 'right_wrist');
+                const wrists = [
+                  { name: 'left', kp: keypoints.find(kp => kp.name === 'left_wrist') },
+                  { name: 'right', kp: keypoints.find(kp => kp.name === 'right_wrist') },
+                ];
 
-                const wrists = [leftWrist, rightWrist].filter(Boolean) as Keypoint[];
+                wrists.forEach(({ name, kp }) => {
+                  if (kp && (kp.score ?? 0) > drawingConfidenceThreshold) {
+                    const now = Date.now();
+                    const prev = prevWristRef.current[name as 'left' | 'right'];
+                    let velocity = 0;
+                    if (prev) {
+                      const dx = kp.x - prev.x;
+                      const dy = kp.y - prev.y;
+                      const dt = now - prev.time;
+                      const distance = Math.sqrt(dx * dx + dy * dy);
+                      velocity = dt > 0 ? distance / dt : 0;
+                    }
+                    // Update previous position
+                    prevWristRef.current[name as 'left' | 'right'] = { x: kp.x, y: kp.y, time: now };
 
-                for (const wrist of wrists) {
-                  if (wrist && (wrist.score ?? 0) > drawingConfidenceThreshold) {
+                    // Only register hit if velocity is above threshold and wrist is inside hitbox
                     if (
-                      wrist.x > paddleHitbox.x &&
-                      wrist.x < paddleHitbox.x + paddleHitbox.width &&
-                      wrist.y > paddleHitbox.y &&
-                      wrist.y < paddleHitbox.y + paddleHitbox.height
+                      kp.x > paddleHitbox.x &&
+                      kp.x < paddleHitbox.x + paddleHitbox.width &&
+                      kp.y > paddleHitbox.y &&
+                      kp.y < paddleHitbox.y + paddleHitbox.height &&
+                      velocity > MIN_VELOCITY_THRESHOLD
                     ) {
-                      const currentTime = Date.now();
-                      if (currentTime - lastHitTimeRef.current > HIT_COOLDOWN_MS) {
+                      if (now - lastHitTimeRef.current[name as 'left' | 'right'] > HIT_COOLDOWN_MS) {
                         setHitCount(prevCount => prevCount + 1);
-                        lastHitTimeRef.current = currentTime;
+                        lastHitTimeRef.current[name as 'left' | 'right'] = now;
                         setIsPaddleHit(true);
                         if (hitSound) {
-                          hitSound.currentTime = 0; // Rewind to start if already playing
+                          hitSound.currentTime = 0;
                           hitSound.play().catch(e => console.error("Error playing hit sound:", e));
                         }
-                        setTimeout(() => setIsPaddleHit(false), 150); // Hit visual feedback duration
-                        break; // Count one hit per frame
+                        setTimeout(() => setIsPaddleHit(false), 150);
                       }
                     }
+                  } else {
+                    // If wrist not detected, clear previous
+                    prevWristRef.current[name as 'left' | 'right'] = null;
                   }
-                }
+                });
               }
             });
           }
@@ -260,13 +306,13 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
         console.error("Error in detectAndDrawPose:", error);
       }
     }
-    if (isPreparing || isActive) { // Continue animation if preparing or active
-        animationFrameId.current = requestAnimationFrame(detectAndDrawPose);
+    if (isPreparing || isActive) {
+      animationFrameId.current = requestAnimationFrame(detectAndDrawPose);
     }
   };
 
   useEffect(() => {
-    if ((isPreparing || isActive) && detector && stream) { // MODIFIED: isPreparing || isActive
+    if ((isPreparing || isActive) && detector && stream) {
       frameCountRef.current = 0;
       animationFrameId.current = requestAnimationFrame(detectAndDrawPose);
     } else {
@@ -286,7 +332,7 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [isPreparing, isActive, detector, stream, skeletonColor]); // ADDED isPreparing
+  }, [isPreparing, isActive, detector, stream, skeletonColor]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -315,7 +361,7 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
 
   const handleStartClick = async () => {
     setHitCount(0);
-    lastHitTimeRef.current = 0;
+    lastHitTimeRef.current = { left: 0, right: 0 };
     setTimer(30);                 // Preset main timer to 30s
     setPaddlePosition(null);      // Clear any previous paddle
     setShowStartButton(false);    // Hide start button
@@ -392,77 +438,138 @@ const MaxPunchesChallenge: React.FC<MaxPunchesChallengeProps> = ({ skeletonColor
     };
   }, [isPreparing, prepTimer, detector, videoRef, canvasRef, paddleWidth, maxPoses, detectionConfidenceThreshold, drawingConfidenceThreshold]);
 
+  // Double-tap to reset timer position (mobile-friendly)
+  const handleTimerTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 400) {
+      setTimerPosition({ x: window.innerWidth - 120, y: 80 });
+    }
+    lastTapRef.current = now;
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 md:p-8 relative">
+    <div className="min-h-screen bg-black text-white flex flex-col items-start justify-start relative overflow-hidden max-w-full max-h-full">
+      {/* Fixed Header */}
+      <div className="w-full bg-gradient-to-r from-red-900/80 to-black/80 py-3 px-2 sm:px-4 flex items-center justify-between z-10 shadow-lg">
+        <button 
+          onClick={() => navigate('/challenges')}
+          className="flex items-center text-white/80 hover:text-white transition-colors text-base sm:text-sm"
+        >
+          <ArrowLeft className="h-5 w-5 mr-1" />
+          <span>Back</span>
+        </button>
+        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-red-500 text-center flex-1">Maximum Punches in 30 Seconds</h1>
+        <div className="w-10 sm:w-16"></div> {/* Spacer to center the title */}
+      </div>
+
       {/* Instructions Modal */}
       {showInstructionsModal && (
-        <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 p-8 rounded-lg">
-          <h2 className="text-4xl text-yellow-400 font-bold mb-6">Max Punches Challenge!</h2>
-          <div className="text-lg text-center space-y-4 mb-8 max-w-md">
-            <p>Get ready to punch as fast as you can for 30 seconds!</p>
-            <p>When you click "Let's Go!", you'll have <strong className="text-yellow-400">3 seconds</strong> to get in position.</p>
-            <p>Raise your <strong className="text-yellow-400">right arm</strong> out. A <strong className="text-red-500">red target</strong> will appear at your fist.</p>
-            <p>Punch the target as many times as you can before the timer runs out!</p>
+        <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-gray-900 border border-red-800 rounded-xl p-4 sm:p-6 max-w-md w-full">
+            <h2 className="text-2xl sm:text-3xl text-yellow-400 font-bold mb-4 sm:mb-6">Max Punches Challenge!</h2>
+            <div className="text-sm sm:text-base text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+              <p>Get ready to punch as fast as you can for 30 seconds!</p>
+              <p>When you click "Let's Go!", you'll have <strong className="text-yellow-400">3 seconds</strong> to get in position.</p>
+              <p>Raise your <strong className="text-yellow-400">right arm</strong> out. A <strong className="text-red-500">red target</strong> will appear at your fist.</p>
+              <p>Punch the target as many times as you can before the timer runs out!</p>
+            </div>
+            <button
+              onClick={() => setShowInstructionsModal(false)}
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg text-lg sm:text-xl shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 ease-in-out"
+            >
+              Let's Go!
+            </button>
           </div>
-          <button
-            onClick={() => setShowInstructionsModal(false)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg text-xl shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
-          >
-            Let's Go!
-          </button>
         </div>
       )}
 
-      <h1 className="text-3xl md:text-4xl font-bold mb-6 md:mb-10 text-center text-red-500">Maximum Punches in 30 Seconds</h1>
-      <div className="flex flex-col md:flex-row w-full max-w-6xl">
-        <div className="w-full md:w-2/3 bg-gray-800 rounded-xl shadow-2xl p-1 md:p-2 mb-4 md:mb-0 md:mr-4 relative">
-          <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-lg aspect-video" muted />
-          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full rounded-lg" />
-          {/* Display Hit Count on the canvas or as an overlay */}
-          {isActive && paddlePosition && (
-            <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white p-2 rounded">
-              Hits: {hitCount}
-            </div>
-          )}
-
-          {/* Preparation Countdown Overlay */}
-          {isPreparing && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50 rounded-lg">
-              <div className="text-yellow-400 text-5xl font-bold mb-4">Get Ready!</div>
-              <div className="text-yellow-400 text-9xl font-bold">{prepTimer}</div>
-            </div>
-          )}
+      {/* Main Content Area - Full Screen Camera */}
+      <div className="w-full flex-1 relative max-w-full max-h-full">
+        {/* Full screen video and canvas */}
+        <div className="absolute inset-0 bg-black max-w-full max-h-full">
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover max-w-full max-h-full" 
+            muted 
+          />
+          <canvas 
+            ref={canvasRef} 
+            className="absolute inset-0 w-full h-full max-w-full max-h-full" 
+          />
         </div>
-        <div className="w-full md:w-1/3 bg-gray-800 rounded-xl shadow-2xl p-4 md:p-6 flex flex-col items-center justify-center">
-          <div className="text-6xl md:text-8xl font-mono text-red-500 mb-8">{String(timer).padStart(2, '0')}s</div>
-          {/* Show final hit count when timer is done */}
-          {!isActive && timer === 0 && (
-            <div className="text-4xl md:text-5xl font-bold text-yellow-400 mb-4">
-              Total Hits: {hitCount}
+
+        {/* Hit Counter - Fixed Position */}
+        {isActive && paddlePosition && (
+          <div className="absolute top-16 left-2 sm:left-4 bg-black/70 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg z-10 text-base sm:text-lg">
+            <div className="text-xs sm:text-sm font-medium text-gray-400">HITS</div>
+            <div className="text-lg sm:text-2xl font-bold text-white">{hitCount}</div>
+          </div>
+        )}
+
+        {/* Draggable Timer - with double-tap to reset */}
+        {isActive && (
+          <DraggableControls
+            initialPosition={timerPosition}
+            className="touch-none"
+          >
+            <div
+              className="bg-black/80 border-2 border-red-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 shadow-lg shadow-red-600/30 min-w-[70px] sm:min-w-[100px] text-center select-none"
+              onTouchEnd={handleTimerTap}
+              onDoubleClick={handleTimerTap}
+            >
+              <div className="text-xs sm:text-sm font-medium text-gray-400">TIME</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-red-500">
+                {String(timer).padStart(2, '0')}
+              </div>
             </div>
-          )}
-          {showStartButton && (
+          </DraggableControls>
+        )}
+
+        {/* Preparation Countdown Overlay */}
+        {isPreparing && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30">
+            <div className="text-yellow-400 text-2xl sm:text-3xl md:text-5xl font-bold mb-2 sm:mb-4">Get Ready!</div>
+            <div className="text-yellow-400 text-5xl sm:text-7xl md:text-9xl font-bold">{prepTimer}</div>
+          </div>
+        )}
+
+        {/* Game End Results */}
+        {!isActive && timer === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30 p-2 sm:p-4">
+            <div className="bg-gray-900 border border-yellow-600 rounded-xl p-4 sm:p-6 max-w-md w-full text-center">
+              <h2 className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-2">Challenge Complete!</h2>
+              <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-white my-4 sm:my-6">
+                {hitCount} <span className="text-lg sm:text-2xl text-gray-400">hits</span>
+              </div>
+              <button
+                onClick={handleStartClick}
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg text-lg sm:text-xl shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 ease-in-out"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Start Button - Centered in the Middle with Glow */}
+        {showStartButton && !showInstructionsModal && (
+          <div className="absolute inset-0 flex items-center justify-center z-20">
             <button
               onClick={handleStartClick}
-              disabled={showInstructionsModal || isPreparing || isActive} // Disable if instructions are up or game active/preparing
-              className={`font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 ${
-                showInstructionsModal || isPreparing || isActive
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700 text-white hover:shadow-red-500/50'
+              disabled={isPreparing || isActive}
+              className={`animate-pulse w-11/12 max-w-xs font-bold py-4 px-10 rounded-2xl text-2xl sm:text-3xl shadow-2xl transition-all duration-300 ease-in-out border-4 border-yellow-400 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 text-black drop-shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-400/60 hover:scale-105 hover:shadow-yellow-400/70 ${
+                isPreparing || isActive
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-400 animate-none'
+                  : 'hover:bg-yellow-400/90'
               }`}
+              style={{ boxShadow: '0 0 32px 8px #fde047, 0 0 8px 2px #facc15' }}
             >
               Start Challenge
             </button>
-          )}
-          {!showStartButton && !isActive && timer === 0 && (
-            <button
-              onClick={handleStartClick}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg text-xl shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 mt-4"
-            >
-              Try Again?
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

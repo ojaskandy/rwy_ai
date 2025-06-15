@@ -423,34 +423,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         from: 'CoachT <onboarding@coacht.xyz>',
         replyTo: ['okandy@uw.edu'],
         to: [email],
-        subject: '🥋 Welcome to CoachT – Your Training Journey Starts Here!',
+        subject: 'Welcome to CoachT! 🎉 Your AI-Powered Martial Arts Coach is Here.',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2>Hey ${name},</h2>
             
             <p>I'm Ojas — founder of CoachT. We're excited to have you onboard! 🎉</p>
             
-            <p>We know Taekwondo can get expensive fast — private lessons, long form corrections, hours spent on the same mistakes.<br>
-            What if you could coach yourself through those moments and save your energy for the fun stuff — like weapons and sparring?</p>
+            <p>We know martial arts training can get expensive fast — private lessons, long form corrections, hours spent on the same mistakes. While your instructors are invaluable, what if you had an AI-powered tutor to <strong>augment</strong> their teaching, helping you refine every move and save your energy for the fun stuff — like sparring or board breaking?</p>
             
-            <p>That's where CoachT comes in.</p>
-            
-            <hr style="border: 1px solid #ddd; margin: 20px 0;">
+            <p>That's where <strong>CoachT</strong> comes in.</p>
             
             <h3>🚀 Here's how to get started:</h3>
-            
             <p><strong>Create your account:</strong> <a href="https://www.coacht.xyz/auth" style="color: #dc2626; text-decoration: none;">www.coacht.xyz/auth</a></p>
+            
+            <p><strong>🔥 Challenges:</strong><br>
+            Push your limits, break records, and master specific martial arts techniques in our engaging challenge arena!</p>
+            
+            <p><strong>💪 Workouts:</strong><br>
+            Engage in structured workout routines designed to improve your speed, power, and precision.</p>
             
             <p><strong>📚 Practice Library:</strong><br>
             Browse and train from an ever-growing list of martial arts moves.<br>
             → Missing a move or spot a bug? Hit the <strong>Feedback</strong> button or email us at <a href="mailto:okandy@uw.edu" style="color: #dc2626;">okandy@uw.edu</a> — we'd love to hear from you.</p>
             
             <p><strong>🎥 Start Live Routine:</strong><br>
-            Upload any expert's video (from YouTube, your instructor, etc.) by clicking the <strong>red + button</strong>.<br>
-            Then perform the form live.<br>
-            When you're done, download or review your screen recording, and hit the big green <strong>"Process Results"</strong> button to get instant feedback.</p>
-            
-            <hr style="border: 1px solid #ddd; margin: 20px 0;">
+            Select from our <strong>pre-loaded expert forms</strong> of various martial arts techniques. Then perform the form live. When you're done, review your screen recording and get instant, AI-driven feedback, including <strong>intelligent voice guidance</strong> to help you improve.</p>
             
             <p>CoachT is early — and built with your input.<br>
             We're here to help you grow, and we're building this together.</p>
@@ -459,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             <p>— Ojas<br>
             Founder, CoachT<br>
-            📩 <a href="mailto:onboarding@coacht.xyz" style="color: #dc2626;">onboarding@coacht.xyz</a><br>
+            📩 <a href="mailto:okandy@uw.edu" style="color: #dc2626;">okandy@uw.edu</a><br>
             🔗 <a href="https://www.coacht.xyz" style="color: #dc2626;">coacht.xyz</a></p>
           </div>
         `

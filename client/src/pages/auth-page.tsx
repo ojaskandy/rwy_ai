@@ -43,9 +43,8 @@ export default function AuthPage() {
   // Loading animation states
   const [loading, setLoading] = useState(true);
   const [typedText, setTypedText] = useState("");
-  const [colorTransition, setColorTransition] = useState(false);
-  const [cornerGradients, setCornerGradients] = useState(false);
   const [logoContrast, setLogoContrast] = useState(false);
+  const [gradientVisible, setGradientVisible] = useState(false);
   
   // Password visibility
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -92,6 +91,9 @@ export default function AuthPage() {
     let text = "CoachT";
     let currentIndex = 0;
     
+    // Start gradient animation immediately
+    setGradientVisible(true);
+    
     const typingInterval = setInterval(() => {
       if (currentIndex <= text.length) {
         setTypedText(text.substring(0, currentIndex));
@@ -99,27 +101,17 @@ export default function AuthPage() {
       } else {
         clearInterval(typingInterval);
         
-        // Start corner gradients
+        // Add logo contrast after typing
         setTimeout(() => {
-          setCornerGradients(true);
+          setLogoContrast(true);
           
-          // Start color transition
+          // Complete loading
           setTimeout(() => {
-            setColorTransition(true);
-            
-            // Add logo contrast
-            setTimeout(() => {
-              setLogoContrast(true);
-              
-              // Complete loading
-              setTimeout(() => {
-                setLoading(false);
-              }, 800);
-            }, 400);
-          }, 500);
-        }, 300);
+            setLoading(false);
+          }, 800); // Delay before hiding loading screen
+        }, 400); // Delay after typing before contrast effect
       }
-    }, 150);
+    }, 150); // Speed of typing
     
     return () => clearInterval(typingInterval);
   }, []);
@@ -150,10 +142,23 @@ export default function AuthPage() {
       
       {/* Loading screen */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
+          {/* Sweeping Red Gradient from Top to Bottom */}
+          <motion.div
+            className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-red-500 via-red-600 to-red-700"
+            initial={{ y: "-100%" }}
+            animate={{ y: gradientVisible ? "0%" : "-100%" }}
+            transition={{ duration: 1.2, ease: "easeInOut" }} // Adjust duration as needed
+          />
+
           {/* CoachT Logo that stays throughout animation */}
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300
-            ${logoContrast ? 'scale-110' : 'scale-100'}`}>
+          <motion.div 
+            className={`relative z-20 transition-all duration-500 ease-in-out flex flex-col items-center justify-center
+              ${logoContrast ? 'scale-110' : 'scale-100'}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }} // Logo fades in after gradient starts
+          >
             <div className={`flex flex-col items-center justify-center transition-all duration-500 
               ${logoContrast ? 'ring-4 ring-black p-4 rounded-xl bg-red-600' : ''}`}>
               {/* Logo icon above text */}
@@ -164,40 +169,14 @@ export default function AuthPage() {
               </div>
               
               {/* CoachT Text with properly positioned cursor */}
-              <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
+              <h1 className="text-6xl md:text-8xl font-bold relative inline-block text-white">
                 <span className="relative">
                   {typedText}
                   <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-white animate-blink"></span>
                 </span>
               </h1>
             </div>
-          </div>
-          
-          {/* Corner gradients that come toward center */}
-          <div className={`absolute top-0 left-0 w-full h-full transition-all duration-1000 ease-in-out
-            ${cornerGradients ? 'opacity-100' : 'opacity-0'}`}>
-            {/* Top-left corner gradient */}
-            <div className={`absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-red-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Top-right corner gradient */}
-            <div className={`absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-red-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Bottom-left corner gradient */}
-            <div className={`absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-red-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Bottom-right corner gradient */}
-            <div className={`absolute bottom-0 right-0 w-1/3 h-1/3 bg-gradient-to-tl from-red-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-          </div>
-          
-          {/* Full gradient overlay */}
-          <div 
-            className={`absolute inset-0 bg-gradient-to-r from-red-600 to-red-500 transition-all duration-800 mix-blend-overlay
-              ${colorTransition ? 'opacity-90' : 'opacity-0'}`}
-          ></div>
+          </motion.div>
         </div>
       )}
       

@@ -102,8 +102,9 @@ const MobileLandingPage = () => {
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             Start Now.
           </h2>
-          <p className="text-md md:text-lg text-sky-200/80 max-w-xs mx-auto">
-            CoachT delivers the best experience on a bigger screen. Get started now.
+          <p className="text-md md:text-lg text-sky-200/80 max-w-sm mx-auto">
+            <span className="font-bold text-lg md:text-xl">Check your email for an onboarding message</span><br />
+            Or explore for yourself: <a href="https://coacht.xyz/auth" className="text-sky-400 hover:text-sky-300 underline">coacht.xyz/auth</a>
           </p>
         </motion.div>
 
@@ -169,16 +170,7 @@ const MobileLandingPage = () => {
           </motion.div>
         )}
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 1 }}
-          className="pt-4 md:pt-6"
-        >
-          <p className="text-xs text-gray-500">
-            Access CoachT on your <Link href="/" className="text-sky-400 hover:text-sky-300 underline">desktop or laptop</Link>.
-          </p>
-        </motion.div>
+
       </motion.div>
     </div>
   );

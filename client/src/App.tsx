@@ -20,6 +20,11 @@ import MobileLandingPage from "@/pages/MobileLanding";
 import Challenges from "@/pages/Challenges";
 import Workouts from "@/pages/Workouts";
 import MaxPunchesChallenge from "@/pages/MaxPunchesChallenge";
+import ReactionTimeChallenge from "@/pages/VipersReflexesChallenge";
+import BalanceBeamBreakerChallenge from "@/pages/BalanceBeamBreakerChallenge";
+import PushupsWorkout from "@/pages/PushupsWorkout";
+import CrunchesWorkout from "@/pages/CrunchesWorkout";
+import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
 
 function Router() {
   return (
@@ -51,6 +56,17 @@ function Router() {
 
       {/* Max Punches Challenge page */}
       <ProtectedRoute path="/challenges/max-punches" component={MaxPunchesChallenge} />
+
+      {/* Viper's Reflexes Challenge page */}
+      <ProtectedRoute path="/challenges/reaction-time" component={ReactionTimeChallenge} />
+
+      {/* Balance Beam Challenge page */}
+      <ProtectedRoute path="/challenges/balance-beam" component={BalanceBeamBreakerChallenge} />
+
+      {/* Workout pages */}
+      <ProtectedRoute path="/workouts/pushups" component={PushupsWorkout} />
+      <ProtectedRoute path="/workouts/crunches" component={CrunchesWorkout} />
+      <ProtectedRoute path="/workouts/jumping-jacks" component={JumpingJacksWorkout} />
 
       {/* Authentication page */}
       <Route path="/auth" component={AuthPage} />

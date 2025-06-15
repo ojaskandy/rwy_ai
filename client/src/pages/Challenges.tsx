@@ -71,6 +71,20 @@ const Challenges: React.FC = () => {
         bgPattern: "endurance",
         available: false,
         rewards: ["150 XP", "Iron Will Badge", "Endurance Master"]
+      },
+      { 
+        name: "Balance Beam Breaker", 
+        id: "balance-beam",
+        description: "Hold a perfect side-kick for 10 seconds on each leg",
+        difficulty: "Advanced",
+        participants: 678,
+        record: "Perfect Form",
+        recordHolder: "KickMaster",
+        icon: Target,
+        color: "from-blue-500 to-cyan-600",
+        bgPattern: "precision",
+        available: true,
+        rewards: ["80 XP", "Balance Badge", "Precision Master"]
       }
     ],
     precision: [
@@ -103,6 +117,10 @@ const Challenges: React.FC = () => {
     if (!available) return;
     if (challengeId === "max-punches") {
       navigate("/challenges/max-punches");
+    } else if (challengeId === "reaction-time") {
+      navigate("/challenges/reaction-time");
+    } else if (challengeId === "balance-beam") {
+      navigate("/challenges/balance-beam");
     } else {
       console.log(`Challenge clicked: ${challengeId}`);
     }
