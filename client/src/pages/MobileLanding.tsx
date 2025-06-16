@@ -103,8 +103,8 @@ const MobileLandingPage = () => {
             Start Now.
           </h2>
           <p className="text-md md:text-lg text-sky-200/80 max-w-sm mx-auto">
-            <span className="font-bold text-lg md:text-xl">Check your email for an onboarding message</span><br />
-            Or explore for yourself: <a href="https://coacht.xyz/auth" className="text-sky-400 hover:text-sky-300 underline">coacht.xyz/auth</a>
+            <span className="font-bold text-lg md:text-xl whitespace-nowrap">Check your email for an onboarding message</span><br />
+            Or explore for yourself: <a href="/auth" className="text-sky-400 hover:text-sky-300 underline">coacht.xyz/auth</a>
           </p>
         </motion.div>
 
