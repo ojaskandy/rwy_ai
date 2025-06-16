@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
-import { detectPoses, initPoseDetection, getJointConnections } from '@/lib/poseDetection';
+import { detectPoses, initPoseDetection, getJointConnections, resetPoseHistory } from '@/lib/poseDetection';
 import { compareAnglesWithDTW } from '@/lib/dtw';
-import GreenGuideOverlay from './GreenGuideOverlay';
+
 import RecordingControls from './camera/RecordingControls';
 import ResultsModal from './camera/ResultsModal';
 import NotesEditor from './camera/NotesEditor';
@@ -10,6 +10,8 @@ import { detectSignificantMovements, detectMovementGaps, type TimingIssues } fro
 import { isVideoUrl } from './camera/utils';
 import StopTestIntermediatePopup from './camera/StopTestIntermediatePopup';
 import TestResultsPopup from './camera/TestResultsPopup';
+import PreloadedVideoSelector from './PreloadedVideoSelector';
+import { MartialArtsVideo } from '@/data/martialArtsVideos';
 
 interface CameraViewProps {
   stream: MediaStream | null;
@@ -116,6 +118,8 @@ export default function CameraView({
   const [isSplitView, setIsSplitView] = useState<boolean>(false);
   const [isVideoPaused, setIsVideoPaused] = useState<boolean>(false);
   const [showMediaSelector, setShowMediaSelector] = useState<boolean>(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [showPreloadedSelector, setShowPreloadedSelector] = useState<boolean>(false);
   const [localRoutineNotes, setLocalRoutineNotes] = useState<string>('');
   const [testResults, setTestResults] = useState<TestResults>({
     isRunning: false,
@@ -203,6 +207,7 @@ export default function CameraView({
 
   // Add a ref for immediate stop signal
   const isAngleRecordingStoppedRef = useRef<boolean>(false);
+  const hasResetPoseHistory = useRef<boolean>(false);
 
   // Add a state for preloaded background image
   const [preloadedBackground, setPreloadedBackground] = useState<HTMLImageElement | null>(null);
@@ -373,7 +378,12 @@ export default function CameraView({
   const detect = async () => {
       try {
         frameCountRef.current = (frameCountRef.current + 1) % frameSkipRate;
-        if (!isTracking || frameCountRef.current !== 0) {
+        if (!isTracking) {
+          hasResetPoseHistory.current = false; // Reset flag when tracking stops
+          animationRef.current = requestAnimationFrame(detect);
+          return;
+        }
+        if (frameCountRef.current !== 0) {
           animationRef.current = requestAnimationFrame(detect);
           return;
         }
@@ -386,14 +396,17 @@ export default function CameraView({
           return;
         }
         
-        const videoWidth = video.videoWidth || video.width || ctx.canvas.width;
-        const videoHeight = video.videoHeight || video.height || ctx.canvas.height;
+        // Use the displayed canvas dimensions, not the native video dimensions
+        const canvasElement = ctx.canvas;
+        const displayWidth = canvasElement.clientWidth || canvasElement.width;
+        const displayHeight = canvasElement.clientHeight || canvasElement.height;
         
-        ctx.canvas.width = videoWidth;
-        ctx.canvas.height = videoHeight;
+        // Set canvas internal dimensions to match display size for proper coordinate mapping
+        ctx.canvas.width = displayWidth;
+        ctx.canvas.height = displayHeight;
         
         // Clear canvas
-        ctx.clearRect(0, 0, videoWidth, videoHeight);
+        ctx.clearRect(0, 0, displayWidth, displayHeight);
         
         // Draw background (video/image source)
         if (showBackground) {
@@ -407,7 +420,7 @@ export default function CameraView({
             }
             
             // Draw the custom background, scaling to fit
-            ctx.drawImage(preloadedBackground, 0, 0, videoWidth, videoHeight);
+            ctx.drawImage(preloadedBackground, 0, 0, displayWidth, displayHeight);
             
             // Reset filters
             ctx.filter = 'none';
@@ -421,7 +434,7 @@ export default function CameraView({
               ctx.filter = `blur(${backgroundBlur}px)`;
             }
             
-            ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+            ctx.drawImage(video, 0, 0, displayWidth, displayHeight);
             
             // Reset filters
             ctx.filter = 'none';
@@ -431,6 +444,12 @@ export default function CameraView({
 
         if (isTracking && mediaLoaded) {
           try {
+            // Reset pose history when tracking starts for the first time
+            if (!hasResetPoseHistory.current) {
+              resetPoseHistory();
+              hasResetPoseHistory.current = true;
+            }
+            
             // PERFORMANCE OPTIMIZATION: Skip frames to reduce CPU load
             // Only run detection every n frames based on device performance
             const shouldSkipFrame = frameCountRef.current % frameSkipRate !== 0;
@@ -442,6 +461,12 @@ export default function CameraView({
               maxPoses,
               confidenceThreshold
             );
+            
+            // Calculate scaling factors for pose coordinates
+            const videoNativeWidth = video.videoWidth || video.width || displayWidth;
+            const videoNativeHeight = video.videoHeight || video.height || displayHeight;
+            const scaleX = displayWidth / videoNativeWidth;
+            const scaleY = displayHeight / videoNativeHeight;
 
             if (sourceElement === videoRef.current && poses && poses.length > 0) {
               setUserPose(poses[0]);
@@ -547,13 +572,7 @@ export default function CameraView({
                     console.log("NO REFERENCE POSE AVAILABLE YET");
                   }
 
-                  ctx.font = "bold 24px system-ui";
-                  ctx.textAlign = "center";
-                  ctx.strokeStyle = 'black';
-                  ctx.lineWidth = 3;
-                  ctx.strokeText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
-                  ctx.fillStyle = '#10B981';
-                  ctx.fillText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+
 
                   if (referencePose && referencePose.keypoints) {
                     const refKeypoints = referencePose.keypoints;
@@ -597,127 +616,7 @@ export default function CameraView({
                         });
                       }
                       
-                      const cleanRefPose = {
-                        keypoints: JSON.parse(JSON.stringify(refKeypoints))
-                      };
-                      ctx.strokeStyle = '#10B981';
-                      ctx.lineWidth = 6;
-                      ctx.globalAlpha = 0.85;
-                      ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
-                      ctx.shadowBlur = 15;
-
-                      connections.forEach((connection) => {
-                        const fromName = connection[0];
-                        const toName = connection[1];
-                        const fromRef = cleanRefPose.keypoints.find((kp: any) => kp.name === fromName);
-                        const toRef = cleanRefPose.keypoints.find((kp: any) => kp.name === toName);
-
-                        if (fromRef && toRef &&
-                            typeof fromRef.score === 'number' &&
-                            typeof toRef.score === 'number' &&
-                            fromRef.score > confidenceThreshold &&
-                            toRef.score > confidenceThreshold) {
-                          ctx.beginPath();
-                          ctx.moveTo(fromRef.x, fromRef.y);
-                          ctx.lineTo(toRef.x, toRef.y);
-                          ctx.stroke();
-                        }
-                      });
-
-                      cleanRefPose.keypoints.forEach((refPoint: any) => {
-                        if (typeof refPoint.score === 'number' && refPoint.score > confidenceThreshold) {
-                          ctx.fillStyle = '#4ADE80';
-                          ctx.beginPath();
-                          ctx.arc(refPoint.x, refPoint.y, 10, 0, 2 * Math.PI);
-                          ctx.fill();
-                        }
-                      });
-
-                      ctx.shadowColor = 'transparent';
-                      ctx.shadowBlur = 0;
-                      ctx.globalAlpha = 1.0;
-                      
-                      // Always show angles for reference pose (instructor)
-                      Object.entries(calculateJointAngles(referencePose)).forEach(([jointName, angle]) => {
-                        if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                          return;
-                        }
-
-                        const joint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
-                        if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
-                          const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
-                          const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
-
-                          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                          ctx.beginPath();
-                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                          ctx.fill();
-
-                          ctx.strokeStyle = '#10B981';
-                          ctx.lineWidth = 2;
-                          ctx.shadowColor = '#10B981';
-                          ctx.shadowBlur = 5;
-                          ctx.beginPath();
-                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                          ctx.stroke();
-
-                          ctx.shadowBlur = 0;
-                          ctx.shadowColor = 'transparent';
-
-                          ctx.fillStyle = 'white';
-                          ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
-
-                          ctx.strokeStyle = '#10B981';
-                          ctx.lineWidth = 1.5;
-                          ctx.beginPath();
-                          ctx.moveTo(joint.x, joint.y);
-                          ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
-                          ctx.stroke();
-                        }
-                      });
-
-                      ctx.font = 'bold 16px Arial';
-                      ctx.textAlign = 'center';
-                      ctx.textBaseline = 'middle';
-                      ctx.lineWidth = 2;
-
-                      Object.entries(calculateJointAngles(referencePose)).forEach(([jointName, angle]) => {
-                        if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                          return;
-                        }
-
-                        const joint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
-                        if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
-                          const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
-                          const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
-
-                          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                          ctx.beginPath();
-                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                          ctx.fill();
-
-                          ctx.strokeStyle = '#10B981';
-                          ctx.lineWidth = 2;
-                          ctx.shadowColor = '#10B981';
-                          ctx.shadowBlur = 5;
-                          ctx.beginPath();
-                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                          ctx.stroke();
-
-                          ctx.shadowBlur = 0;
-                          ctx.shadowColor = 'transparent';
-
-                          ctx.fillStyle = 'white';
-                          ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
-
-                          ctx.strokeStyle = '#10B981';
-                          ctx.lineWidth = 1.5;
-                          ctx.beginPath();
-                          ctx.moveTo(joint.x, joint.y);
-                          ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
-                          ctx.stroke();
-                        }
-                      });
+                      // Reference pose data is processed for analysis but not visually displayed during test mode
                     }
                   }
                 }
@@ -758,8 +657,8 @@ export default function CameraView({
                       ctx.shadowBlur = 10;
 
                       ctx.beginPath();
-                      ctx.moveTo(from.x, from.y);
-                      ctx.lineTo(to.x, to.y);
+                      ctx.moveTo(from.x * scaleX, from.y * scaleY);
+                      ctx.lineTo(to.x * scaleX, to.y * scaleY);
                       ctx.stroke();
 
                       ctx.shadowColor = 'transparent';
@@ -786,7 +685,7 @@ export default function CameraView({
 
                       ctx.fillStyle = pointColor;
                       ctx.beginPath();
-                      ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                      ctx.arc(x * scaleX, y * scaleY, 6, 0, 2 * Math.PI);
                       ctx.fill();
 
                       ctx.shadowColor = 'transparent';
@@ -823,12 +722,14 @@ export default function CameraView({
                       const endJoint = keypoints.find(kp => kp.name === endJointName);
 
                       if (startJoint && endJoint) {
-                        const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
-                        const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
+                        const scaledJointX = joint.x * scaleX;
+                        const scaledJointY = joint.y * scaleY;
+                        const offsetX = (scaledJointX > displayWidth / 2) ? -30 : 30;
+                        const offsetY = (scaledJointY > displayHeight / 2) ? -30 : 30;
 
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                         ctx.beginPath();
-                        ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                        ctx.arc(scaledJointX + offsetX/2, scaledJointY + offsetY/2, 22, 0, 2 * Math.PI);
                         ctx.fill();
 
                         ctx.strokeStyle = '#ef4444';
@@ -836,20 +737,20 @@ export default function CameraView({
                         ctx.shadowColor = '#ef4444';
                         ctx.shadowBlur = 5;
                         ctx.beginPath();
-                        ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                        ctx.arc(scaledJointX + offsetX/2, scaledJointY + offsetY/2, 22, 0, 2 * Math.PI);
                         ctx.stroke();
 
                         ctx.shadowBlur = 0;
                         ctx.shadowColor = 'transparent';
 
                         ctx.fillStyle = 'white';
-                        ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
+                        ctx.fillText(`${angle}°`, scaledJointX + offsetX/2, scaledJointY + offsetY/2);
 
                         ctx.strokeStyle = '#ef4444';
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
-                        ctx.moveTo(joint.x, joint.y);
-                        ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
+                        ctx.moveTo(scaledJointX, scaledJointY);
+                        ctx.lineTo(scaledJointX + offsetX/2, scaledJointY + offsetY/2);
                         ctx.stroke();
                       }
                     }
@@ -1122,63 +1023,8 @@ export default function CameraView({
             });
           }
           
-                      // Always display joint angles on reference skeleton
-            // Use the point color for angles
-            const anglePointColor = skeletonColor === 'blue' ? '#3b82f6' :
-                              skeletonColor === 'green' ? '#10b981' :
-                              skeletonColor === 'purple' ? '#8b5cf6' :
-                              skeletonColor === 'orange' ? '#f97316' :
-                              '#ef4444'; // default red
-            
-            // Set up text display properties
-            ctx.font = 'bold 16px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // Display angles for each joint
-            Object.entries(refAngles).forEach(([jointName, angle]) => {
-              // Skip face joints that don't have meaningful angles
-              if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                return;
-              }
-              
-              const joint = keypoints.find(kp => kp.name === jointName);
-              if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
-                const offsetX = (joint.x * scaleX > overlayCanvas.width / 2) ? -30 : 30;
-                const offsetY = (joint.y * scaleY > overlayCanvas.height / 2) ? -30 : 30;
-                
-                // Draw angle background circle
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                ctx.beginPath();
-                ctx.arc(joint.x * scaleX + offsetX/2, joint.y * scaleY + offsetY/2, 22, 0, 2 * Math.PI);
-                ctx.fill();
-                
-                // Draw circle border
-                ctx.strokeStyle = anglePointColor;
-                ctx.lineWidth = 2;
-                ctx.shadowColor = anglePointColor;
-                ctx.shadowBlur = 5;
-                ctx.beginPath();
-                ctx.arc(joint.x * scaleX + offsetX/2, joint.y * scaleY + offsetY/2, 22, 0, 2 * Math.PI);
-                ctx.stroke();
-                
-                // Reset shadow effect
-                ctx.shadowBlur = 0;
-                ctx.shadowColor = 'transparent';
-                
-                // Display angle text
-                ctx.fillStyle = 'white';
-                ctx.fillText(`${angle}°`, joint.x * scaleX + offsetX/2, joint.y * scaleY + offsetY/2);
-                
-                // Draw connecting line from joint to angle display
-                ctx.strokeStyle = anglePointColor;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(joint.x * scaleX, joint.y * scaleY);
-                ctx.lineTo(joint.x * scaleX + offsetX/2, joint.y * scaleY + offsetY/2);
-                ctx.stroke();
-              }
-            });
+          // Note: Angles are calculated and stored in the backend for analysis
+          // but not displayed on the reference video to keep the UI clean
         }
       } catch (error) {
         console.error('Error during reference pose detection:', error);
@@ -1229,7 +1075,7 @@ export default function CameraView({
 
   const togglePlayPause = () => {
     if (mediaUrl && isVideoUrl(mediaUrl) && referenceVideoRef.current) {
-      const refVideoElement = referenceVideoRef.current;
+      const refVideoElement = referenceVideoRef.current as HTMLVideoElement;
 
       console.log("Toggling reference video playback", isVideoPaused ? "playing" : "pausing");
 
@@ -1253,6 +1099,21 @@ export default function CameraView({
     }
 
     setIsVideoPaused(!isVideoPaused);
+  };
+
+  // Handle playback speed change
+  const changePlaybackSpeed = (speed: number) => {
+    setPlaybackSpeed(speed);
+    
+    // Apply to reference video if it exists
+    if (referenceVideoRef.current) {
+      referenceVideoRef.current.playbackRate = speed;
+    }
+    
+    // Apply to main video if no reference video
+    if (videoRef.current && !referenceVideoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
   };
 
   const [timingIssues, setTimingIssues] = useState<TimingIssues>({
@@ -2790,13 +2651,7 @@ export default function CameraView({
                 style={isFullscreenMode ? { display: 'block', maxHeight: '100%', maxWidth: '100%' } : {}}
               ></canvas>
 
-              {testResults.isRunning && (
-                <GreenGuideOverlay
-                  videoRef={referenceVideoRef}
-                  isTestMode={testResults.isRunning}
-                  confidenceThreshold={confidenceThreshold}
-                />
-              )}
+
 
               {false && distanceInfo.showMeter && userPose && referencePose && !testResults.isRunning && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-black/80 border border-red-900/40 shadow-lg">
@@ -2869,12 +2724,7 @@ export default function CameraView({
                 </div>
               )}
 
-              {testResults.isRunning && referencePose && (isSplitView || sourceType === 'camera') && (
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/80 border border-emerald-600/50 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>
-                  Follow the green guide
-                </div>
-              )}
+
 
               <div className="absolute top-2 left-2 bg-black/70 border border-red-900/50 text-red-100 px-2 py-1 rounded-md text-xs font-medium shadow-md">
                 {(isSplitView || sourceType === 'camera') && (
@@ -2921,6 +2771,7 @@ export default function CameraView({
                       if (referenceVideoRef.current) {
                         referenceVideoRef.current.pause();
                         referenceVideoRef.current.currentTime = 0;
+                        referenceVideoRef.current.playbackRate = playbackSpeed;
                       }
                       setIsVideoPaused(true); // Update UI to show 'Play' button
                     }}
@@ -2947,17 +2798,59 @@ export default function CameraView({
 
                   <div className={`flex gap-1 ${isFullscreenMode ? 'w-full justify-evenly' : ''}`}>
                     {isVideoUrl(mediaUrl) && (
-                      <button
-                        onClick={togglePlayPause}
-                        className={`bg-red-600 hover:bg-red-700 text-white rounded shadow-md ${
-                          isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
-                        }`}
-                      >
-                        <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
-                          {isVideoPaused ? 'play_arrow' : 'pause'}
-                        </span>
-                        {!isFullscreenMode && (isVideoPaused ? 'Play' : 'Pause')}
-                      </button>
+                      <>
+                        <button
+                          onClick={togglePlayPause}
+                          className={`bg-red-600 hover:bg-red-700 text-white rounded shadow-md ${
+                            isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
+                          }`}
+                        >
+                          <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
+                            {isVideoPaused ? 'play_arrow' : 'pause'}
+                          </span>
+                          {!isFullscreenMode && (isVideoPaused ? 'Play' : 'Pause')}
+                        </button>
+                        
+                        {/* Speed Control */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => changePlaybackSpeed(0.5)}
+                            className={`text-white rounded shadow-md text-xs px-1 py-1 ${
+                              playbackSpeed === 0.5 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                            title="0.5x speed"
+                          >
+                            0.5x
+                          </button>
+                          <button
+                            onClick={() => changePlaybackSpeed(1.0)}
+                            className={`text-white rounded shadow-md text-xs px-1 py-1 ${
+                              playbackSpeed === 1.0 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                            title="Normal speed"
+                          >
+                            1x
+                          </button>
+                          <button
+                            onClick={() => changePlaybackSpeed(1.5)}
+                            className={`text-white rounded shadow-md text-xs px-1 py-1 ${
+                              playbackSpeed === 1.5 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                            title="1.5x speed"
+                          >
+                            1.5x
+                          </button>
+                          <button
+                            onClick={() => changePlaybackSpeed(2.0)}
+                            className={`text-white rounded shadow-md text-xs px-1 py-1 ${
+                              playbackSpeed === 2.0 ? 'bg-orange-600' : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                            title="2x speed"
+                          >
+                            2x
+                          </button>
+                        </div>
+                      </>
                     )}
 
                     <button
@@ -2982,76 +2875,98 @@ export default function CameraView({
 
             {isSplitView && showMediaSelector && (
               <div className="bg-black/90 border border-red-900/40 relative md:w-1/2 w-full flex flex-col items-center justify-center p-4">
-                <h3 className="text-xl font-bold text-red-500 mb-3">Select Reference Media</h3>
-                <p className="text-red-100 text-sm mb-4 text-center">Upload an image or video to compare with your live tracking</p>
+                <div className="w-full max-w-md">
+                  <div className="text-center mb-6">
+                    <h3 className="text-xl font-bold text-red-500 mb-2">Select Reference Media</h3>
+                    <p className="text-red-100 text-sm">Choose a pre-loaded martial arts form or upload your own media</p>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-3 w-full max-w-xs">
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'image/*';
-                      input.onchange = (e) => {
-                        const file = (e.target as HTMLInputElement).files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          const img = new Image();
-                          img.src = url;
-                          img.onload = () => {
-                            if (onScreenshot) onScreenshot(url);
+                  <div className="space-y-4">
+                                         {/* Pre-loaded Video Option */}
+                     <button
+                       onClick={() => {
+                         setShowMediaSelector(false);
+                         setShowPreloadedSelector(true);
+                       }}
+                       className="w-full h-16 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
+                     >
+                       <span className="material-icons text-2xl">video_library</span>
+                       Choose Pre-loaded Video
+                     </button>
+
+                    {/* Upload Video Option */}
+                    <button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'video/mp4,video/webm,video/ogg,video/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            if (!file.type.startsWith('video/')) {
+                              console.error("Not a video file:", file.type);
+                              return;
+                            }
+
+                            console.log("Selected video file:", file.name, file.type);
+                            const url = URL.createObjectURL(file);
+                            const flaggedUrl = url + '#video';
+
+                            if (onScreenshot) {
+                              console.log("Sending video URL to parent:", flaggedUrl);
+                              onScreenshot(flaggedUrl);
+                            }
+
                             setShowMediaSelector(false);
-                          };
-                        }
-                      };
-                      input.click();
-                    }}
-                    className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg flex items-center justify-center shadow-lg"
-                  >
-                    <span className="material-icons mr-2">add_photo_alternate</span>
-                    Upload Image
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'video/mp4,video/webm,video/ogg,video/*';
-                      input.onchange = (e) => {
-                        const file = (e.target as HTMLInputElement).files?.[0];
-                        if (file) {
-                          if (!file.type.startsWith('video/')) {
-                            console.error("Not a video file:", file.type);
-                            return;
                           }
+                        };
+                        input.click();
+                      }}
+                      className="w-full h-16 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
+                    >
+                      <span className="material-icons text-2xl">file_upload</span>
+                      Upload Video
+                    </button>
 
-                          console.log("Selected video file:", file.name, file.type);
-                          const url = URL.createObjectURL(file);
-                          const flaggedUrl = url + '#video';
+                    {/* Cancel Button */}
+                    <button
+                      onClick={() => setShowMediaSelector(false)}
+                      className="w-full border-red-900/30 bg-transparent text-gray-300 hover:bg-red-900/20 hover:text-white p-3 rounded-lg flex items-center justify-center shadow-lg border"
+                    >
+                      <span className="material-icons mr-2">close</span>
+                      Cancel
+                    </button>
+                  </div>
 
-                          if (onScreenshot) {
-                            console.log("Sending video URL to parent:", flaggedUrl);
-                            onScreenshot(flaggedUrl);
-                          }
-
-                          setShowMediaSelector(false);
-                        }
-                      };
-                      input.click();
-                    }}
-                    className="bg-red-700 hover:bg-red-800 text-white p-3 rounded-lg flex items-center justify-center shadow-lg"
-                  >
-                    <span className="material-icons mr-2">video_library</span>
-                    Upload Video
-                  </button>
-
-                  <button
-                    onClick={() => setShowMediaSelector(false)}
-                    className="bg-gray-900 hover:bg-gray-800 text-white p-3 rounded-lg flex items-center justify-center shadow-lg border border-red-900/20"
-                  >
-                    <span className="material-icons mr-2">close</span>
-                    Cancel
-                  </button>
+                  <div className="mt-6 pt-4 border-t border-red-900/30">
+                    <div className="text-xs text-gray-500 text-center space-y-1">
+                      <p>Pre-loaded videos include martial arts forms and techniques</p>
+                      <p>Upload supports: MP4, WEBM, OGG</p>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* Preloaded Video Selector */}
+            {showPreloadedSelector && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <PreloadedVideoSelector
+                  onVideoSelect={(video: HTMLVideoElement | null, url: string, videoData: MartialArtsVideo) => {
+                    if (video) {
+                      // Handle local video file
+                      const flaggedUrl = url + '#video';
+                      if (onScreenshot) {
+                        onScreenshot(flaggedUrl);
+                      }
+                    }
+                    setShowPreloadedSelector(false);
+                  }}
+                  onCancel={() => {
+                    setShowPreloadedSelector(false);
+                    setShowMediaSelector(true);
+                  }}
+                />
               </div>
             )}
           </div>
@@ -3125,7 +3040,7 @@ export default function CameraView({
           
           // D. Reset reference video and play it from the beginning / Handle image
           const refVideo = referenceVideoRef.current;
-          if (refVideo) {
+          if (refVideo && refVideo instanceof HTMLVideoElement) {
             refVideo.currentTime = 0;
             refVideo.loop = false;
             
@@ -3180,7 +3095,7 @@ export default function CameraView({
             }
             
             // Stop reference video playback
-            if (referenceVideoRef.current) {
+            if (referenceVideoRef.current && referenceVideoRef.current instanceof HTMLVideoElement) {
               referenceVideoRef.current.pause();
               referenceVideoRef.current.onended = null;
               referenceVideoRef.current.onpause = null;

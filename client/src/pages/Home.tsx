@@ -281,7 +281,7 @@ export default function Home() {
   };
 
   // Handle video upload
-  const handleVideoUpload = (video: HTMLVideoElement, url: string) => {
+  const handleVideoUpload = (video: HTMLVideoElement, url: string, videoData?: any) => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
@@ -291,6 +291,12 @@ export default function Home() {
     setUploadedVideo(video);
     setMediaUrl(url + '#video'); // Add flag to identify as video
     setTrackingStatus('ready');
+    
+    // If this is a pre-loaded video, you could store additional metadata
+    if (videoData) {
+      console.log('Selected pre-loaded video:', videoData);
+      // You could store this in state or localStorage for reference
+    }
   };
 
   // Take screenshot
@@ -298,6 +304,16 @@ export default function Home() {
     if (dataUrl.startsWith('blob:')) {
       // This is a reference media upload (not a screenshot)
       setMediaUrl(dataUrl);
+    } else if (dataUrl.includes('#youtube')) {
+      // This is a YouTube video
+      setSourceType('video');
+      setMediaUrl(dataUrl);
+      setTrackingStatus('ready');
+    } else if (dataUrl.includes('#video')) {
+      // This is a local video file selection
+      setSourceType('video');
+      setMediaUrl(dataUrl);
+      setTrackingStatus('ready');
     } else {
       // This is a regular screenshot
       setScreenshotData(dataUrl);

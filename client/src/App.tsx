@@ -25,6 +25,7 @@ import BalanceBeamBreakerChallenge from "@/pages/BalanceBeamBreakerChallenge";
 import PushupsWorkout from "@/pages/PushupsWorkout";
 import CrunchesWorkout from "@/pages/CrunchesWorkout";
 import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
+import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
 
 function Router() {
   return (
@@ -67,6 +68,9 @@ function Router() {
       <ProtectedRoute path="/workouts/pushups" component={PushupsWorkout} />
       <ProtectedRoute path="/workouts/crunches" component={CrunchesWorkout} />
       <ProtectedRoute path="/workouts/jumping-jacks" component={JumpingJacksWorkout} />
+
+      {/* Live Routine Demo */}
+      <ProtectedRoute path="/live-routine" component={LiveRoutineDemo} />
 
       {/* Authentication page */}
       <Route path="/auth" component={AuthPage} />

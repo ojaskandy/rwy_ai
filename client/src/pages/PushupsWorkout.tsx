@@ -9,8 +9,8 @@ const COUNTDOWN_SECONDS = 3;
 const SKELETON_COLOR = 'orange';
 const DRAWING_CONFIDENCE_THRESHOLD = 0.3;
 
-// Face-to-shoulder line pushup detection
-const FACE_BELOW_SHOULDER_THRESHOLD = 10; // pixels - how far below shoulder line counts as "down"
+// Face-to-shoulder line pushup detection  
+const FACE_BELOW_SHOULDER_THRESHOLD = 80; // pixels - face needs to be within 80px of shoulder line to count as "down"
 const MIN_BODY_ANGLE = 140; // degrees - minimum plank position angle (more lenient)
 
 const PushupsWorkout: React.FC = () => {
@@ -40,6 +40,8 @@ const PushupsWorkout: React.FC = () => {
   const [facePosition, setFacePosition] = useState<{x: number, y: number} | null>(null);
   const [shoulderLineY, setShoulderLineY] = useState<number | null>(null);
   const [isFaceBelowShoulders, setIsFaceBelowShoulders] = useState(false);
+  const [lastCountTime, setLastCountTime] = useState<number>(0);
+  const COOLDOWN_MS = 200; // 0.2 second cooldown to prevent double counting
   
   // Stats tracking
   const [previousStats, setPreviousStats] = useState<{
@@ -141,6 +143,7 @@ const PushupsWorkout: React.FC = () => {
     setFacePosition(null);
     setShoulderLineY(null);
     setIsFaceBelowShoulders(false);
+    setLastCountTime(0);
   };
 
   useEffect(() => {
@@ -310,10 +313,17 @@ const PushupsWorkout: React.FC = () => {
               const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
               setShoulderLineY(shoulderY);
               
-              // Check if face is below shoulder line
+              // Check if face is at or below shoulder line (pushup down position)
               if (nose && (nose.score ?? 0) > DRAWING_CONFIDENCE_THRESHOLD) {
-                const faceBelowLine = nose.y > (shoulderY + FACE_BELOW_SHOULDER_THRESHOLD);
+                // Face is "below" shoulders when Y value is greater (lower on screen)
+                const faceBelowLine = (shoulderY - nose.y) <= FACE_BELOW_SHOULDER_THRESHOLD;
                 setIsFaceBelowShoulders(faceBelowLine);
+                
+                // Debug logging
+                if (isWorkoutActive && !showCountdown) {
+                  const distance = shoulderY - nose.y;
+                  console.log(`Face Y: ${nose.y.toFixed(0)}, Shoulder Y: ${shoulderY.toFixed(0)}, Distance: ${distance.toFixed(0)}, Threshold: ${FACE_BELOW_SHOULDER_THRESHOLD}, BelowLine: ${faceBelowLine}, Phase: ${currentPhase}`);
+                }
               }
             }
 
@@ -328,16 +338,26 @@ const PushupsWorkout: React.FC = () => {
         setBodyAngle(body);
         setIsPerfectPosition(perfectPos);
 
-        // Face-to-shoulder line pushup counting logic
+        // Face-to-shoulder line pushup counting logic with cooldown
         if (isWorkoutActive && !showCountdown && shoulderLineY !== null && facePosition !== null) {
+          const currentTime = Date.now();
+          const timeSinceLastCount = currentTime - lastCountTime;
+          
           // Detect when face goes below shoulder line (pushup down position)
           if (currentPhase === 'up' && isFaceBelowShoulders) {
+            console.log('Phase change: UP -> DOWN (face below shoulders)');
             setCurrentPhase('down');
-          } else if (currentPhase === 'down' && !isFaceBelowShoulders) {
-            // Face came back above shoulder line - count the pushup
+          } else if (currentPhase === 'down' && !isFaceBelowShoulders && timeSinceLastCount > COOLDOWN_MS) {
+            // Face came back above shoulder line - count the pushup (with cooldown)
+            console.log('PUSHUP COUNTED! Face returned above shoulders');
             setCurrentPhase('up');
-            setPushupCount(prev => prev + 1);
+            setPushupCount(prev => {
+              const newCount = prev + 1;
+              console.log(`Pushup count: ${prev} -> ${newCount}`);
+              return newCount;
+            });
             setFeedbackCount(prev => prev + 1);
+            setLastCountTime(currentTime);
           }
         }
 
@@ -535,7 +555,9 @@ const PushupsWorkout: React.FC = () => {
                   <div>
                     Face: {facePosition.y.toFixed(0)}px | Shoulders: {shoulderLineY.toFixed(0)}px
                     <br />
-                    {isFaceBelowShoulders ? "✅ Face Below" : "❌ Face Above"}
+                    {isFaceBelowShoulders ? "✅ DOWN Position" : "❌ UP Position"}
+                    <br />
+                    Phase: <span className="font-bold text-orange-300">{currentPhase.toUpperCase()}</span>
                   </div>
                 )}
               </div>

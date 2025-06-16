@@ -147,7 +147,7 @@ const Workouts: React.FC = () => {
           })}
         </div>
         
-        {workouts.length === 0 && (
+      {workouts.length === 0 && (
           <motion.p 
             className="text-center text-gray-400 text-xl mt-12"
             initial={{ opacity: 0 }}
@@ -156,7 +156,7 @@ const Workouts: React.FC = () => {
           >
             (No workouts available yet - stay tuned!)
           </motion.p>
-        )}
+      )}
       </div>
     </div>
   );

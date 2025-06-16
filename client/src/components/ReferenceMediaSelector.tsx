@@ -1,0 +1,108 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import MediaUploader from './MediaUploader';
+import PreloadedVideoSelector from './PreloadedVideoSelector';
+import { MartialArtsVideo } from '@/data/martialArtsVideos';
+
+interface ReferenceMediaSelectorProps {
+  onImageUpload: (image: HTMLImageElement, url: string) => void;
+  onVideoUpload: (video: HTMLVideoElement, url: string, videoData?: MartialArtsVideo) => void;
+  onCancel: () => void;
+}
+
+export default function ReferenceMediaSelector({ 
+  onImageUpload, 
+  onVideoUpload, 
+  onCancel 
+}: ReferenceMediaSelectorProps) {
+  const [currentView, setCurrentView] = useState<'main' | 'preloaded' | 'upload'>('main');
+
+  const handlePreloadedVideoSelect = (video: HTMLVideoElement, url: string, videoData: MartialArtsVideo) => {
+    onVideoUpload(video, url, videoData);
+  };
+
+  const handleCustomVideoUpload = (video: HTMLVideoElement, url: string) => {
+    onVideoUpload(video, url);
+  };
+
+  const handleCustomImageUpload = (image: HTMLImageElement, url: string) => {
+    onImageUpload(image, url);
+  };
+
+  if (currentView === 'preloaded') {
+    return (
+      <PreloadedVideoSelector
+        onVideoSelect={handlePreloadedVideoSelect}
+        onCancel={() => setCurrentView('main')}
+      />
+    );
+  }
+
+  if (currentView === 'upload') {
+    return (
+      <MediaUploader
+        onImageUpload={handleCustomImageUpload}
+        onVideoUpload={handleCustomVideoUpload}
+        onCancel={() => setCurrentView('main')}
+      />
+    );
+  }
+
+  // Main selection view
+  return (
+    <div className="p-8 bg-gray-900 rounded-lg max-w-md w-full border border-red-900/30 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-serif bg-gradient-to-r from-red-500 to-red-600 text-transparent bg-clip-text">
+          Select Reference Media
+        </h3>
+        <button 
+          onClick={onCancel}
+          className="text-gray-400 hover:text-white"
+        >
+          <span className="material-icons">close</span>
+        </button>
+      </div>
+
+      <p className="text-gray-300 text-center mb-8">
+        Upload an image or video to compare with your live tracking
+      </p>
+
+      <div className="space-y-4">
+        {/* Pre-loaded Video Option */}
+        <Button
+          onClick={() => setCurrentView('preloaded')}
+          className="w-full h-16 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white font-semibold text-lg flex items-center justify-center gap-3"
+        >
+          <span className="material-icons text-2xl">video_library</span>
+          Choose Pre-loaded Video
+        </Button>
+
+        {/* Upload Option */}
+        <Button
+          onClick={() => setCurrentView('upload')}
+          className="w-full h-16 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold text-lg flex items-center justify-center gap-3"
+        >
+          <span className="material-icons text-2xl">file_upload</span>
+          Upload Video
+        </Button>
+
+        {/* Cancel Button */}
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="w-full border-red-900/30 bg-transparent text-gray-300 hover:bg-red-900/20 hover:text-white"
+        >
+          <span className="material-icons mr-2">close</span>
+          Cancel
+        </Button>
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-red-900/30">
+        <div className="text-xs text-gray-500 text-center space-y-1">
+          <p>Pre-loaded videos include martial arts forms and techniques</p>
+          <p>Upload supports: JPG, PNG, WEBP, MP4, WEBM</p>
+        </div>
+      </div>
+    </div>
+  );
+} 

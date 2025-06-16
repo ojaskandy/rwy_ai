@@ -10,6 +10,27 @@ let modelConfig: poseDetection.MoveNetModelConfig = {
   enableSmoothing: true,
 };
 
+// Pose smoothing variables
+interface SmoothedKeypoint {
+  x: number;
+  y: number;
+  score: number;
+  name: string;
+}
+
+interface PoseHistory {
+  poses: Array<{
+    keypoints: SmoothedKeypoint[];
+    timestamp: number;
+  }>;
+  maxHistory: number;
+}
+
+const poseHistory: PoseHistory = {
+  poses: [],
+  maxHistory: 5 // Keep last 5 poses for smoothing
+};
+
 /**
  * Initialize the pose detection models
  */
@@ -133,33 +154,28 @@ export async function detectPoses(
     // Run inference with enhanced settings for better detection
     console.log(`Running pose detection with maxPoses: ${maxPoses}, confidence: ${minConfidence}`);
     
-    // Adjust estimation options based on source type
+    // Enhanced estimation options for better stability
     const estimationOptions = {
       maxPoses,
       flipHorizontal: false,
-      scoreThreshold: minConfidence * 0.7, // Lower internal threshold to get more keypoints
+      scoreThreshold: Math.max(0.3, minConfidence * 0.6), // Lower threshold to get more keypoints initially
     };
     
     const poses = await detector.estimatePoses(image, estimationOptions);
     
-    console.log(`Detected ${poses.length} poses with ${poses[0]?.keypoints.length || 0} keypoints`);
+    if (!poses || poses.length === 0) {
+      return [];
+    }
     
-    // Apply more advanced filtering for better detection quality
+    // Filter keypoints by confidence - PRECISE TRACKING, NO SMOOTHING
     const filteredPoses = poses.map(pose => {
-      // Keep more keypoints initially but with confidence scores
-      const keypoints = pose.keypoints.filter(kp => 
-        typeof kp.score === 'number' && kp.score > minConfidence * 0.8
+      const filteredKeypoints = pose.keypoints.filter(kp => 
+        typeof kp.score === 'number' && kp.score > minConfidence
       );
-      
-      // Log keypoint counts for debugging
-      if (keypoints.length > 0) {
-        const avgConfidence = keypoints.reduce((sum, kp) => sum + (kp.score || 0), 0) / keypoints.length;
-        console.log(`Kept ${keypoints.length} keypoints with avg confidence: ${avgConfidence.toFixed(2)}`);
-      }
-      
+
       return {
         ...pose,
-        keypoints
+        keypoints: filteredKeypoints
       };
     });
     
@@ -197,4 +213,130 @@ export function getJointConnections(): Array<[string, string]> {
     ['left_eye', 'left_ear'],
     ['right_eye', 'right_ear'],
   ] as Array<[string, string]>;
+}
+
+// Lightweight smoothing function for keypoints - minimal drift
+function smoothKeypoints(currentPose: any, history: PoseHistory): SmoothedKeypoint[] {
+  if (!currentPose?.keypoints || history.poses.length < 2) {
+    return currentPose?.keypoints || [];
+  }
+
+  const smoothedKeypoints: SmoothedKeypoint[] = [];
+  const alpha = 0.85; // Much less smoothing to prevent drift (0 = all history, 1 = all current)
+
+  currentPose.keypoints.forEach((currentKp: any) => {
+    // Only use the most recent pose for minimal smoothing
+    const lastPose = history.poses[history.poses.length - 1];
+    const lastKp = lastPose?.keypoints.find(kp => kp.name === currentKp.name);
+
+    if (lastKp && lastKp.score > 0.4) {
+      // Apply very light smoothing only if the distance isn't too large (prevents jumps)
+      const distance = Math.sqrt(
+        Math.pow(currentKp.x - lastKp.x, 2) + Math.pow(currentKp.y - lastKp.y, 2)
+      );
+      
+      // Only smooth if movement is reasonable (not a detection error)
+      if (distance < 50) {
+        smoothedKeypoints.push({
+          x: alpha * currentKp.x + (1 - alpha) * lastKp.x,
+          y: alpha * currentKp.y + (1 - alpha) * lastKp.y,
+          score: currentKp.score,
+          name: currentKp.name
+        });
+      } else {
+        // Large movement - don't smooth, use current position
+        smoothedKeypoints.push({
+          x: currentKp.x,
+          y: currentKp.y,
+          score: currentKp.score,
+          name: currentKp.name
+        });
+      }
+    } else {
+      // No history or low confidence - use current position
+      smoothedKeypoints.push({
+        x: currentKp.x,
+        y: currentKp.y,
+        score: currentKp.score,
+        name: currentKp.name
+      });
+    }
+  });
+
+  return smoothedKeypoints;
+}
+
+export async function detectPosesSmooth(
+  image: HTMLVideoElement | HTMLImageElement,
+  maxPoses: number = 1,
+  minConfidence: number = 0.5
+) {
+  if (!detector) {
+    detector = await initPoseDetection();
+  }
+
+  if (!detector) {
+    throw new Error('Pose detector not initialized');
+  }
+
+  const sourceWidth = image instanceof HTMLVideoElement ? image.videoWidth : image.naturalWidth;
+  const sourceHeight = image instanceof HTMLVideoElement ? image.videoHeight : image.naturalHeight;
+
+  if (sourceWidth === 0 || sourceHeight === 0) {
+    console.warn('Invalid source dimensions, skipping detection');
+    return [];
+  }
+
+  try {
+    // Enhanced estimation options for better stability
+    const estimationOptions = {
+      maxPoses,
+      flipHorizontal: false,
+      scoreThreshold: Math.max(0.3, minConfidence * 0.6), // Lower threshold to get more keypoints initially
+    };
+
+    const poses = await detector.estimatePoses(image, estimationOptions);
+
+    if (!poses || poses.length === 0) {
+      return [];
+    }
+
+    // Apply smoothing to reduce jitter
+    const smoothedPoses = poses.map(pose => {
+      const smoothedKeypoints = smoothKeypoints(pose, poseHistory);
+      
+      // Filter keypoints by confidence after smoothing
+      const filteredKeypoints = smoothedKeypoints.filter(kp => 
+        kp.score > minConfidence
+      );
+
+      return {
+        ...pose,
+        keypoints: filteredKeypoints
+      };
+    });
+
+    // Update history with current pose (before smoothing for next frame)
+    if (smoothedPoses.length > 0 && smoothedPoses[0].keypoints.length > 5) {
+      poseHistory.poses.push({
+        keypoints: smoothedPoses[0].keypoints,
+        timestamp: Date.now()
+      });
+
+      // Maintain history size
+      if (poseHistory.poses.length > poseHistory.maxHistory) {
+        poseHistory.poses.shift();
+      }
+    }
+
+    return smoothedPoses;
+  } catch (error) {
+    console.error('Error estimating poses:', error);
+    throw error;
+  }
+}
+
+// Reset pose history (useful when switching cameras or starting new sessions)
+export function resetPoseHistory() {
+  poseHistory.poses = [];
 }

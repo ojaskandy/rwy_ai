@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import MediaUploader from "./MediaUploader";
+import ReferenceMediaSelector from "./ReferenceMediaSelector";
+import { MartialArtsVideo } from "@/data/martialArtsVideos";
 
 interface SourceSelectorProps {
   sourceType: 'camera' | 'image' | 'video';
   setSourceType: (type: 'camera' | 'image' | 'video') => void;
   onImageUpload: (image: HTMLImageElement, url: string) => void;
-  onVideoUpload: (video: HTMLVideoElement, url: string) => void;
+  onVideoUpload: (video: HTMLVideoElement, url: string, videoData?: MartialArtsVideo) => void;
   hasCameraPermission: boolean;
   requestCameraPermission: () => void;
 }
@@ -103,13 +104,13 @@ export default function SourceSelector({
       
       {showUploader && (sourceType === 'image' || sourceType === 'video') && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <MediaUploader
-            onImageUpload={(image, url) => {
+          <ReferenceMediaSelector
+            onImageUpload={(image: HTMLImageElement, url: string) => {
               onImageUpload(image, url);
               setShowUploader(false);
             }}
-            onVideoUpload={(video, url) => {
-              onVideoUpload(video, url);
+            onVideoUpload={(video: HTMLVideoElement, url: string, videoData?: MartialArtsVideo) => {
+              onVideoUpload(video, url, videoData);
               setShowUploader(false);
             }}
             onCancel={() => {
