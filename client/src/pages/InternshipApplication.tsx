@@ -18,7 +18,7 @@ const internshipApplicationSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Please enter a valid email address"),
   socialMediaHandle: z.string().optional(),
-  socialMediaPlatform: z.enum(["linkedin", "twitter", "github", "instagram", "other"]).optional(),
+  socialMediaPlatform: z.enum(["linkedin", "twitter", "github", "instagram", "tiktok", "other"]).optional(),
   technicalHackAnswer: z.string().max(100, "Please keep under 100 words").optional(),
   unorthodoxThingAnswer: z.string().max(100, "Please keep under 100 words").optional(),
   resumeFileName: z.string().optional(),
@@ -246,6 +246,7 @@ export default function InternshipApplication() {
                               <SelectItem value="github">GitHub</SelectItem>
                               <SelectItem value="twitter">Twitter</SelectItem>
                               <SelectItem value="instagram">Instagram</SelectItem>
+                              <SelectItem value="tiktok">TikTok</SelectItem>
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
