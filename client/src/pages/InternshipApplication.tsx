@@ -127,7 +127,7 @@ export default function InternshipApplication() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -139,7 +139,7 @@ export default function InternshipApplication() {
             transition={{ delay: 0.2 }}
             className="mb-6"
           >
-            <CheckCircle className="w-24 h-24 text-green-500 mx-auto" />
+            <CheckCircle className="w-24 h-24 text-red-500 mx-auto" />
           </motion.div>
           <h1 className="text-3xl font-bold text-white mb-4">Application Submitted!</h1>
           <p className="text-gray-300 mb-6">
@@ -147,7 +147,7 @@ export default function InternshipApplication() {
           </p>
           <Button
             onClick={() => window.location.href = '/'}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/25"
           >
             Return to Home
           </Button>
@@ -157,16 +157,18 @@ export default function InternshipApplication() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold text-white mb-4">Join the CoachT Team</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Join the <span className="text-red-500">CoachT</span> Team
+          </h1>
           <p className="text-gray-300 text-lg">
-            Help us revolutionize martial arts training with AI technology
+            Revolutionize martial arts training with AI
           </p>
         </motion.div>
 
@@ -175,9 +177,9 @@ export default function InternshipApplication() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-white">Internship Application</CardTitle>
+          <Card className="bg-gray-900/80 border-red-900/50 backdrop-blur-sm shadow-xl shadow-red-500/10">
+            <CardHeader className="border-b border-red-900/30">
+              <CardTitle className="text-white text-2xl">Internship Application</CardTitle>
               <CardDescription className="text-gray-400">
                 We're looking for passionate individuals to join our mission
               </CardDescription>
@@ -192,11 +194,11 @@ export default function InternshipApplication() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Full Name *</FormLabel>
+                          <FormLabel className="text-white font-medium">Full Name *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
-                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                               placeholder="Your full name"
                             />
                           </FormControl>
@@ -210,12 +212,12 @@ export default function InternshipApplication() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Email Address *</FormLabel>
+                          <FormLabel className="text-white font-medium">Email Address *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               type="email"
-                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                               placeholder="your.email@example.com"
                             />
                           </FormControl>
@@ -232,14 +234,14 @@ export default function InternshipApplication() {
                       name="socialMediaPlatform"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Most Relevant Social Platform</FormLabel>
+                          <FormLabel className="text-white font-medium">Most Relevant Social Platform</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                              <SelectTrigger className="bg-gray-800 border-gray-600 text-white focus:border-red-500 focus:ring-1 focus:ring-red-500">
                                 <SelectValue placeholder="Select platform" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-gray-700 border-gray-600">
+                            <SelectContent className="bg-gray-800 border-gray-600">
                               <SelectItem value="linkedin">LinkedIn</SelectItem>
                               <SelectItem value="github">GitHub</SelectItem>
                               <SelectItem value="twitter">Twitter</SelectItem>
@@ -257,11 +259,11 @@ export default function InternshipApplication() {
                       name="socialMediaHandle"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Handle/Username</FormLabel>
+                          <FormLabel className="text-white font-medium">Handle/Username</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
-                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                               placeholder="@username or profile URL"
                             />
                           </FormControl>
@@ -277,13 +279,13 @@ export default function InternshipApplication() {
                     name="technicalHackAnswer"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white">
+                        <FormLabel className="text-white font-medium">
                           Technical/Non-technical System Hack (Optional)
                         </FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
-                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 min-h-20"
+                            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 min-h-20 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                             placeholder="Describe a technical or non-technical system you hacked to your benefit (under 100 words)"
                             maxLength={600}
                           />
@@ -298,13 +300,13 @@ export default function InternshipApplication() {
                     name="unorthodoxThingAnswer"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white">
+                        <FormLabel className="text-white font-medium">
                           Unorthodox/Silly Thing You Made People Care About (Optional)
                         </FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
-                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 min-h-20"
+                            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 min-h-20 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                             placeholder="Describe something unorthodox or silly you got people to care about and how (under 100 words)"
                             maxLength={600}
                           />
