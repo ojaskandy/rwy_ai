@@ -318,17 +318,17 @@ export default function InternshipApplication() {
 
                   {/* Resume Upload */}
                   <div className="space-y-4">
-                    <FormLabel className="text-white">Resume Upload</FormLabel>
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                    <FormLabel className="text-white font-medium">Resume Upload</FormLabel>
+                    <div className="border-2 border-dashed border-red-800/50 rounded-lg p-6 text-center bg-gray-800/30">
                       {resumeFile ? (
-                        <div className="flex items-center justify-center space-x-2 text-green-400">
+                        <div className="flex items-center justify-center space-x-2 text-red-400">
                           <FileText className="w-5 h-5" />
                           <span>{resumeFile.name}</span>
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto" />
-                          <p className="text-gray-400">Upload your resume (PDF or Word)</p>
+                          <Upload className="w-8 h-8 text-red-400 mx-auto" />
+                          <p className="text-gray-300">Upload your resume (PDF or Word)</p>
                           <p className="text-sm text-gray-500">Max file size: 5MB</p>
                         </div>
                       )}
@@ -341,10 +341,10 @@ export default function InternshipApplication() {
                       />
                       <label
                         htmlFor="resume-upload"
-                        className={`inline-block mt-4 px-4 py-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`inline-block mt-4 px-6 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
                           uploading 
                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                            : 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40'
                         }`}
                       >
                         {uploading ? 'Uploading...' : resumeFile ? 'Change Resume' : 'Choose File'}
@@ -355,9 +355,9 @@ export default function InternshipApplication() {
                   <Button
                     type="submit"
                     disabled={applicationMutation.isPending}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-lg font-semibold"
+                    className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-bold shadow-xl shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200"
                   >
-                    {applicationMutation.isPending ? 'Submitting...' : 'Submit Application'}
+                    {applicationMutation.isPending ? 'Submitting Application...' : 'Submit Application'}
                   </Button>
                 </form>
               </Form>
