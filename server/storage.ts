@@ -53,6 +53,11 @@ export interface IStorage {
   saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord>;
   getEmailRecords(): Promise<EmailRecord[]>;
   
+  // Internship application methods
+  saveInternshipApplication(application: InsertInternshipApplication): Promise<InternshipApplication>;
+  getInternshipApplications(): Promise<InternshipApplication[]>;
+  getInternshipApplicationById(id: number): Promise<InternshipApplication | undefined>;
+  
   // Session store
   sessionStore: session.Store;
 }
