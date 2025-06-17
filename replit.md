@@ -102,6 +102,7 @@ The deployment includes:
 
 Changelog:
 - June 16, 2025. Initial setup
+- June 17, 2025. Added comprehensive internship application system with resume upload capabilities, form validation, and database storage
 
 ## User Preferences
 

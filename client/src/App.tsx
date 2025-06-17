@@ -82,6 +82,9 @@ function Router() {
       {/* Early access landing page for mobile users */}
       <Route path="/early" component={MobileLandingPage} />
       
+      {/* Internship application page */}
+      <Route path="/internship" component={InternshipApplication} />
+      
       {/* 404 page */}
       <Route component={NotFound} />
     </Switch>
