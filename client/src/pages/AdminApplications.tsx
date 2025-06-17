@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Calendar, Mail, User, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Download, Calendar, Mail, User, ExternalLink, Lock } from "lucide-react";
 import { format } from "date-fns";
 
 type InternshipApplication = {
@@ -20,9 +22,69 @@ type InternshipApplication = {
 };
 
 export default function AdminApplications() {
-  const { data: applications, isLoading, error } = useQuery<InternshipApplication[]>({
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const { data: applications, isLoading, error: queryError } = useQuery<InternshipApplication[]>({
     queryKey: ["/api/internship-applications"],
+    enabled: isAuthenticated, // Only fetch when authenticated
   });
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === "280806") {
+      setIsAuthenticated(true);
+      setError("");
+    } else {
+      setError("Invalid password");
+      setPassword("");
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full"
+        >
+          <Card className="bg-gray-900/80 border-red-900/50 backdrop-blur-sm shadow-xl shadow-red-500/10">
+            <CardHeader className="text-center border-b border-red-900/30">
+              <CardTitle className="text-white text-2xl flex items-center justify-center gap-2">
+                <Lock className="w-6 h-6 text-red-400" />
+                Admin Access
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Enter password to view applications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                />
+                {error && (
+                  <p className="text-red-400 text-sm">{error}</p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/25"
+                >
+                  Access Admin Panel
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   const handleDownloadResume = (fileUrl: string, fileName: string) => {
     const link = document.createElement('a');
@@ -70,12 +132,12 @@ export default function AdminApplications() {
     );
   }
 
-  if (error) {
+  if (queryError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading applications</p>
-          <p className="text-gray-400">{(error as Error).message}</p>
+          <p className="text-gray-400">{queryError ? String(queryError) : 'Unknown error'}</p>
         </div>
       </div>
     );
@@ -172,25 +234,57 @@ export default function AdminApplications() {
                       </div>
                     )}
 
-                    {/* Technical Hack Answer */}
-                    {application.technicalHackAnswer && (
+                    {/* Application Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Technical Hack Answer */}
                       <div>
-                        <h4 className="text-white font-medium mb-2">Technical/System Hack</h4>
-                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                          <p className="text-gray-300">{application.technicalHackAnswer}</p>
+                        <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          Technical/System Hack
+                        </h4>
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 min-h-[100px]">
+                          {application.technicalHackAnswer ? (
+                            <p className="text-gray-300 leading-relaxed">{application.technicalHackAnswer}</p>
+                          ) : (
+                            <p className="text-gray-500 italic">No response provided</p>
+                          )}
                         </div>
                       </div>
-                    )}
 
-                    {/* Unorthodox Thing Answer */}
-                    {application.unorthodoxThingAnswer && (
+                      {/* Unorthodox Thing Answer */}
                       <div>
-                        <h4 className="text-white font-medium mb-2">Unorthodox/Silly Achievement</h4>
-                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                          <p className="text-gray-300">{application.unorthodoxThingAnswer}</p>
+                        <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          Unorthodox/Silly Achievement
+                        </h4>
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 min-h-[100px]">
+                          {application.unorthodoxThingAnswer ? (
+                            <p className="text-gray-300 leading-relaxed">{application.unorthodoxThingAnswer}</p>
+                          ) : (
+                            <p className="text-gray-500 italic">No response provided</p>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Application Summary */}
+                    <div className="bg-red-950/20 rounded-lg p-4 border border-red-800/30">
+                      <h4 className="text-red-300 font-medium mb-2">Application Summary</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Contact:</span>
+                          <p className="text-white">{application.email}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Social Platform:</span>
+                          <p className="text-white">{application.socialMediaPlatform || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Resume:</span>
+                          <p className="text-white">{application.resumeFileName ? 'Attached' : 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
