@@ -27,6 +27,7 @@ import CrunchesWorkout from "@/pages/CrunchesWorkout";
 import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
 import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
 import InternshipApplication from "@/pages/InternshipApplication";
+import AdminApplications from "@/pages/AdminApplications";
 
 function Router() {
   return (
@@ -84,6 +85,9 @@ function Router() {
       
       {/* Internship application page */}
       <Route path="/internship" component={InternshipApplication} />
+      
+      {/* Admin applications page */}
+      <Route path="/admin/applications" component={AdminApplications} />
       
       {/* 404 page */}
       <Route component={NotFound} />

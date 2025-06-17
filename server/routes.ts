@@ -70,6 +70,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
   
+
+  
   // Early Access Signup - no authentication required
   app.post("/api/early-access", async (req, res) => {
     try {
@@ -558,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve uploaded files
-  app.use('/uploads', require('express').static(path.join(process.cwd(), 'uploads')));
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // Internship application routes
   app.post("/api/internship-applications", async (req: Request, res: Response, next: NextFunction) => {
