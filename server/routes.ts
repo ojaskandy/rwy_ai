@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -14,7 +15,7 @@ import { z } from "zod";
 import * as fs from 'fs';
 import * as path from 'path';
 import { Resend } from 'resend';
-import { Request, Response, NextFunction } from "express";
+import multer from "multer";
 
 // Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
@@ -29,6 +30,41 @@ try {
 } catch (error) {
   console.error("Failed to initialize Resend:", error);
 }
+
+// Configure multer for file uploads
+const storage_config = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'resumes');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const applicantName = req.body.applicantName || 'unknown';
+    const timestamp = Date.now();
+    const extension = path.extname(file.originalname);
+    const filename = `${applicantName.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}${extension}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({
+  storage: storage_config,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and Word documents are allowed'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -505,6 +541,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Resume upload endpoint
+  app.post("/api/upload-resume", upload.single('resume'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileUrl = `/uploads/resumes/${req.file.filename}`;
+      res.json({ fileUrl, fileName: req.file.originalname });
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+      res.status(500).json({ message: "Upload failed" });
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', require('express').static(path.join(process.cwd(), 'uploads')));
 
   // Internship application routes
   app.post("/api/internship-applications", async (req: Request, res: Response, next: NextFunction) => {

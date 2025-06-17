@@ -97,20 +97,30 @@ export default function InternshipApplication() {
 
     setUploading(true);
     try {
-      // Convert file to base64 for simple storage
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        setResumeFile(file);
-        form.setValue("resumeFileName", file.name);
-        form.setValue("resumeFileUrl", base64);
-        setUploading(false);
-        toast({
-          title: "Resume Uploaded",
-          description: "Your resume has been attached successfully.",
-        });
-      };
-      reader.readAsDataURL(file);
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('resume', file);
+      formData.append('applicantName', form.getValues('fullName') || 'unknown');
+
+      const response = await fetch('/api/upload-resume', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      
+      setResumeFile(file);
+      form.setValue("resumeFileName", file.name);
+      form.setValue("resumeFileUrl", result.fileUrl);
+      setUploading(false);
+      toast({
+        title: "Resume Uploaded",
+        description: "Your resume has been attached successfully.",
+      });
     } catch (error) {
       setUploading(false);
       toast({
