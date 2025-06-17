@@ -13,7 +13,13 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Camera,
+  Brain,
+  Trophy,
+  Eye,
+  Activity,
+  Shield
 } from "lucide-react";
 
 export default function MarketingLanding() {
@@ -34,9 +40,9 @@ export default function MarketingLanding() {
   }, [features.length]);
 
   const stats = [
-    { number: "10,000+", label: "Athletes Trained" },
-    { number: "95%", label: "Improvement Rate" },
-    { number: "24/7", label: "AI Coach Available" }
+    { number: "24/7", label: "AI Coach Available" },
+    { number: "Real-time", label: "Movement Analysis" },
+    { number: "Precision", label: "Form Feedback" }
   ];
 
   const benefits = [
@@ -61,9 +67,9 @@ export default function MarketingLanding() {
     <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black text-white overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4">
-        {/* Animated Background Elements */}
+        {/* Enhanced Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Glowing orbs */}
+          {/* Main glowing orbs */}
           <motion.div
             className="absolute top-20 left-20 w-32 h-32 bg-red-600/20 rounded-full blur-xl"
             animate={{
@@ -89,6 +95,61 @@ export default function MarketingLanding() {
               delay: 1
             }}
           />
+          
+          {/* Floating martial arts icons */}
+          <motion.div
+            className="absolute top-32 right-32 text-red-400/30"
+            animate={{
+              y: [-10, 10, -10],
+              rotate: [0, 5, 0]
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <Target className="w-16 h-16" />
+          </motion.div>
+          
+          <motion.div
+            className="absolute bottom-32 left-32 text-red-400/30"
+            animate={{
+              y: [10, -10, 10],
+              rotate: [0, -5, 0]
+            }}
+            transition={{
+              duration: 7,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
+            }}
+          >
+            <Activity className="w-12 h-12" />
+          </motion.div>
+          
+          <motion.div
+            className="absolute top-1/2 left-16 text-red-400/20"
+            animate={{
+              x: [-5, 5, -5],
+              y: [-5, 5, -5]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1
+            }}
+          >
+            <Brain className="w-10 h-10" />
+          </motion.div>
+          
+          {/* Geometric patterns */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-1/4 left-1/4 w-1 h-32 bg-red-500 rotate-45 transform origin-bottom"></div>
+            <div className="absolute top-1/3 right-1/4 w-1 h-24 bg-red-400 rotate-12 transform origin-bottom"></div>
+            <div className="absolute bottom-1/4 left-1/3 w-1 h-28 bg-red-600 -rotate-45 transform origin-bottom"></div>
+          </div>
         </div>
 
         <div className="relative z-10 text-center max-w-4xl mx-auto">
@@ -105,14 +166,14 @@ export default function MarketingLanding() {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
               Master{" "}
               <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                Taekwondo
+                Martial Arts
               </span>
               <br />
               with AI Precision
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Transform your training with AI-powered movement analysis and real-time coaching feedback.
+              Transform your martial arts training with AI-powered movement analysis and real-time coaching feedback.
             </p>
 
             <AnimatePresence mode="wait">
@@ -181,8 +242,18 @@ export default function MarketingLanding() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-20 px-4 relative">
+        {/* Background decoration */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-10 text-red-500">
+            <Shield className="w-24 h-24" />
+          </div>
+          <div className="absolute bottom-20 right-10 text-red-500">
+            <Trophy className="w-32 h-32" />
+          </div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -190,15 +261,32 @@ export default function MarketingLanding() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Why Choose{" "}
               <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
                 CoachT
               </span>
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Advanced AI technology meets traditional martial arts training
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+              Advanced AI technology meets traditional martial arts training for Karate, Taekwondo, Kung Fu, and more
             </p>
+            
+            {/* Martial Arts Styles */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {["Karate", "Taekwondo", "Kung Fu", "Boxing", "Muay Thai", "Kickboxing"].map((style, index) => (
+                <motion.div
+                  key={style}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Badge className="bg-red-600/10 text-red-300 border-red-600/30 px-3 py-1">
+                    {style}
+                  </Badge>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -210,19 +298,25 @@ export default function MarketingLanding() {
                 transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
               >
-                <Card className="bg-gray-900/50 border-gray-800 hover:border-red-600/50 transition-all duration-300 group">
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-600/30 transition-colors">
-                      <div className="text-red-400">
+                <Card className="bg-gray-900/50 border-gray-800 hover:border-red-600/50 transition-all duration-500 group relative overflow-hidden">
+                  {/* Card glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <CardHeader className="relative">
+                    <motion.div 
+                      className="w-16 h-16 bg-gradient-to-br from-red-600/20 to-red-700/20 rounded-xl flex items-center justify-center mb-4 group-hover:from-red-600/30 group-hover:to-red-700/30 transition-all duration-300"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                    >
+                      <div className="text-red-400 group-hover:text-red-300 transition-colors">
                         {benefit.icon}
                       </div>
-                    </div>
-                    <CardTitle className="text-white text-xl">
+                    </motion.div>
+                    <CardTitle className="text-white text-xl group-hover:text-red-100 transition-colors">
                       {benefit.title}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-gray-400 text-base">
+                  <CardContent className="relative">
+                    <CardDescription className="text-gray-400 text-base leading-relaxed group-hover:text-gray-300 transition-colors">
                       {benefit.description}
                     </CardDescription>
                   </CardContent>
@@ -234,8 +328,18 @@ export default function MarketingLanding() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-20 px-4 relative">
+        {/* Background elements */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-32 right-20 text-red-500">
+            <Camera className="w-20 h-20" />
+          </div>
+          <div className="absolute bottom-32 left-20 text-red-500">
+            <Eye className="w-16 h-16" />
+          </div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -243,7 +347,7 @@ export default function MarketingLanding() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Simple. Powerful. Effective.
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
@@ -251,22 +355,28 @@ export default function MarketingLanding() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               {
                 step: "1",
+                icon: <Camera className="w-8 h-8" />,
                 title: "Open Camera",
-                description: "Allow camera access for movement tracking"
+                description: "Allow camera access for movement tracking",
+                color: "from-blue-600 to-blue-700"
               },
               {
                 step: "2", 
+                icon: <Activity className="w-8 h-8" />,
                 title: "Start Training",
-                description: "Follow along with guided techniques"
+                description: "Follow along with guided techniques",
+                color: "from-green-600 to-green-700"
               },
               {
                 step: "3",
+                icon: <Brain className="w-8 h-8" />,
                 title: "Get Feedback",
-                description: "Receive instant AI-powered corrections"
+                description: "Receive instant AI-powered corrections",
+                color: "from-red-600 to-red-700"
               }
             ].map((item, index) => (
               <motion.div
@@ -275,21 +385,41 @@ export default function MarketingLanding() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                className="text-center relative"
+                className="text-center relative group"
               >
-                <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-700 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-6 mx-auto">
+                {/* Step number with gradient */}
+                <motion.div 
+                  className={`w-20 h-20 bg-gradient-to-r ${item.color} rounded-full flex items-center justify-center text-white text-2xl font-bold mb-6 mx-auto shadow-lg shadow-red-500/25 group-hover:shadow-red-500/40 transition-shadow duration-300`}
+                  whileHover={{ scale: 1.1 }}
+                >
                   {item.step}
-                </div>
-                <h3 className="text-xl font-semibold mb-4 text-white">
+                </motion.div>
+                
+                {/* Icon */}
+                <motion.div 
+                  className="w-12 h-12 bg-gray-800/50 rounded-lg flex items-center justify-center mx-auto mb-4 text-red-400 group-hover:bg-red-600/20 transition-colors duration-300"
+                  whileHover={{ rotate: 10 }}
+                >
+                  {item.icon}
+                </motion.div>
+                
+                <h3 className="text-xl font-semibold mb-4 text-white group-hover:text-red-100 transition-colors">
                   {item.title}
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
                   {item.description}
                 </p>
+                
+                {/* Connecting arrows */}
                 {index < 2 && (
-                  <div className="hidden md:block absolute top-8 left-full w-full">
-                    <ArrowRight className="w-6 h-6 text-red-600/50 mx-auto" />
-                  </div>
+                  <motion.div 
+                    className="hidden md:block absolute top-10 left-full w-12 z-10"
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: (index + 1) * 0.3 }}
+                  >
+                    <ArrowRight className="w-8 h-8 text-red-600/60 mx-auto animate-pulse" />
+                  </motion.div>
                 )}
               </motion.div>
             ))}
@@ -310,7 +440,7 @@ export default function MarketingLanding() {
               Ready to Transform Your Training?
             </h2>
             <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-              Join thousands of martial artists improving their skills with AI-powered coaching.
+              Join martial artists worldwide improving their skills with AI-powered coaching.
             </p>
             
             <Link href="/early">
