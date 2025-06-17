@@ -506,6 +506,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Internship application routes
+  app.post("/api/internship-applications", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const applicationData = req.body;
+      
+      // Basic validation
+      if (!applicationData.fullName || !applicationData.email) {
+        return res.status(400).json({ message: "Full name and email are required" });
+      }
+
+      const application = await storage.saveInternshipApplication(applicationData);
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("Error saving internship application:", error);
+      next(error);
+    }
+  });
+
+  app.get("/api/internship-applications", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // This endpoint could be protected with admin auth in the future
+      const applications = await storage.getInternshipApplications();
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching internship applications:", error);
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

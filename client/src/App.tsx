@@ -26,6 +26,7 @@ import PushupsWorkout from "@/pages/PushupsWorkout";
 import CrunchesWorkout from "@/pages/CrunchesWorkout";
 import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
 import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
+import InternshipApplication from "@/pages/InternshipApplication";
 
 function Router() {
   return (
