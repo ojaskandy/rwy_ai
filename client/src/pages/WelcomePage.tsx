@@ -276,36 +276,105 @@ export default function WelcomePage() {
         </div>
       </motion.section>
 
-      {/* What CoachT Does - Reveal on scroll */}
-      <motion.section 
-        className="py-32 px-6 relative z-30"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 1.5 }}
-        viewport={{ once: true, margin: "-100px" }}
-        style={{ marginTop: '100vh' }}
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h2 
-            className="text-3xl md:text-4xl font-bold mb-6"
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            viewport={{ once: true }}
-          >
-            Revolutionary AI Training
-          </motion.h2>
-          <motion.p 
-            className="text-lg text-gray-300 leading-relaxed max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            viewport={{ once: true }}
-          >
-            CoachT uses cutting-edge AI to provide instant, intelligent feedback, helping you fix mistakes in real-time and unlock your full potential.
-          </motion.p>
+      {/* Belt Progression Section - Three Martial Arts Panels */}
+      <section className="relative h-screen w-full overflow-hidden">
+        {/* Three background panels */}
+        <div className="absolute inset-0 flex">
+          {/* Taekwondo Panel */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/60 to-blue-700/40"></div>
+            <div className="absolute inset-0 bg-black/40"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-blue-200/20 text-8xl font-bold transform -rotate-12">TKD</div>
+            </div>
+          </div>
+          
+          {/* Karate Panel */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800/60 to-gray-600/40"></div>
+            <div className="absolute inset-0 bg-black/40"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-gray-200/20 text-8xl font-bold">空手</div>
+            </div>
+          </div>
+          
+          {/* Muay Thai Panel */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-900/60 to-red-700/40"></div>
+            <div className="absolute inset-0 bg-black/40"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-orange-200/20 text-8xl font-bold transform rotate-12">MT</div>
+            </div>
+          </div>
         </div>
-      </motion.section>
+
+        {/* Centered belt progression content */}
+        <div className="relative z-20 h-full flex items-center justify-center">
+          <div className="text-center max-w-4xl mx-auto px-6">
+            {/* Glass overlay background */}
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-3xl border border-white/10"></div>
+            
+            <div className="relative z-10 py-16 px-8">
+              <motion.h2 
+                className="text-4xl md:text-6xl font-bold mb-16 bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1.2 }}
+                viewport={{ once: true }}
+              >
+                Your Journey to Mastery
+              </motion.h2>
+
+              {/* Belt progression phrases */}
+              <div className="space-y-12">
+                {[
+                  { belt: "White Belt", phrase: "Start your journey. CoachT will guide every move.", color: "text-white", delay: 0.2 },
+                  { belt: "Yellow Belt", phrase: "Build your basics. Train with confidence, not confusion.", color: "text-yellow-300", delay: 0.4 },
+                  { belt: "Green Belt", phrase: "Push further. Tailored workouts, real growth.", color: "text-green-400", delay: 0.6 },
+                  { belt: "Blue Belt", phrase: "Challenge yourself. Every rep moves you up the ranks.", color: "text-blue-400", delay: 0.8 },
+                  { belt: "Red Belt", phrase: "Refine your edge. Outpace others on the leaderboard.", color: "text-red-400", delay: 1.0 },
+                  { belt: "Black Belt", phrase: "Train like a master. Inspire the next generation.", color: "text-gray-900 bg-white px-4 py-2 rounded-lg", delay: 1.2 }
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    className="text-center"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: item.delay }}
+                    viewport={{ once: true, margin: "-50px" }}
+                  >
+                    <div className={`text-sm font-semibold uppercase tracking-wider mb-2 ${item.color.includes('bg-') ? 'text-gray-600' : item.color}`}>
+                      {item.belt}
+                    </div>
+                    <div className={`text-lg md:text-xl font-medium leading-relaxed ${item.color.includes('bg-') ? item.color : 'text-gray-100'} shadow-lg`}>
+                      {item.phrase}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Call to action */}
+              <motion.div
+                className="mt-16"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 1.5 }}
+                viewport={{ once: true }}
+              >
+                <Link href="/auth">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
+                  >
+                    Begin Your Journey
+                    <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Core Features - 2x2 Grid */}
       <section className="py-20 px-6 relative z-30">
