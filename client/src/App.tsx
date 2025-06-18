@@ -33,8 +33,11 @@ import AdminApplications from "@/pages/AdminApplications";
 function Router() {
   return (
     <Switch>
+      {/* Authentication page as default */}
+      <Route path="/" component={AuthPage} />
+      
       {/* Welcome page with silhouette zoom interaction */}
-      <Route path="/" component={WelcomePage} />
+      <Route path="/welcome" component={WelcomePage} />
       
       {/* Marketing landing page moved to /renovate */}
       <Route path="/renovate" component={MarketingLanding} />
@@ -75,7 +78,7 @@ function Router() {
       {/* Live Routine Demo */}
       <ProtectedRoute path="/live-routine" component={LiveRoutineDemo} />
 
-      {/* Authentication page */}
+      {/* Authentication page (also accessible directly) */}
       <Route path="/auth" component={AuthPage} />
       
       {/* Early access signup page */}
