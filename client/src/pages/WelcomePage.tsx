@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Sparkles } from "lucide-react";
 import silhouetteImage from "@assets/image_1750268882265.png";
+import challengeArenaImage from "@assets/image_1750188086936.png";
+import homeScreenImage from "@assets/image_1750188117761.png";
+import practiceLibraryImage from "@assets/image_1750188231521.png";
 
 const martialArtsTerms = [
   "AI Coach",
@@ -24,13 +27,13 @@ const martialArtsTerms = [
   "Excellence"
 ];
 
-const rotatingTexts = [
-  "Built by Martial Artists",
-  "Your Competitive Edge",
-  "Advance Faster",
-  "Next Belt Awaits",
-  "Revolutionary Training",
-  "AI-Powered Mastery"
+const rotatingMainTexts = [
+  "Form Perfection",
+  "Power Unleashed",
+  "Speed Mastery",
+  "Technique Refined",
+  "Precision Training",
+  "Elite Performance"
 ];
 
 export default function WelcomePage() {
@@ -52,14 +55,14 @@ export default function WelcomePage() {
   // Rotate text every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTextIndex((prev) => (prev + 1) % rotatingTexts.length);
+      setCurrentTextIndex((prev) => (prev + 1) % rotatingMainTexts.length);
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   // Hide scroll hint after user starts scrolling
   useEffect(() => {
-    const unsubscribe = scrollY.onChange((latest) => {
+    const unsubscribe = scrollY.on("change", (latest) => {
       if (latest > 50) {
         setShowScrollHint(false);
       }
@@ -196,7 +199,7 @@ export default function WelcomePage() {
             </h2>
           </motion.div>
 
-          {/* Rotating text with icon */}
+          {/* Static text with icon */}
           <motion.div
             className="mb-12"
             initial={{ opacity: 0 }}
@@ -206,29 +209,24 @@ export default function WelcomePage() {
           >
             <div className="flex items-center justify-center gap-3 mb-8">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={currentTextIndex}
-                  className="text-lg text-gray-300"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {rotatingTexts[currentTextIndex]}
-                </motion.span>
-              </AnimatePresence>
+              <span className="text-lg text-gray-300">
+                Built by Martial Artists
+              </span>
             </div>
 
-            <motion.h3 
-              className="text-4xl md:text-5xl font-bold text-white mb-8"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.9 }}
-              viewport={{ once: true }}
-            >
-              Form Perfection
-            </motion.h3>
+            {/* Rotating main text */}
+            <AnimatePresence mode="wait">
+              <motion.h3 
+                key={currentTextIndex}
+                className="text-4xl md:text-5xl font-bold text-white mb-8"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.8 }}
+              >
+                {rotatingMainTexts[currentTextIndex]}
+              </motion.h3>
+            </AnimatePresence>
           </motion.div>
 
           {/* CTA Buttons */}
@@ -274,8 +272,251 @@ export default function WelcomePage() {
         </div>
       </motion.section>
 
-      {/* Additional spacing for scroll effect */}
-      <div className="h-screen"></div>
+      {/* What CoachT Does - Reveal on scroll */}
+      <motion.section 
+        className="py-32 px-6 relative z-30"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1.5 }}
+        viewport={{ once: true, margin: "-100px" }}
+        style={{ marginTop: '50vh' }}
+      >
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.h2 
+            className="text-3xl md:text-4xl font-bold mb-6"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            viewport={{ once: true }}
+          >
+            Revolutionary AI Training
+          </motion.h2>
+          <motion.p 
+            className="text-lg text-gray-300 leading-relaxed max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            viewport={{ once: true }}
+          >
+            CoachT uses cutting-edge AI to provide instant, intelligent feedback, helping you fix mistakes in real-time and unlock your full potential.
+          </motion.p>
+        </div>
+      </motion.section>
+
+      {/* Core Features - 2x2 Grid */}
+      <section className="py-20 px-6 relative z-30">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2 
+            className="text-3xl md:text-4xl font-bold text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            How CoachT Empowers Your Training
+          </motion.h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Dynamic Challenges */}
+            <motion.div 
+              className="group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <div className="bg-gray-900/30 rounded-2xl p-6 h-full border border-gray-800 hover:border-orange-600/50 transition-all duration-300">
+                <img 
+                  src={challengeArenaImage} 
+                  alt="Challenge Arena" 
+                  className="w-full rounded-xl shadow-lg shadow-orange-500/20 border border-gray-700 mb-6"
+                />
+                <h3 className="text-xl font-bold mb-4 text-white group-hover:text-orange-300 transition-colors">
+                  Dynamic Challenges
+                </h3>
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  Push your limits, dominate leaderboards, and prove your skills in thrilling, gamified challenges.
+                </p>
+                <Link href="/early">
+                  <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white w-full group">
+                    Try Challenges
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Start Live Routine */}
+            <motion.div 
+              className="group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <div className="bg-gray-900/30 rounded-2xl p-6 h-full border border-gray-800 hover:border-blue-600/50 transition-all duration-300">
+                <img 
+                  src={homeScreenImage} 
+                  alt="Training Interface" 
+                  className="w-full rounded-xl shadow-lg shadow-blue-500/20 border border-gray-700 mb-6"
+                />
+                <h3 className="text-xl font-bold mb-4 text-white group-hover:text-blue-300 transition-colors">
+                  Start Live Routine
+                </h3>
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  Compare your live performance against expert demonstrations with precise AI insights.
+                </p>
+                <Link href="/early">
+                  <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white w-full group">
+                    Start Training
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Practice Library */}
+            <motion.div 
+              className="group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <div className="bg-gray-900/30 rounded-2xl p-6 h-full border border-gray-800 hover:border-purple-600/50 transition-all duration-300">
+                <img 
+                  src={practiceLibraryImage} 
+                  alt="Practice Library" 
+                  className="w-full rounded-xl shadow-lg shadow-purple-500/20 border border-gray-700 mb-6"
+                />
+                <h3 className="text-xl font-bold mb-4 text-white group-hover:text-purple-300 transition-colors">
+                  Practice Library
+                </h3>
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  Advanced pose detection analyzes your every move with precise visual cues and AI guidance.
+                </p>
+                <Link href="/early">
+                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-full group">
+                    Explore Library
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Real-time Feedback */}
+            <motion.div 
+              className="group"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <div className="bg-gray-900/30 rounded-2xl p-6 h-full border border-gray-800 hover:border-green-600/50 transition-all duration-300">
+                <div className="w-full h-48 bg-gradient-to-br from-green-900/20 to-green-700/20 rounded-xl border border-gray-700 mb-6 flex items-center justify-center">
+                  <div className="text-center">
+                    <Sparkles className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                    <p className="text-green-300 font-medium">Real-time AI Analysis</p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-4 text-white group-hover:text-green-300 transition-colors">
+                  Real-time AI Feedback
+                </h3>
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  Get instant corrections and intelligent voice guidance from your personal AI master.
+                </p>
+                <Link href="/early">
+                  <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white w-full group">
+                    Try AI Feedback
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <motion.section 
+        className="py-32 px-6 relative z-30"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1.5 }}
+        viewport={{ once: true, margin: "-100px" }}
+      >
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            viewport={{ once: true }}
+          >
+            <motion.div
+              className="mb-8"
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <Sparkles className="w-16 h-16 text-red-500 mx-auto mb-6" />
+            </motion.div>
+            
+            <h2 className="text-4xl md:text-6xl font-bold mb-8 leading-tight">
+              Ready to achieve{" "}
+              <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
+                mastery?
+              </span>
+            </h2>
+            
+            <motion.p 
+              className="text-2xl font-bold text-white mb-12"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Start Your FREE Journey with CoachT Today
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <Link href="/auth">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/30 px-16 py-8 text-2xl font-bold group transform hover:scale-105 transition-all duration-500"
+                >
+                  Start Now
+                  <ArrowRight className="ml-3 w-8 h-8 group-hover:translate-x-2 transition-transform duration-300" />
+                </Button>
+              </Link>
+            </motion.div>
+            
+            <motion.p 
+              className="text-gray-400 mt-8 text-lg"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              viewport={{ once: true }}
+            >
+              No credit card required • Instant access
+            </motion.p>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Minimal Footer */}
+      <footer className="py-8 px-6 border-t border-gray-900 relative z-30">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-gray-500 text-sm">
+            © 2025 CoachT. Revolutionizing martial arts training with AI.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

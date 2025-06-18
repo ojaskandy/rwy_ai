@@ -104,6 +104,7 @@ Changelog:
 - June 16, 2025. Initial setup
 - June 17, 2025. Added comprehensive internship application system with resume upload capabilities, form validation, and database storage
 - June 17, 2025. Redesigned MarketingLanding (renovate) page with CoachT branding, removed developer portal, replaced early access with "Start now" linking to /early, simplified content for better readability
+- June 18, 2025. Created revolutionary welcome page with silhouette zoom interaction, floating martial arts terms, and complete website content integration. Implemented scroll-triggered animations and competitive edge messaging focused on advancing to next belt faster.
 
 ## User Preferences
 
