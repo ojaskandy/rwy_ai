@@ -282,8 +282,7 @@ export default function WelcomePage() {
             transition={{ duration: 1, delay: 1.5 }}
             viewport={{ once: true }}
           >
-            The competitive advantage that accelerates your journey to the next belt. 
-            <span className="text-red-400"> Others don't know about this.</span>
+            The competitive advantage that accelerates your journey to the next belt.
           </motion.p>
         </div>
       </motion.section>
