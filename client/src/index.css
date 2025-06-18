@@ -4,6 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Enhanced text rendering for crisp display on all devices */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* Mobile-specific text improvements */
+@media (max-width: 768px) {
+  * {
+    -webkit-text-stroke: 0.01em transparent;
+  }
+  
+  .text-lg, .text-xl, .text-2xl {
+    letter-spacing: 0.01em;
+  }
+}
+
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }

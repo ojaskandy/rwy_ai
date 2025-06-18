@@ -341,17 +341,17 @@ export default function WelcomePage() {
                 }}
               >
                 {/* 3D Card Effect */}
-                <div className={`bg-gradient-to-r ${item.gradient} rounded-2xl p-8 border border-gray-200/20 ${item.shadowColor} shadow-2xl transform transition-all duration-500 group-hover:shadow-4xl backdrop-blur-sm`}>
+                <div className={`bg-gradient-to-r ${item.gradient} rounded-2xl p-6 md:p-8 border border-gray-200/20 ${item.shadowColor} shadow-2xl transform transition-all duration-500 group-hover:shadow-4xl backdrop-blur-sm`}>
                   {/* Belt indicator */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${item.gradient} border-2 border-gray-300 shadow-lg`}></div>
-                    <div className={`text-sm font-bold uppercase tracking-wider ${item.textColor} opacity-80`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full bg-gradient-to-r ${item.gradient} border-2 border-gray-300 shadow-lg`}></div>
+                    <div className={`text-xs md:text-sm font-bold uppercase tracking-wider ${item.textColor} opacity-90 antialiased`} style={{ WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
                       {item.belt}
                     </div>
                   </div>
                   
                   {/* Main content */}
-                  <div className={`text-xl md:text-2xl font-semibold leading-relaxed ${item.textColor}`}>
+                  <div className={`text-lg md:text-xl lg:text-2xl font-semibold leading-relaxed ${item.textColor} antialiased`} style={{ WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale', textRendering: 'optimizeLegibility' }}>
                     {item.phrase}
                   </div>
                   
