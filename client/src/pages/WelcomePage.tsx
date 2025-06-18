@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowRight, Sparkles } from "lucide-react";
-import silhouetteImage from "@assets/image_1750268882265.png";
+import HighResSilhouette from "@/components/HighResSilhouette";
 import challengeArenaImage from "@assets/image_1750188086936.png";
 import homeScreenImage from "@assets/image_1750188117761.png";
 import practiceLibraryImage from "@assets/image_1750188231521.png";
@@ -41,22 +41,25 @@ export default function WelcomePage() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(true);
   
-  // Silhouette zoom effect
-  const silhouetteScale = useTransform(scrollY, [0, 800], [1, 15]);
-  const silhouetteOpacity = useTransform(scrollY, [0, 400, 800], [1, 0.8, 0]);
+  // Extended silhouette zoom effect - slower progression
+  const silhouetteScale = useTransform(scrollY, [0, 1200], [1, 20]);
+  const silhouetteOpacity = useTransform(scrollY, [0, 600, 1200], [1, 0.9, 0]);
   
-  // Background transition
-  const backgroundOpacity = useTransform(scrollY, [600, 1000], [0, 1]);
+  // Floating words fade out as content appears
+  const floatingWordsOpacity = useTransform(scrollY, [600, 1000], [1, 0]);
   
-  // Main content reveal
-  const contentY = useTransform(scrollY, [800, 1200], [100, 0]);
-  const contentOpacity = useTransform(scrollY, [800, 1200], [0, 1]);
+  // Background transition - more gradual
+  const backgroundOpacity = useTransform(scrollY, [800, 1400], [0, 1]);
+  
+  // Main content reveal - extended range for better solidification
+  const contentY = useTransform(scrollY, [1200, 1800], [100, 0]);
+  const contentOpacity = useTransform(scrollY, [1200, 1800], [0, 1]);
 
-  // Rotate text every 2 seconds
+  // Rotate text every 3 seconds (slower)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTextIndex((prev) => (prev + 1) % rotatingMainTexts.length);
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -70,51 +73,45 @@ export default function WelcomePage() {
     return unsubscribe;
   }, [scrollY]);
 
-  // Generate floating terms based on scroll
-  const generateFloatingTerms = () => {
-    const terms = [];
-    const scrollPosition = scrollY.get();
-    
-    for (let i = 0; i < 8; i++) {
-      const termIndex = Math.floor((scrollPosition / 100 + i) % martialArtsTerms.length);
-      const yOffset = ((scrollPosition + i * 150) % 1000) - 500;
-      const xOffset = (i % 2 === 0 ? -200 : 200) + (Math.sin(scrollPosition / 200 + i) * 100);
-      
-      terms.push(
-        <motion.div
-          key={`${termIndex}-${i}`}
-          className="absolute text-2xl md:text-4xl font-bold text-red-500/30 pointer-events-none select-none"
-          style={{
-            left: `calc(50% + ${xOffset}px)`,
-            top: `calc(50% + ${yOffset}px)`,
-            transform: 'translate(-50%, -50%)',
-          }}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ 
-            opacity: [0, 0.6, 0],
-            scale: [0.5, 1, 0.8],
-            y: [20, -20, -40]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            delay: i * 0.2,
-            ease: "easeOut"
-          }}
-        >
-          {martialArtsTerms[termIndex]}
-        </motion.div>
-      );
-    }
-    return terms;
+  // Generate floating terms that fade as content appears
+  const FloatingTerms = () => {
+    return (
+      <motion.div 
+        className="fixed inset-0 z-10 pointer-events-none"
+        style={{ opacity: floatingWordsOpacity }}
+      >
+        {martialArtsTerms.map((term, i) => (
+          <motion.div
+            key={`${term}-${i}`}
+            className="absolute text-xl md:text-3xl font-bold text-red-500/40 select-none"
+            style={{
+              left: `${20 + (i % 3) * 30}%`,
+              top: `${15 + (i % 4) * 20}%`,
+            }}
+            initial={{ opacity: 0, scale: 0.5, y: 50 }}
+            animate={{ 
+              opacity: [0, 0.7, 0.4, 0],
+              scale: [0.5, 1, 1, 0.8],
+              y: [50, 0, -20, -60]
+            }}
+            transition={{ 
+              duration: 6,
+              repeat: Infinity,
+              delay: i * 0.8,
+              ease: "easeOut"
+            }}
+          >
+            {term}
+          </motion.div>
+        ))}
+      </motion.div>
+    );
   };
 
   return (
-    <div className="relative min-h-[200vh] bg-black text-white overflow-hidden">
-      {/* Floating martial arts terms */}
-      <div className="fixed inset-0 z-10 pointer-events-none">
-        {generateFloatingTerms()}
-      </div>
+    <div className="relative min-h-[300vh] bg-black text-white overflow-hidden">
+      {/* Floating martial arts terms that fade as content appears */}
+      <FloatingTerms />
 
       {/* Initial silhouette section */}
       <motion.section className="fixed inset-0 flex items-center justify-center z-20">
@@ -125,11 +122,7 @@ export default function WelcomePage() {
             opacity: silhouetteOpacity
           }}
         >
-          <img 
-            src={silhouetteImage} 
-            alt="Martial Artist Silhouette"
-            className="w-32 h-32 md:w-48 md:h-48 object-contain"
-          />
+          <HighResSilhouette />
         </motion.div>
 
         {/* Scroll hint */}
@@ -166,7 +159,7 @@ export default function WelcomePage() {
         style={{ 
           y: contentY,
           opacity: contentOpacity,
-          marginTop: '100vh'
+          marginTop: '150vh'
         }}
       >
         <div className="text-center max-w-4xl mx-auto">
