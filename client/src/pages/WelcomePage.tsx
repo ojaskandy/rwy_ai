@@ -68,9 +68,9 @@ export default function WelcomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setAutoScrolling(true);
-      // Smooth scroll to the main content area
+      // Smooth scroll to the main content area where CoachT page appears
       window.scrollTo({
-        top: window.innerHeight * 1.2, // Target scroll position where content is fully solid
+        top: window.innerHeight * 2.4, // Scroll all the way to the main content section
         behavior: 'smooth'
       });
     }, 4000); // Wait 4 seconds before auto-scrolling
