@@ -71,6 +71,17 @@ export const martialArtsVideos: MartialArtsVideo[] = [
     videoUrl: '/videos/taekwondo/Taegeuk 5 Oh Jang June 16 2025.mp4',
     thumbnailUrl: '/videos/taekwondo/Taegeuk 5 Oh Jang.jpg',
     isLocalFile: true
+  },
+  {
+    id: 'taekwondo-form-6',
+    name: 'Taegeuk 6 - Yook Jang',
+    description: 'Sixth taekwondo poomsae with advanced kicking and defensive techniques',
+    category: 'taekwondo',
+    difficulty: 'advanced',
+    duration: '2:14',
+    videoUrl: '/videos/taekwondo/Taegeuk 6 Yook Jang June 16 2025.mp4',
+    thumbnailUrl: '/videos/taekwondo/Taegeuk 6 Yook Jang.jpg',
+    isLocalFile: true
   }
   
   // Add more videos here as you upload them:

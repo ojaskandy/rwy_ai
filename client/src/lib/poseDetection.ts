@@ -172,7 +172,7 @@ export async function detectPoses(
       const filteredKeypoints = pose.keypoints.filter(kp => 
         typeof kp.score === 'number' && kp.score > minConfidence
       );
-
+      
       return {
         ...pose,
         keypoints: filteredKeypoints

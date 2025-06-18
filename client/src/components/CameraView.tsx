@@ -2799,17 +2799,17 @@ export default function CameraView({
                   <div className={`flex gap-1 ${isFullscreenMode ? 'w-full justify-evenly' : ''}`}>
                     {isVideoUrl(mediaUrl) && (
                       <>
-                        <button
-                          onClick={togglePlayPause}
-                          className={`bg-red-600 hover:bg-red-700 text-white rounded shadow-md ${
-                            isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
-                          }`}
-                        >
-                          <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
-                            {isVideoPaused ? 'play_arrow' : 'pause'}
-                          </span>
-                          {!isFullscreenMode && (isVideoPaused ? 'Play' : 'Pause')}
-                        </button>
+                      <button
+                        onClick={togglePlayPause}
+                        className={`bg-red-600 hover:bg-red-700 text-white rounded shadow-md ${
+                          isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
+                        }`}
+                      >
+                        <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
+                          {isVideoPaused ? 'play_arrow' : 'pause'}
+                        </span>
+                        {!isFullscreenMode && (isVideoPaused ? 'Play' : 'Pause')}
+                      </button>
                         
                         {/* Speed Control */}
                         <div className="flex items-center gap-1">
@@ -2883,59 +2883,59 @@ export default function CameraView({
 
                   <div className="space-y-4">
                                          {/* Pre-loaded Video Option */}
-                     <button
-                       onClick={() => {
-                         setShowMediaSelector(false);
+                  <button
+                    onClick={() => {
+                            setShowMediaSelector(false);
                          setShowPreloadedSelector(true);
-                       }}
+                    }}
                        className="w-full h-16 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
-                     >
+                  >
                        <span className="material-icons text-2xl">video_library</span>
                        Choose Pre-loaded Video
-                     </button>
+                  </button>
 
                     {/* Upload Video Option */}
-                    <button
-                      onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'video/mp4,video/webm,video/ogg,video/*';
-                        input.onchange = (e) => {
-                          const file = (e.target as HTMLInputElement).files?.[0];
-                          if (file) {
-                            if (!file.type.startsWith('video/')) {
-                              console.error("Not a video file:", file.type);
-                              return;
-                            }
-
-                            console.log("Selected video file:", file.name, file.type);
-                            const url = URL.createObjectURL(file);
-                            const flaggedUrl = url + '#video';
-
-                            if (onScreenshot) {
-                              console.log("Sending video URL to parent:", flaggedUrl);
-                              onScreenshot(flaggedUrl);
-                            }
-
-                            setShowMediaSelector(false);
+                  <button
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'video/mp4,video/webm,video/ogg,video/*';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          if (!file.type.startsWith('video/')) {
+                            console.error("Not a video file:", file.type);
+                            return;
                           }
-                        };
-                        input.click();
-                      }}
+
+                          console.log("Selected video file:", file.name, file.type);
+                          const url = URL.createObjectURL(file);
+                          const flaggedUrl = url + '#video';
+
+                          if (onScreenshot) {
+                            console.log("Sending video URL to parent:", flaggedUrl);
+                            onScreenshot(flaggedUrl);
+                          }
+
+                          setShowMediaSelector(false);
+                        }
+                      };
+                      input.click();
+                    }}
                       className="w-full h-16 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
-                    >
+                  >
                       <span className="material-icons text-2xl">file_upload</span>
-                      Upload Video
-                    </button>
+                    Upload Video
+                  </button>
 
                     {/* Cancel Button */}
-                    <button
-                      onClick={() => setShowMediaSelector(false)}
+                  <button
+                    onClick={() => setShowMediaSelector(false)}
                       className="w-full border-red-900/30 bg-transparent text-gray-300 hover:bg-red-900/20 hover:text-white p-3 rounded-lg flex items-center justify-center shadow-lg border"
-                    >
-                      <span className="material-icons mr-2">close</span>
-                      Cancel
-                    </button>
+                  >
+                    <span className="material-icons mr-2">close</span>
+                    Cancel
+                  </button>
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-red-900/30">
