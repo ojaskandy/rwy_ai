@@ -251,6 +251,18 @@ export default function WelcomePage() {
               </Button>
             </Link>
             
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white px-8 py-6 text-lg"
+              onClick={() => {
+                const featuresSection = document.querySelector('[data-section="features"]');
+                featuresSection?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Learn More
+            </Button>
+            
             <a href="https://cal.com/ojas-kandhare/coacht-demo?overlayCalendar=true" target="_blank" rel="noopener noreferrer">
               <Button 
                 variant="outline" 
@@ -276,113 +288,117 @@ export default function WelcomePage() {
         </div>
       </motion.section>
 
-      {/* Belt Progression Section - Three Martial Arts Panels */}
-      <section className="relative min-h-screen w-full overflow-hidden py-20">
-        {/* Three background panels */}
-        <div className="absolute inset-0 flex">
-          {/* Taekwondo Panel */}
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/60 to-blue-700/40"></div>
-            <div className="absolute inset-0 bg-black/40"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-blue-200/20 text-8xl font-bold transform -rotate-12">TKD</div>
-            </div>
-          </div>
-          
-          {/* Karate Panel */}
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-800/60 to-gray-600/40"></div>
-            <div className="absolute inset-0 bg-black/40"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-gray-200/20 text-8xl font-bold">空手</div>
-            </div>
-          </div>
-          
-          {/* Muay Thai Panel */}
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-900/60 to-red-700/40"></div>
-            <div className="absolute inset-0 bg-black/40"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-orange-200/20 text-8xl font-bold transform rotate-12">MT</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Centered belt progression content */}
-        <div className="relative z-20 min-h-screen flex items-center justify-center px-6">
-          <div className="text-center max-w-4xl mx-auto">
-            <motion.h2 
-              className="text-4xl md:text-6xl font-bold mb-20 bg-white/90 backdrop-blur-sm rounded-2xl px-8 py-6 text-black shadow-2xl"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2 }}
-              viewport={{ once: true }}
-            >
+      {/* Belt Progression Section - Redesigned to match website aesthetic */}
+      <section className="py-32 px-6 relative z-30 bg-gradient-to-b from-black via-gray-900 to-black">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2 
+            className="text-4xl md:text-6xl font-bold text-center mb-20"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2 }}
+            viewport={{ once: true }}
+          >
+            <span className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent">
               Your Journey to Mastery
-            </motion.h2>
+            </span>
+          </motion.h2>
 
-            {/* Belt progression phrases */}
-            <div className="space-y-8">
-              {[
-                { belt: "White Belt", phrase: "Start your journey. CoachT will guide every move.", color: "text-gray-800", bgColor: "bg-white/90" },
-                { belt: "Yellow Belt", phrase: "Build your basics. Train with confidence, not confusion.", color: "text-gray-800", bgColor: "bg-yellow-100/90" },
-                { belt: "Green Belt", phrase: "Push further. Tailored workouts, real growth.", color: "text-gray-800", bgColor: "bg-green-100/90" },
-                { belt: "Blue Belt", phrase: "Challenge yourself. Every rep moves you up the ranks.", color: "text-gray-800", bgColor: "bg-blue-100/90" },
-                { belt: "Red Belt", phrase: "Refine your edge. Outpace others on the leaderboard.", color: "text-gray-800", bgColor: "bg-red-100/90" },
-                { belt: "Black Belt", phrase: "Train like a master. Inspire the next generation.", color: "text-white", bgColor: "bg-gray-900/90" }
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  className={`${item.bgColor} backdrop-blur-sm rounded-xl px-8 py-6 shadow-2xl transform hover:scale-105 transition-all duration-300`}
-                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.6, delay: index * 0.15 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                >
-                  <div className={`text-sm font-bold uppercase tracking-wider mb-3 ${item.color} opacity-70`}>
-                    {item.belt}
+          {/* Belt progression with 3D effects */}
+          <div className="space-y-6">
+            {[
+              { belt: "White Belt", phrase: "Start your journey. CoachT will guide every move.", gradient: "from-gray-100 to-white", textColor: "text-gray-800", shadowColor: "shadow-gray-500/20" },
+              { belt: "Yellow Belt", phrase: "Build your basics. Train with confidence, not confusion.", gradient: "from-yellow-200 to-yellow-100", textColor: "text-gray-800", shadowColor: "shadow-yellow-500/20" },
+              { belt: "Green Belt", phrase: "Push further. Tailored workouts, real growth.", gradient: "from-green-200 to-green-100", textColor: "text-gray-800", shadowColor: "shadow-green-500/20" },
+              { belt: "Blue Belt", phrase: "Challenge yourself. Every rep moves you up the ranks.", gradient: "from-blue-200 to-blue-100", textColor: "text-gray-800", shadowColor: "shadow-blue-500/20" },
+              { belt: "Red Belt", phrase: "Refine your edge. Outpace others on the leaderboard.", gradient: "from-red-200 to-red-100", textColor: "text-gray-800", shadowColor: "shadow-red-500/20" },
+              { belt: "Black Belt", phrase: "Train like a master. Inspire the next generation.", gradient: "from-gray-800 to-gray-900", textColor: "text-white", shadowColor: "shadow-gray-900/40" }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                className={`relative group`}
+                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50, scale: 0.9 }}
+                whileInView={{ 
+                  opacity: 1, 
+                  x: 0, 
+                  scale: 1,
+                  z: 20
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  z: 40,
+                  rotateY: 5,
+                  rotateX: 2
+                }}
+                transition={{ 
+                  duration: 0.8, 
+                  delay: index * 0.1,
+                  type: "spring",
+                  stiffness: 100
+                }}
+                viewport={{ once: true, margin: "-50px" }}
+                style={{ 
+                  perspective: "1000px",
+                  transformStyle: "preserve-3d"
+                }}
+              >
+                {/* 3D Card Effect */}
+                <div className={`bg-gradient-to-r ${item.gradient} rounded-2xl p-8 border border-gray-200/20 ${item.shadowColor} shadow-2xl transform transition-all duration-500 group-hover:shadow-4xl backdrop-blur-sm`}>
+                  {/* Belt indicator */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${item.gradient} border-2 border-gray-300 shadow-lg`}></div>
+                    <div className={`text-sm font-bold uppercase tracking-wider ${item.textColor} opacity-80`}>
+                      {item.belt}
+                    </div>
                   </div>
-                  <div className={`text-lg md:text-xl font-semibold leading-relaxed ${item.color}`}>
+                  
+                  {/* Main content */}
+                  <div className={`text-xl md:text-2xl font-semibold leading-relaxed ${item.textColor}`}>
                     {item.phrase}
                   </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Call to action buttons */}
-            <motion.div
-              className="mt-16 flex flex-col sm:flex-row gap-4 justify-center items-center"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 1.0 }}
-              viewport={{ once: true }}
-            >
-              <Link href="/early">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
-                >
-                  Begin Your Journey
-                  <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              
-              <a href="https://cal.com/ojas-kandhare/coacht-demo?overlayCalendar=true" target="_blank" rel="noopener noreferrer">
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="bg-white/90 backdrop-blur-sm border-gray-300 text-gray-800 hover:bg-white hover:text-black px-8 py-6 text-lg font-semibold"
-                >
-                  Reach out as organization
-                </Button>
-              </a>
-            </motion.div>
+                  
+                  {/* Subtle glow effect on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none`}></div>
+                </div>
+                
+                {/* 3D depth shadow */}
+                <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} rounded-2xl transform translate-x-2 translate-y-2 -z-10 opacity-30 group-hover:translate-x-3 group-hover:translate-y-3 transition-transform duration-300`}></div>
+              </motion.div>
+            ))}
           </div>
+
+          {/* Call to action buttons */}
+          <motion.div
+            className="mt-20 flex flex-col sm:flex-row gap-6 justify-center items-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Link href="/early">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
+              >
+                Begin Your Journey
+                <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            
+            <a href="https://cal.com/ojas-kandhare/coacht-demo?overlayCalendar=true" target="_blank" rel="noopener noreferrer">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white px-8 py-6 text-lg font-semibold"
+              >
+                Reach out as organization
+              </Button>
+            </a>
+          </motion.div>
         </div>
       </section>
 
       {/* Core Features - 2x2 Grid */}
-      <section className="py-20 px-6 relative z-30">
+      <section className="py-20 px-6 relative z-30" data-section="features">
         <div className="max-w-6xl mx-auto">
           <motion.h2 
             className="text-3xl md:text-4xl font-bold text-center mb-16"
