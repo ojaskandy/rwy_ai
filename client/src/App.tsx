@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
+import WelcomePage from "@/pages/WelcomePage";
 import RootRedirector from "@/pages/RootRedirector";
 import MobileLandingPage from "@/pages/MobileLanding";
 import Challenges from "@/pages/Challenges";
@@ -26,15 +27,20 @@ import PushupsWorkout from "@/pages/PushupsWorkout";
 import CrunchesWorkout from "@/pages/CrunchesWorkout";
 import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
 import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
+import InternshipApplication from "@/pages/InternshipApplication";
+import AdminApplications from "@/pages/AdminApplications";
 
 function Router() {
   return (
     <Switch>
-      {/* Root path now uses RootRedirector */}
-      <Route path="/" component={RootRedirector} />
+      {/* Authentication page as default */}
+      <Route path="/" component={AuthPage} />
       
-      {/* Marketing landing page moved to /welcome */}
-      <Route path="/welcome" component={MarketingLanding} />
+      {/* Welcome page with silhouette zoom interaction */}
+      <Route path="/welcome" component={WelcomePage} />
+      
+      {/* Marketing landing page moved to /renovate */}
+      <Route path="/renovate" component={MarketingLanding} />
       
       {/* User dashboard after login - This might be redundant if /app is the main target */}
       {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
@@ -72,7 +78,7 @@ function Router() {
       {/* Live Routine Demo */}
       <ProtectedRoute path="/live-routine" component={LiveRoutineDemo} />
 
-      {/* Authentication page */}
+      {/* Authentication page (also accessible directly) */}
       <Route path="/auth" component={AuthPage} />
       
       {/* Early access signup page */}
@@ -80,6 +86,12 @@ function Router() {
       
       {/* Early access landing page for mobile users */}
       <Route path="/early" component={MobileLandingPage} />
+      
+      {/* Internship application page */}
+      <Route path="/internship" component={InternshipApplication} />
+      
+      {/* Admin applications page */}
+      <Route path="/admin/applications" component={AdminApplications} />
       
       {/* 404 page */}
       <Route component={NotFound} />

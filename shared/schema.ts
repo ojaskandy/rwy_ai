@@ -152,3 +152,31 @@ export const insertEmailRecordSchema = createInsertSchema(emailRecords).pick({
 
 export type InsertEmailRecord = z.infer<typeof insertEmailRecordSchema>;
 export type EmailRecord = typeof emailRecords.$inferSelect;
+
+// Internship applications table
+export const internshipApplications = pgTable("internship_applications", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  socialMediaHandle: text("social_media_handle"),
+  socialMediaPlatform: text("social_media_platform"), // linkedin, twitter, github, etc.
+  technicalHackAnswer: text("technical_hack_answer"),
+  unorthodoxThingAnswer: text("unorthodox_thing_answer"),
+  resumeFileName: text("resume_file_name"),
+  resumeFileUrl: text("resume_file_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertInternshipApplicationSchema = createInsertSchema(internshipApplications).pick({
+  fullName: true,
+  email: true,
+  socialMediaHandle: true,
+  socialMediaPlatform: true,
+  technicalHackAnswer: true,
+  unorthodoxThingAnswer: true,
+  resumeFileName: true,
+  resumeFileUrl: true,
+});
+
+export type InsertInternshipApplication = z.infer<typeof insertInternshipApplicationSchema>;
+export type InternshipApplication = typeof internshipApplications.$inferSelect;

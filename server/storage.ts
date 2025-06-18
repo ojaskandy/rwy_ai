@@ -1,12 +1,13 @@
 import { 
-  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords,
+  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords, internshipApplications,
   type User, type InsertUser, 
   type TrackingSettings, type InsertTrackingSettings,
   type UserProfile, type InsertUserProfile,
   type Recording, type InsertRecording,
   type EarlyAccessSignup, type InsertEarlyAccess,
   type ReferenceMove, type InsertReferenceMove,
-  type EmailRecord, type InsertEmailRecord
+  type EmailRecord, type InsertEmailRecord,
+  type InternshipApplication, type InsertInternshipApplication
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
@@ -52,6 +53,11 @@ export interface IStorage {
   // Email record methods
   saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord>;
   getEmailRecords(): Promise<EmailRecord[]>;
+  
+  // Internship application methods
+  saveInternshipApplication(application: InsertInternshipApplication): Promise<InternshipApplication>;
+  getInternshipApplications(): Promise<InternshipApplication[]>;
+  getInternshipApplicationById(id: number): Promise<InternshipApplication | undefined>;
   
   // Session store
   sessionStore: session.Store;
@@ -390,6 +396,31 @@ export class DatabaseStorage implements IStorage {
       .from(emailRecords)
       .orderBy(desc(emailRecords.sentAt));
     return records;
+  }
+
+  // Internship application methods
+  async saveInternshipApplication(application: InsertInternshipApplication): Promise<InternshipApplication> {
+    const [created] = await db
+      .insert(internshipApplications)
+      .values(application)
+      .returning();
+    return created;
+  }
+
+  async getInternshipApplications(): Promise<InternshipApplication[]> {
+    const applications = await db
+      .select()
+      .from(internshipApplications)
+      .orderBy(desc(internshipApplications.createdAt));
+    return applications;
+  }
+
+  async getInternshipApplicationById(id: number): Promise<InternshipApplication | undefined> {
+    const [application] = await db
+      .select()
+      .from(internshipApplications)
+      .where(eq(internshipApplications.id, id));
+    return application || undefined;
   }
 }
 
