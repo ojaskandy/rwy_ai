@@ -68,14 +68,9 @@ export default function WelcomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setAutoScrolling(true);
-      // Calculate proper scroll distance based on device type
-      const isMobile = window.innerWidth < 768;
-      const scrollTarget = isMobile 
-        ? window.innerHeight * 1.9  // Mobile needs more scroll to reach content properly
-        : window.innerHeight * 1.6; // Desktop
-      
+      // Scroll exactly to where the main content section starts (160vh)
       window.scrollTo({
-        top: scrollTarget,
+        top: window.innerHeight * 1.6, // 160vh = 1.6 * viewport height
         behavior: 'smooth'
       });
     }, 2500); // Wait 2.5 seconds before auto-scrolling
@@ -289,41 +284,6 @@ export default function WelcomePage() {
           >
             The competitive advantage that accelerates your journey to the next belt.
           </motion.p>
-
-          {/* Subtle scroll indicator */}
-          <motion.div
-            className="flex flex-col items-center mt-16 mb-8"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 2 }}
-            viewport={{ once: true }}
-          >
-            <span className="text-gray-500 text-sm mb-3 tracking-wide">Scroll to explore</span>
-            <motion.div
-              className="w-6 h-10 border-2 border-gray-600 rounded-full flex justify-center"
-              animate={{ 
-                borderColor: ["#4B5563", "#DC2626", "#4B5563"]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <motion.div
-                className="w-1 h-3 bg-gradient-to-b from-red-500 to-transparent rounded-full mt-2"
-                animate={{ 
-                  y: [0, 12, 0],
-                  opacity: [1, 0.3, 1]
-                }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </motion.div>
-          </motion.div>
         </div>
       </motion.section>
 
