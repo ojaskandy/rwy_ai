@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
+import WelcomePage from "@/pages/WelcomePage";
 import RootRedirector from "@/pages/RootRedirector";
 import MobileLandingPage from "@/pages/MobileLanding";
 import Challenges from "@/pages/Challenges";
@@ -32,11 +33,11 @@ import AdminApplications from "@/pages/AdminApplications";
 function Router() {
   return (
     <Switch>
-      {/* Root path now uses RootRedirector */}
-      <Route path="/" component={RootRedirector} />
+      {/* Welcome page with silhouette zoom interaction */}
+      <Route path="/" component={WelcomePage} />
       
-      {/* Marketing landing page moved to /welcome */}
-      <Route path="/welcome" component={MarketingLanding} />
+      {/* Marketing landing page moved to /renovate */}
+      <Route path="/renovate" component={MarketingLanding} />
       
       {/* User dashboard after login - This might be redundant if /app is the main target */}
       {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
