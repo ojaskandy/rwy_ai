@@ -41,41 +41,41 @@ export default function WelcomePage() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(true);
   
-  // Extended silhouette zoom effect - slower progression
-  const silhouetteScale = useTransform(scrollY, [0, 1200], [1, 20]);
-  const silhouetteOpacity = useTransform(scrollY, [0, 600, 1200], [1, 0.9, 0]);
+  // Extended silhouette zoom effect - slower progression for better experience
+  const silhouetteScale = useTransform(scrollY, [0, 1500], [1, 25]);
+  const silhouetteOpacity = useTransform(scrollY, [0, 800, 1500], [1, 0.9, 0]);
   
   // Floating words fade out as content appears
-  const floatingWordsOpacity = useTransform(scrollY, [600, 1000], [1, 0]);
+  const floatingWordsOpacity = useTransform(scrollY, [800, 1200], [1, 0]);
   
-  // Background transition - more gradual
-  const backgroundOpacity = useTransform(scrollY, [800, 1400], [0, 1]);
+  // Background transition - more gradual for better solidification
+  const backgroundOpacity = useTransform(scrollY, [1000, 1600], [0, 1]);
   
-  // Main content reveal - extended range for better solidification
-  const contentY = useTransform(scrollY, [1200, 1800], [100, 0]);
-  const contentOpacity = useTransform(scrollY, [1200, 1800], [0, 1]);
+  // Main content reveal - extended range for proper solidification
+  const contentY = useTransform(scrollY, [1500, 2100], [100, 0]);
+  const contentOpacity = useTransform(scrollY, [1500, 2100], [0, 1]);
 
-  // Rotate text every 3 seconds (slower)
+  // Rotate text every 4 seconds (slower as requested)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTextIndex((prev) => (prev + 1) % rotatingMainTexts.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
   // Hide scroll hint after user starts scrolling
   useEffect(() => {
     const unsubscribe = scrollY.on("change", (latest) => {
-      if (latest > 50) {
+      if (latest > 100) {
         setShowScrollHint(false);
       }
     });
     return unsubscribe;
   }, [scrollY]);
 
-  // Generate floating terms that fade as content appears
-  const FloatingTerms = () => {
-    return (
+  return (
+    <div className="relative min-h-[400vh] bg-black text-white overflow-hidden">
+      {/* Floating martial arts terms that fade as content appears */}
       <motion.div 
         className="fixed inset-0 z-10 pointer-events-none"
         style={{ opacity: floatingWordsOpacity }}
@@ -83,21 +83,21 @@ export default function WelcomePage() {
         {martialArtsTerms.map((term, i) => (
           <motion.div
             key={`${term}-${i}`}
-            className="absolute text-xl md:text-3xl font-bold text-red-500/40 select-none"
+            className="absolute text-lg md:text-2xl font-bold text-red-500/30 select-none"
             style={{
-              left: `${20 + (i % 3) * 30}%`,
-              top: `${15 + (i % 4) * 20}%`,
+              left: `${15 + (i % 4) * 25}%`,
+              top: `${10 + (i % 5) * 18}%`,
             }}
-            initial={{ opacity: 0, scale: 0.5, y: 50 }}
+            initial={{ opacity: 0, scale: 0.3, y: 100 }}
             animate={{ 
-              opacity: [0, 0.7, 0.4, 0],
-              scale: [0.5, 1, 1, 0.8],
-              y: [50, 0, -20, -60]
+              opacity: [0, 0.6, 0.3, 0],
+              scale: [0.3, 1, 1, 0.7],
+              y: [100, 0, -30, -80]
             }}
             transition={{ 
-              duration: 6,
+              duration: 8,
               repeat: Infinity,
-              delay: i * 0.8,
+              delay: i * 1.2,
               ease: "easeOut"
             }}
           >
@@ -105,13 +105,6 @@ export default function WelcomePage() {
           </motion.div>
         ))}
       </motion.div>
-    );
-  };
-
-  return (
-    <div className="relative min-h-[300vh] bg-black text-white overflow-hidden">
-      {/* Floating martial arts terms that fade as content appears */}
-      <FloatingTerms />
 
       {/* Initial silhouette section */}
       <motion.section className="fixed inset-0 flex items-center justify-center z-20">
@@ -133,7 +126,7 @@ export default function WelcomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: 2 }}
+              transition={{ delay: 3 }}
             >
               <motion.div
                 animate={{ y: [0, 10, 0] }}
@@ -153,13 +146,13 @@ export default function WelcomePage() {
         style={{ opacity: backgroundOpacity }}
       />
 
-      {/* Main content that appears after zoom */}
+      {/* Main content that appears after zoom and solidifies properly */}
       <motion.section 
         className="relative z-30 min-h-screen flex flex-col items-center justify-center px-6"
         style={{ 
           y: contentY,
           opacity: contentOpacity,
-          marginTop: '150vh'
+          marginTop: '200vh'
         }}
       >
         <div className="text-center max-w-4xl mx-auto">
@@ -168,7 +161,7 @@ export default function WelcomePage() {
             className="text-6xl md:text-8xl font-bold mb-8"
             initial={{ opacity: 0, scale: 0.5 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 1.5 }}
             viewport={{ once: true }}
           >
             <span className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent">
@@ -181,7 +174,7 @@ export default function WelcomePage() {
             className="mb-6"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
+            transition={{ duration: 1, delay: 0.3 }}
             viewport={{ once: true }}
           >
             <h2 className="text-2xl md:text-3xl text-gray-200 mb-2">
@@ -192,12 +185,12 @@ export default function WelcomePage() {
             </h2>
           </motion.div>
 
-          {/* Static text with icon */}
+          {/* Static text with icon and rotating main text */}
           <motion.div
             className="mb-12"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
+            transition={{ duration: 1, delay: 0.6 }}
             viewport={{ once: true }}
           >
             <div className="flex items-center justify-center gap-3 mb-8">
@@ -215,7 +208,7 @@ export default function WelcomePage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.8 }}
+                transition={{ duration: 1 }}
               >
                 {rotatingMainTexts[currentTextIndex]}
               </motion.h3>
@@ -227,7 +220,7 @@ export default function WelcomePage() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2 }}
+            transition={{ duration: 1, delay: 1.2 }}
             viewport={{ once: true }}
           >
             <Link href="/auth">
@@ -256,7 +249,7 @@ export default function WelcomePage() {
             className="text-gray-400 mt-12 text-lg max-w-2xl mx-auto leading-relaxed"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1.5 }}
+            transition={{ duration: 1, delay: 1.5 }}
             viewport={{ once: true }}
           >
             The competitive advantage that accelerates your journey to the next belt. 
@@ -272,7 +265,7 @@ export default function WelcomePage() {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 1.5 }}
         viewport={{ once: true, margin: "-100px" }}
-        style={{ marginTop: '50vh' }}
+        style={{ marginTop: '100vh' }}
       >
         <div className="max-w-4xl mx-auto text-center">
           <motion.h2 
