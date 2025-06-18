@@ -68,9 +68,9 @@ export default function WelcomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setAutoScrolling(true);
-      // Scroll exactly to where the main content section starts (120vh)
+      // Scroll exactly to where the main content section starts (160vh)
       window.scrollTo({
-        top: window.innerHeight * 1.2, // 120vh = 1.2 * viewport height
+        top: window.innerHeight * 1.6, // 160vh = 1.6 * viewport height
         behavior: 'smooth'
       });
     }, 4000); // Wait 4 seconds before auto-scrolling
@@ -167,7 +167,7 @@ export default function WelcomePage() {
         style={{ 
           y: contentY,
           opacity: contentOpacity,
-          marginTop: '120vh'
+          marginTop: '160vh'
         }}
       >
         {/* Visual indicator that this is the key content */}
