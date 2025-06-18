@@ -40,20 +40,21 @@ export default function WelcomePage() {
   const { scrollY } = useScroll();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(true);
+  const [autoScrolling, setAutoScrolling] = useState(false);
   
-  // Extended silhouette zoom effect - slower progression for better experience
-  const silhouetteScale = useTransform(scrollY, [0, 1500], [1, 25]);
-  const silhouetteOpacity = useTransform(scrollY, [0, 800, 1500], [1, 0.9, 0]);
+  // Faster, more dramatic zoom effect to reach content quickly
+  const silhouetteScale = useTransform(scrollY, [0, 1200], [1, 30]);
+  const silhouetteOpacity = useTransform(scrollY, [0, 600, 1200], [1, 0.8, 0]);
   
-  // Floating words fade out as content appears
-  const floatingWordsOpacity = useTransform(scrollY, [800, 1200], [1, 0]);
+  // Floating words fade out quickly as zoom happens
+  const floatingWordsOpacity = useTransform(scrollY, [400, 800], [1, 0]);
   
-  // Background transition - more gradual for better solidification
-  const backgroundOpacity = useTransform(scrollY, [1000, 1600], [0, 1]);
+  // Background appears earlier and more solid
+  const backgroundOpacity = useTransform(scrollY, [800, 1200], [0, 1]);
   
-  // Main content reveal - extended range for proper solidification
-  const contentY = useTransform(scrollY, [1500, 2100], [100, 0]);
-  const contentOpacity = useTransform(scrollY, [1500, 2100], [0, 1]);
+  // Main content appears much more solid and obvious - no gradual fade
+  const contentY = useTransform(scrollY, [1200, 1400], [50, 0]);
+  const contentOpacity = useTransform(scrollY, [1200, 1400], [0, 1]);
 
   // Rotate text every 4 seconds (slower as requested)
   useEffect(() => {
@@ -63,18 +64,32 @@ export default function WelcomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Hide scroll hint after user starts scrolling
+  // Auto-scroll functionality - starts after 4 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAutoScrolling(true);
+      // Smooth scroll to the main content area
+      window.scrollTo({
+        top: window.innerHeight * 1.2, // Target scroll position where content is fully solid
+        behavior: 'smooth'
+      });
+    }, 4000); // Wait 4 seconds before auto-scrolling
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Hide scroll hint after user starts scrolling or auto-scroll begins
   useEffect(() => {
     const unsubscribe = scrollY.on("change", (latest) => {
-      if (latest > 100) {
+      if (latest > 100 || autoScrolling) {
         setShowScrollHint(false);
       }
     });
     return unsubscribe;
-  }, [scrollY]);
+  }, [scrollY, autoScrolling]);
 
   return (
-    <div className="relative min-h-[400vh] bg-black text-white overflow-hidden">
+    <div className="relative min-h-[300vh] bg-black text-white overflow-hidden">
       {/* Floating martial arts terms that fade as content appears */}
       <motion.div 
         className="fixed inset-0 z-10 pointer-events-none"
@@ -148,13 +163,16 @@ export default function WelcomePage() {
 
       {/* Main content that appears after zoom and solidifies properly */}
       <motion.section 
-        className="relative z-30 min-h-screen flex flex-col items-center justify-center px-6"
+        className="relative z-30 min-h-screen flex flex-col items-center justify-center px-6 bg-black border-t-4 border-red-500"
         style={{ 
           y: contentY,
           opacity: contentOpacity,
-          marginTop: '200vh'
+          marginTop: '120vh'
         }}
       >
+        {/* Visual indicator that this is the key content */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 bg-red-500 rounded-full"></div>
+        
         <div className="text-center max-w-4xl mx-auto">
           {/* CoachT Logo */}
           <motion.h1 
