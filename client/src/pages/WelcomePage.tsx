@@ -64,7 +64,7 @@ export default function WelcomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll functionality - starts after 4 seconds
+  // Auto-scroll functionality - starts after 2.5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setAutoScrolling(true);
@@ -73,7 +73,7 @@ export default function WelcomePage() {
         top: window.innerHeight * 1.6, // 160vh = 1.6 * viewport height
         behavior: 'smooth'
       });
-    }, 4000); // Wait 4 seconds before auto-scrolling
+    }, 2500); // Wait 2.5 seconds before auto-scrolling
 
     return () => clearTimeout(timer);
   }, []);
@@ -241,7 +241,7 @@ export default function WelcomePage() {
             transition={{ duration: 1, delay: 1.2 }}
             viewport={{ once: true }}
           >
-            <Link href="/auth">
+            <Link href="/early">
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
@@ -251,15 +251,15 @@ export default function WelcomePage() {
               </Button>
             </Link>
             
-            <Link href="/renovate">
+            <a href="https://cal.com/ojas-kandhare/coacht-demo?overlayCalendar=true" target="_blank" rel="noopener noreferrer">
               <Button 
                 variant="outline" 
                 size="lg" 
                 className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white px-8 py-6 text-lg"
               >
-                Learn More
+                Reach out as organization
               </Button>
-            </Link>
+            </a>
           </motion.div>
 
           {/* Competitive edge message */}
@@ -277,7 +277,7 @@ export default function WelcomePage() {
       </motion.section>
 
       {/* Belt Progression Section - Three Martial Arts Panels */}
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="relative min-h-screen w-full overflow-hidden py-20">
         {/* Three background panels */}
         <div className="absolute inset-0 flex">
           {/* Taekwondo Panel */}
@@ -309,69 +309,74 @@ export default function WelcomePage() {
         </div>
 
         {/* Centered belt progression content */}
-        <div className="relative z-20 h-full flex items-center justify-center">
-          <div className="text-center max-w-4xl mx-auto px-6">
-            {/* Glass overlay background */}
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-3xl border border-white/10"></div>
-            
-            <div className="relative z-10 py-16 px-8">
-              <motion.h2 
-                className="text-4xl md:text-6xl font-bold mb-16 bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2 }}
-                viewport={{ once: true }}
-              >
-                Your Journey to Mastery
-              </motion.h2>
+        <div className="relative z-20 min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-4xl mx-auto">
+            <motion.h2 
+              className="text-4xl md:text-6xl font-bold mb-20 bg-white/90 backdrop-blur-sm rounded-2xl px-8 py-6 text-black shadow-2xl"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2 }}
+              viewport={{ once: true }}
+            >
+              Your Journey to Mastery
+            </motion.h2>
 
-              {/* Belt progression phrases */}
-              <div className="space-y-12">
-                {[
-                  { belt: "White Belt", phrase: "Start your journey. CoachT will guide every move.", color: "text-white", delay: 0.2 },
-                  { belt: "Yellow Belt", phrase: "Build your basics. Train with confidence, not confusion.", color: "text-yellow-300", delay: 0.4 },
-                  { belt: "Green Belt", phrase: "Push further. Tailored workouts, real growth.", color: "text-green-400", delay: 0.6 },
-                  { belt: "Blue Belt", phrase: "Challenge yourself. Every rep moves you up the ranks.", color: "text-blue-400", delay: 0.8 },
-                  { belt: "Red Belt", phrase: "Refine your edge. Outpace others on the leaderboard.", color: "text-red-400", delay: 1.0 },
-                  { belt: "Black Belt", phrase: "Train like a master. Inspire the next generation.", color: "text-gray-900 bg-white px-4 py-2 rounded-lg", delay: 1.2 }
-                ].map((item, index) => (
-                  <motion.div
-                    key={index}
-                    className="text-center"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: item.delay }}
-                    viewport={{ once: true, margin: "-50px" }}
-                  >
-                    <div className={`text-sm font-semibold uppercase tracking-wider mb-2 ${item.color.includes('bg-') ? 'text-gray-600' : item.color}`}>
-                      {item.belt}
-                    </div>
-                    <div className={`text-lg md:text-xl font-medium leading-relaxed ${item.color.includes('bg-') ? item.color : 'text-gray-100'} shadow-lg`}>
-                      {item.phrase}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Call to action */}
-              <motion.div
-                className="mt-16"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 1.5 }}
-                viewport={{ once: true }}
-              >
-                <Link href="/auth">
-                  <Button 
-                    size="lg" 
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
-                  >
-                    Begin Your Journey
-                    <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </motion.div>
+            {/* Belt progression phrases */}
+            <div className="space-y-8">
+              {[
+                { belt: "White Belt", phrase: "Start your journey. CoachT will guide every move.", color: "text-gray-800", bgColor: "bg-white/90" },
+                { belt: "Yellow Belt", phrase: "Build your basics. Train with confidence, not confusion.", color: "text-gray-800", bgColor: "bg-yellow-100/90" },
+                { belt: "Green Belt", phrase: "Push further. Tailored workouts, real growth.", color: "text-gray-800", bgColor: "bg-green-100/90" },
+                { belt: "Blue Belt", phrase: "Challenge yourself. Every rep moves you up the ranks.", color: "text-gray-800", bgColor: "bg-blue-100/90" },
+                { belt: "Red Belt", phrase: "Refine your edge. Outpace others on the leaderboard.", color: "text-gray-800", bgColor: "bg-red-100/90" },
+                { belt: "Black Belt", phrase: "Train like a master. Inspire the next generation.", color: "text-white", bgColor: "bg-gray-900/90" }
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  className={`${item.bgColor} backdrop-blur-sm rounded-xl px-8 py-6 shadow-2xl transform hover:scale-105 transition-all duration-300`}
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.6, delay: index * 0.15 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                >
+                  <div className={`text-sm font-bold uppercase tracking-wider mb-3 ${item.color} opacity-70`}>
+                    {item.belt}
+                  </div>
+                  <div className={`text-lg md:text-xl font-semibold leading-relaxed ${item.color}`}>
+                    {item.phrase}
+                  </div>
+                </motion.div>
+              ))}
             </div>
+
+            {/* Call to action buttons */}
+            <motion.div
+              className="mt-16 flex flex-col sm:flex-row gap-4 justify-center items-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 1.0 }}
+              viewport={{ once: true }}
+            >
+              <Link href="/early">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-2xl shadow-red-500/25 px-12 py-6 text-xl font-semibold group transform hover:scale-105 transition-all duration-300"
+                >
+                  Begin Your Journey
+                  <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              
+              <a href="https://cal.com/ojas-kandhare/coacht-demo?overlayCalendar=true" target="_blank" rel="noopener noreferrer">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="bg-white/90 backdrop-blur-sm border-gray-300 text-gray-800 hover:bg-white hover:text-black px-8 py-6 text-lg font-semibold"
+                >
+                  Reach out as organization
+                </Button>
+              </a>
+            </motion.div>
           </div>
         </div>
       </section>
