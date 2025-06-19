@@ -71,7 +71,7 @@ export default function AuthPage() {
   // Check if user is already logged in
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/app");  // Redirect to main app instead of root
     }
   }, [user, navigate]);
   

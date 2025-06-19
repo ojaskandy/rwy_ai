@@ -82,20 +82,29 @@ export const martialArtsVideos: MartialArtsVideo[] = [
     videoUrl: '/videos/taekwondo/Taegeuk 6 Yook Jang June 16 2025.mp4',
     thumbnailUrl: '/videos/taekwondo/Taegeuk 6 Yook Jang.jpg',
     isLocalFile: true
+  },
+  {
+    id: 'taekwondo-form-7',
+    name: 'Taegeuk 7 - Chil Jang',
+    description: 'Seventh taekwondo poomsae with sophisticated movements and advanced techniques',
+    category: 'taekwondo',
+    difficulty: 'advanced',
+    duration: '2:45',
+    videoUrl: '/videos/taekwondo/Taegeuk 7 Chil Jang June 16 2025.mp4',
+    thumbnailUrl: '/videos/taekwondo/Taegeuk 7 Chil Jang.jpg',
+    isLocalFile: true
+  },
+  {
+    id: 'taekwondo-form-8',
+    name: 'Taegeuk 8 - Pal Jang',
+    description: 'Eighth taekwondo poomsae with master-level techniques and complex combinations',
+    category: 'taekwondo',
+    difficulty: 'advanced',
+    duration: '2:29',
+    videoUrl: '/videos/taekwondo/Taegeuk 8 Pal Jang June 17 2025.mp4',
+    thumbnailUrl: '/videos/taekwondo/Taegeuk 8 Pal Jang.jpg',
+    isLocalFile: true
   }
-  
-  // Add more videos here as you upload them:
-  // {
-  //   id: 'taekwondo-form-2',
-  //   name: 'Taegeuk 2 - Ee Jang',
-  //   description: 'Second taekwondo poomsae with advancing techniques',
-  //   category: 'taekwondo',
-  //   difficulty: 'beginner',
-  //   duration: '2:45',
-  //   videoUrl: '/videos/taekwondo/your-video-name.mp4',
-  //   thumbnailUrl: '/videos/taekwondo/your-thumbnail.jpg',
-  //   isLocalFile: true
-  // }
 ];
 
 export const getCategorizedVideos = () => {
