@@ -131,6 +131,9 @@ def main():
     heian_nidan_path = os.path.join(karate_dir, "Heian Nidan.jpg")
     create_heian_thumbnail("NIDAN", heian_nidan_path)
     
+    heian_sandan_path = os.path.join(karate_dir, "Heian Sandan.jpg")
+    create_heian_thumbnail("SANDAN", heian_sandan_path)
+    
     print("\n🎯 All thumbnails created successfully!")
     print(f"📁 Taekwondo thumbnails: {taekwondo_dir}")
     print(f"📁 Karate thumbnails: {karate_dir}")

@@ -128,6 +128,17 @@ export const martialArtsVideos: MartialArtsVideo[] = [
     videoUrl: '/videos/karate/Heian Nidan June 18 2025.mp4',
     thumbnailUrl: '/videos/karate/Heian Nidan.jpg',
     isLocalFile: true
+  },
+  {
+    id: 'karate-kata-3',
+    name: 'Heian Sandan',
+    description: 'Third kata in the Heian series - introduces more complex movements, turns, and advanced techniques',
+    category: 'karate',
+    difficulty: 'intermediate',
+    duration: '2:32',
+    videoUrl: '/videos/karate/Heian Sandan June 18 2025.mp4',
+    thumbnailUrl: '/videos/karate/Heian Sandan.jpg',
+    isLocalFile: true
   }
 ];
 
