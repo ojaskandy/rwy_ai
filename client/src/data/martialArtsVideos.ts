@@ -104,6 +104,30 @@ export const martialArtsVideos: MartialArtsVideo[] = [
     videoUrl: '/videos/taekwondo/Taegeuk 8 Pal Jang June 17 2025.mp4',
     thumbnailUrl: '/videos/taekwondo/Taegeuk 8 Pal Jang.jpg',
     isLocalFile: true
+  },
+
+  // Karate Kata - Local Video Files
+  {
+    id: 'karate-kata-1',
+    name: 'Heian Shodan',
+    description: 'First kata in the Heian series - fundamental Shotokan karate form with basic blocks, punches and stances',
+    category: 'karate',
+    difficulty: 'beginner',
+    duration: '2:28',
+    videoUrl: '/videos/karate/Heian Shodan June 17 2025.mp4',
+    thumbnailUrl: '/videos/karate/Heian Shodan.jpg',
+    isLocalFile: true
+  },
+  {
+    id: 'karate-kata-2',
+    name: 'Heian Nidan',
+    description: 'Second kata in the Heian series - builds on Heian Shodan with new techniques including knife hand and side kicks',
+    category: 'karate',
+    difficulty: 'beginner',
+    duration: '2:42',
+    videoUrl: '/videos/karate/Heian Nidan June 18 2025.mp4',
+    thumbnailUrl: '/videos/karate/Heian Nidan.jpg',
+    isLocalFile: true
   }
 ];
 
