@@ -1,5 +1,6 @@
 import { 
   users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords, internshipApplications,
+  shifuData, shifuLogs, poseReferences,
   type User, type InsertUser, 
   type TrackingSettings, type InsertTrackingSettings,
   type UserProfile, type InsertUserProfile,
@@ -7,7 +8,10 @@ import {
   type EarlyAccessSignup, type InsertEarlyAccess,
   type ReferenceMove, type InsertReferenceMove,
   type EmailRecord, type InsertEmailRecord,
-  type InternshipApplication, type InsertInternshipApplication
+  type InternshipApplication, type InsertInternshipApplication,
+  type ShifuData, type InsertShifuData,
+  type ShifuLog, type InsertShifuLog,
+  type PoseReference, type InsertPoseReference
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
@@ -58,6 +62,15 @@ export interface IStorage {
   saveInternshipApplication(application: InsertInternshipApplication): Promise<InternshipApplication>;
   getInternshipApplications(): Promise<InternshipApplication[]>;
   getInternshipApplicationById(id: number): Promise<InternshipApplication | undefined>;
+  
+  // Shifu AI Coach methods
+  getShifuData(userId: number): Promise<ShifuData | undefined>;
+  createShifuData(data: InsertShifuData): Promise<ShifuData>;
+  updateShifuData(userId: number, updateData: Partial<InsertShifuData>): Promise<ShifuData>;
+  getShifuLogs(userId: number, limit?: number): Promise<ShifuLog[]>;
+  createShifuLog(log: InsertShifuLog): Promise<ShifuLog>;
+  updateShifuLog(userId: number, date: Date, updates: Partial<InsertShifuLog>): Promise<ShifuLog>;
+  getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined>;
   
   // Session store
   sessionStore: session.Store;
@@ -421,6 +434,80 @@ export class DatabaseStorage implements IStorage {
       .from(internshipApplications)
       .where(eq(internshipApplications.id, id));
     return application || undefined;
+  }
+
+  // Shifu AI Coach methods
+  async getShifuData(userId: number): Promise<ShifuData | undefined> {
+    const [data] = await db
+      .select()
+      .from(shifuData)
+      .where(eq(shifuData.userId, userId));
+    return data || undefined;
+  }
+
+  async createShifuData(data: InsertShifuData): Promise<ShifuData> {
+    const [created] = await db
+      .insert(shifuData)
+      .values({
+        ...data,
+        challengeHistory: data.challengeHistory || []
+      })
+      .returning();
+    return created;
+  }
+
+  async updateShifuData(userId: number, updateData: Partial<InsertShifuData>): Promise<ShifuData> {
+    const [updated] = await db
+      .update(shifuData)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(shifuData.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async getShifuLogs(userId: number, limit?: number): Promise<ShifuLog[]> {
+    const logs = await db
+      .select()
+      .from(shifuLogs)
+      .where(eq(shifuLogs.userId, userId))
+      .orderBy(desc(shifuLogs.date))
+      .limit(limit);
+    return logs;
+  }
+
+  async createShifuLog(log: InsertShifuLog): Promise<ShifuLog> {
+    const [created] = await db
+      .insert(shifuLogs)
+      .values(log)
+      .returning();
+    return created;
+  }
+
+  async updateShifuLog(userId: number, date: Date, updates: Partial<InsertShifuLog>): Promise<ShifuLog> {
+    const [updated] = await db
+      .update(shifuLogs)
+      .set(updates)
+      .where(eq(shifuLogs.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [goal] = await db
+      .select()
+      .from(shifuLogs)
+      .where(eq(shifuLogs.userId, userId))
+      .orderBy(desc(shifuLogs.date))
+      .limit(1);
+    return goal || undefined;
   }
 }
 

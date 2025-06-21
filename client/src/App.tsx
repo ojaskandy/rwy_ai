@@ -23,6 +23,7 @@ import Workouts from "@/pages/Workouts";
 import MaxPunchesChallenge from "@/pages/MaxPunchesChallenge";
 import ReactionTimeChallenge from "@/pages/VipersReflexesChallenge";
 import BalanceBeamBreakerChallenge from "@/pages/BalanceBeamBreakerChallenge";
+import ShifuSaysChallenge from "@/pages/ShifuSaysChallenge";
 import PushupsWorkout from "@/pages/PushupsWorkout";
 import CrunchesWorkout from "@/pages/CrunchesWorkout";
 import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
@@ -69,6 +70,9 @@ function Router() {
 
       {/* Balance Beam Challenge page */}
       <ProtectedRoute path="/challenges/balance-beam" component={BalanceBeamBreakerChallenge} />
+
+      {/* Shifu Says Challenge page */}
+      <ProtectedRoute path="/challenges/shifu-says" component={ShifuSaysChallenge} />
 
       {/* Workout pages */}
       <ProtectedRoute path="/workouts/pushups" component={PushupsWorkout} />

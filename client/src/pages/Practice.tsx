@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { detectPoses, initPoseDetection, getJointConnections } from '@/lib/poseDetection';
 import { calculateJointAngles, angleJoints } from '@/components/camera/JointScoringEngine';
+import ShifuGuide, { ShifuPresets } from '@/components/ShifuGuide';
 
 // Define a reference pose type
 interface ReferencePose {
@@ -61,7 +62,22 @@ const defaultTaekwondoMovesData: Array<{ // Renamed from taekwondoMoves
     difficulty: 'Intermediate',
     description: 'A kick delivered with the side edge of the foot or heel.',
     videoUrl: '/moves/side-kick.mp4',
-    thumbnailUrl: '/moves/side-kick-thumb.jpg'
+    thumbnailUrl: '/moves/side-kick-thumb.jpg',
+    tip: 'Chamber your knee high, pivot on your supporting foot, and drive through with your heel. Keep your body straight.',
+    referencePose: {
+      imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&h=600',
+      processed: true,
+      angles: {
+        left_shoulder: 30,
+        right_shoulder: 155,
+        left_elbow: 23,
+        right_elbow: 20,
+        left_hip: 123,
+        right_hip: 120,
+        left_knee: 171,
+        right_knee: 170
+      }
+    }
   },
   {
     id: 3,
@@ -1288,6 +1304,9 @@ export default function Practice() {
           
           // Show results
           setPracticeResults({ score, feedback });
+          
+          // Trigger Shifu results guide
+          triggerResultsGuide(score);
         }
         
         return true;
@@ -2010,6 +2029,83 @@ export default function Practice() {
     const body = encodeURIComponent("Please type your feedback here:\n\n"); // Default body
     window.location.href = `mailto:ojaskandy@gmail.com?subject=${subject}&body=${body}`;
   };
+
+  // Shifu Guide states for Practice page
+  const [showTechniqueGuide, setShowTechniqueGuide] = useState<boolean>(false);
+  const [showCameraGuide, setShowCameraGuide] = useState<boolean>(false);
+  const [showResultsGuide, setShowResultsGuide] = useState<boolean>(false);
+  const [showSelectMoveGuide, setShowSelectMoveGuide] = useState<boolean>(false);
+  const [hasShownPracticeGuides, setHasShownPracticeGuides] = useState<boolean>(false);
+
+  // Shifu Guidance Functions
+  const triggerTechniqueGuide = (move: typeof selectedMove) => {
+    if (move && !hasShownPracticeGuides) {
+      setTimeout(() => {
+        setShowTechniqueGuide(true);
+      }, 1000);
+    }
+  };
+
+  const triggerCameraGuide = () => {
+    setTimeout(() => {
+      setShowCameraGuide(true);
+    }, 500);
+  };
+
+  const triggerResultsGuide = (score: number) => {
+    setTimeout(() => {
+      setShowResultsGuide(true);
+    }, 1000);
+  };
+
+  const getShifuAdviceForTechnique = (move: typeof selectedMove): string => {
+    if (!move) return "Select a technique to start practicing!";
+    
+    const adviceMap: Record<string, string> = {
+      'Side Kick (Yeop Chagi)': 'Chamber your knee high, pivot on your supporting foot, and drive through with your heel. Keep your body straight and balanced!',
+      'Front Kick (Ap Chagi)': 'Lift your knee up first, then snap your foot forward. Strike with the ball of your foot, not your toes!',
+      'Roundhouse Kick (Dollyo Chagi)': 'Turn your hip over and pivot on your supporting foot. Strike with the top of your foot and follow through!',
+      'Back Kick (Dwi Chagi)': 'Look over your shoulder, chamber your knee, then drive your heel straight back. Maximum power comes from your hip thrust!',
+      'Axe Kick (Naeryeo Chagi)': 'Lift your leg high and straight, then bring it down like an axe. Strike with your heel and control the descent!',
+    };
+    
+    return adviceMap[move.name] || `Remember to focus on proper form for ${move.name}. Balance, timing, and technique are key!`;
+  };
+
+  const getShifuAdviceForScore = (score: number, move: typeof selectedMove): string => {
+    if (score >= 90) {
+      return "Outstanding! Your technique is nearly perfect. Keep this level of precision!";
+    } else if (score >= 80) {
+      return "Excellent work! Small adjustments to your form will make it even better.";
+    } else if (score >= 70) {
+      return "Good effort! Focus on the details - chamber position and follow-through need work.";
+    } else if (score >= 50) {
+      return "Keep practicing! Pay attention to your stance and balance. Slow down and focus on form over speed.";
+    } else {
+      return "Don't get discouraged! " + getShifuAdviceForTechnique(move) + " Practice makes perfect!";
+    }
+  };
+
+  // Track when guides are completed
+  const handleGuideComplete = () => {
+    setHasShownPracticeGuides(true);
+    localStorage.setItem('hasSeenPracticeGuides', 'true');
+  };
+
+  // Load guide state on mount
+  useEffect(() => {
+    const hasSeenGuides = localStorage.getItem('hasSeenPracticeGuides');
+    if (hasSeenGuides) {
+      setHasShownPracticeGuides(true);
+    }
+  }, []);
+
+  // Trigger technique guide when move is selected
+  useEffect(() => {
+    if (selectedMove && !hasShownPracticeGuides) {
+      triggerTechniqueGuide(selectedMove);
+    }
+  }, [selectedMove, hasShownPracticeGuides]);
   
   return (
     <div className="min-h-screen flex flex-col bg-black">
@@ -2168,7 +2264,22 @@ export default function Practice() {
                     </div>
                   </div>
                   
-                  <p className="text-white text-lg mb-6">{practiceResults.feedback}</p>
+                  <p className="text-white text-lg mb-4">{practiceResults.feedback}</p>
+                  
+                  {/* Shifu Advice Section */}
+                  <div className="bg-gradient-to-r from-orange-900/40 to-red-900/40 rounded-lg p-4 mb-4 border border-orange-600/20">
+                    <div className="flex items-center mb-2">
+                      <img 
+                        src="/images/shifu_coacht.png" 
+                        alt="Shifu" 
+                        className="w-8 h-8 object-contain rounded mr-3"
+                      />
+                      <h3 className="text-orange-300 font-semibold">Shifu's Advice</h3>
+                    </div>
+                    <p className="text-orange-100 text-sm leading-relaxed">
+                      {getShifuAdviceForScore(practiceResults.score, selectedMove)}
+                    </p>
+                  </div>
                   
                   {/* Angle comparison table */}
                   {selectedMove?.referencePose?.angles && (
@@ -2659,12 +2770,29 @@ export default function Practice() {
             </p>
             
             {selectedMove && selectedMove.tip && (
-              <div className="bg-gray-800/60 border border-red-900/20 rounded p-3 mb-6">
+              <div className="bg-gray-800/60 border border-red-900/20 rounded p-3 mb-4">
                 <h3 className="text-sm font-bold text-white mb-1 flex items-center">
                   <span className="material-icons text-red-500 text-sm mr-1">tips_and_updates</span>
                   Coach Tip
                 </h3>
                 <p className="text-gray-300 text-sm">{selectedMove.tip}</p>
+              </div>
+            )}
+
+            {/* Shifu's Technique Advice */}
+            {selectedMove && (
+              <div className="bg-gradient-to-r from-orange-900/40 to-red-900/40 rounded-lg p-4 mb-6 border border-orange-600/20">
+                <div className="flex items-center mb-2">
+                  <img 
+                    src="/images/shifu_coacht.png" 
+                    alt="Shifu" 
+                    className="w-7 h-7 object-contain rounded mr-3"
+                  />
+                  <h3 className="text-orange-300 font-semibold text-sm">Shifu's Technique Guide</h3>
+                </div>
+                <p className="text-orange-100 text-sm leading-relaxed">
+                  {getShifuAdviceForTechnique(selectedMove)}
+                </p>
               </div>
             )}
             
@@ -2947,6 +3075,66 @@ export default function Practice() {
           </>
         )}
       </main>
+
+      {/* Shifu Guides for Practice Page */}
+      {!hasShownPracticeGuides && !selectedMove && (
+        <ShifuGuide
+          expression="pointing"
+          message="Choose a technique from the library to practice! Start with basics if you're new to martial arts."
+          position="top-right"
+          pointingDirection="down"
+          onDismiss={() => {
+            setHasShownPracticeGuides(true);
+            localStorage.setItem('hasSeenPracticeGuides', 'true');
+          }}
+          showDelay={1000}
+          autoShow={true}
+        />
+      )}
+
+      {selectedMove && !isPracticeMode && !showTechniqueGuide && (
+        <ShifuGuide
+          expression="neutral"
+          message={`Great choice! ${selectedMove.name} is a ${selectedMove.difficulty.toLowerCase()} level technique. Review the pose and when ready, click 'Practice this move'.`}
+          position="top-left"
+          onDismiss={() => setShowTechniqueGuide(true)}
+          showDelay={2000}
+          autoShow={true}
+        />
+      )}
+
+      {isPracticeMode && countdown > 0 && !showCameraGuide && (
+        <ShifuGuide
+          expression="happy"
+          message="Get into position! I'll analyze your form and give you feedback. Remember to hold the pose steady when the camera captures!"
+          position="center"
+          onDismiss={() => setShowCameraGuide(true)}
+          showDelay={500}
+          autoShow={true}
+        />
+      )}
+
+      {practiceResults && practiceResults.score >= 80 && !showResultsGuide && (
+        <ShifuGuide
+          expression="happy"
+          message="Excellent form! Your technique is really improving. Keep practicing to maintain this level!"
+          position="top-right"
+          onDismiss={() => setShowResultsGuide(true)}
+          showDelay={1000}
+          autoShow={true}
+        />
+      )}
+
+      {practiceResults && practiceResults.score < 60 && !showResultsGuide && (
+        <ShifuGuide
+          expression="sad"
+          message="Don't worry, practice makes perfect! Focus on the highlighted joints and try again. You're learning!"
+          position="top-right"
+          onDismiss={() => setShowResultsGuide(true)}
+          showDelay={1000}
+          autoShow={true}
+        />
+      )}
     </div>
   );
 }

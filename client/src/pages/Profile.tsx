@@ -25,7 +25,8 @@ import {
   Camera,
   X,
   ImagePlus,
-  Trash2
+  Trash2,
+  Sword
 } from 'lucide-react';
 import {
   Card,
@@ -46,6 +47,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import ShifuLog from '@/components/ShifuLog';
 
 // Default mock data to use while API data is loading
 const defaultUserStats = {
@@ -693,6 +695,21 @@ export default function Profile() {
                     ))}
                   </div>
                 </div>
+              </motion.div>
+
+              {/* Shifu AI Coach Log */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="mb-10"
+              >
+                <div className="flex items-center mb-6">
+                  <Sword className="h-5 w-5 text-red-500 mr-2" />
+                  <h2 className="text-xl font-bold text-white">Shifu AI Coach</h2>
+                </div>
+                
+                <ShifuLog />
               </motion.div>
             </div>
             

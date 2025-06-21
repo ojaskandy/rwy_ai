@@ -4,6 +4,8 @@ import CameraView from '@/components/CameraView';
 import PermissionDialog from '@/components/PermissionDialog';
 import LoadingState from '@/components/LoadingState';
 import ScreenshotModal from '@/components/ScreenshotModal';
+import ShifuDailyGoal from '@/components/ShifuDailyGoal';
+import ShifuGuide, { ShifuPresets } from '@/components/ShifuGuide';
 import { initPoseDetection, getModels } from '@/lib/poseDetection';
 import { requestCameraPermission, getCameraStream } from '@/lib/cameraUtils';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,7 +15,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone, Sword, Target, X
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Sword, Target, X, MessageCircle, Activity
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -58,6 +60,29 @@ interface Recording {
   notes: string | null;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+}
+
+// User Context Interfaces for Shifu awareness
+interface UserActivity {
+  id: string;
+  type: 'challenge' | 'practice' | 'workout' | 'daily_goal' | 'live_routine';
+  title: string;
+  status: 'started' | 'completed' | 'paused' | 'failed';
+  accuracy?: number;
+  startTime: Date;
+  endTime?: Date;
+  details: string;
+}
+
+interface UserContext {
+  lastActivity: UserActivity | null;
+  recentActivities: UserActivity[];
+  currentStreak: number;
+  preferredTechniques: string[];
+  weakAreas: string[];
+  strengths: string[];
+  sessionTime: number; // minutes spent today
+  lastLogin: Date;
 }
 
 // Timer component specifically for the current session view on this page
@@ -148,7 +173,22 @@ export default function Home() {
   
   // Theme state for buttons
   const [buttonTheme, setButtonTheme] = useState<'sky' | 'crimson' | 'emerald' | 'amber'>('sky');
+
+  // Shifu Guide states
+  const [showWelcomeGuide, setShowWelcomeGuide] = useState<boolean>(false);
+  const [showPracticeGuide, setShowPracticeGuide] = useState<boolean>(false);
+  const [showChallengeGuide, setShowChallengeGuide] = useState<boolean>(false);
+  const [hasShownInitialGuide, setHasShownInitialGuide] = useState<boolean>(false);
   
+  // Shifu Chat states
+  const [showShifuChat, setShowShifuChat] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'shifu', timestamp: Date}>>([]);
+  const [chatInput, setChatInput] = useState<string>('');
+  
+  // Context Tracking states
+  const [showContextDashboard, setShowContextDashboard] = useState<boolean>(false);
+  const [userContext, setUserContext] = useState<UserContext | null>(null);
+
   // Fetch recordings for the session log
   const { data: recordings, isLoading: isLoadingRecordings, error: recordingsError } = useQuery<Recording[], Error>({
     queryKey: ['/api/recordings', user?.id],
@@ -412,6 +452,324 @@ export default function Home() {
     setShowBackground(!blackoutMode);
   }, [blackoutMode]);
 
+  // Shifu Guide Logic
+  useEffect(() => {
+    const hasSeenGuides = localStorage.getItem('hasSeenShifuGuides');
+    if (!hasSeenGuides && user && !hasShownInitialGuide) {
+      setTimeout(() => {
+        setShowWelcomeGuide(true);
+        setHasShownInitialGuide(true);
+      }, 3000);
+    }
+  }, [user, hasShownInitialGuide]);
+
+  // Trigger practice guide based on daily goal
+  const triggerPracticeGuide = () => {
+    setTimeout(() => {
+      setShowPracticeGuide(true);
+    }, 2000);
+  };
+
+  // Trigger challenge guide for specific techniques  
+  const triggerChallengeGuide = () => {
+    setTimeout(() => {
+      setShowChallengeGuide(true);
+    }, 4000);
+  };
+
+  // Handle guide dismissal
+  const handleGuideComplete = () => {
+    localStorage.setItem('hasSeenShifuGuides', 'true');
+    setShowWelcomeGuide(false);
+    triggerPracticeGuide();
+  };
+
+  // Shifu Chat functions
+  const openShifuChat = () => {
+    setShowShifuChat(true);
+    if (chatMessages.length === 0) {
+      // Add initial greeting from Shifu
+      setChatMessages([{
+        id: 1,
+        text: "Hello! I'm Shifu, your AI martial arts coach. How can I help you with your training today?",
+        sender: 'shifu',
+        timestamp: new Date()
+      }]);
+    }
+  };
+
+  const sendChatMessage = () => {
+    if (!chatInput.trim()) return;
+    
+    const userMessage = {
+      id: chatMessages.length + 1,
+      text: chatInput,
+      sender: 'user' as const,
+      timestamp: new Date()
+    };
+    
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    
+    // Generate context-aware Shifu response
+    setTimeout(() => {
+      const shifuResponse = generateContextAwareShifuResponse(userMessage.text);
+      setChatMessages(prev => [...prev, {
+        id: prev.length + 1,
+        text: shifuResponse,
+        sender: 'shifu',
+        timestamp: new Date()
+      }]);
+    }, 1000);
+  };
+
+  const generateShifuResponse = (userMessage: string): string => {
+    const message = userMessage.toLowerCase();
+    
+    if (message.includes('help') || message.includes('guide')) {
+      return "I'm here to guide you! I can help you with training techniques, belt progression, daily goals, and proper form. What would you like to work on today?";
+    } else if (message.includes('technique') || message.includes('form')) {
+      return "Great question about technique! Remember: proper stance is your foundation. Keep your guard up, pivot on your supporting foot, and generate power from your core. Which technique are you practicing?";
+    } else if (message.includes('practice') || message.includes('train')) {
+      return "Practice makes perfect! I recommend starting with basic stances and gradually working up to combinations. The Practice page has great drills. Would you like me to suggest a routine?";
+    } else if (message.includes('belt') || message.includes('rank')) {
+      return "Your belt represents your journey and dedication! Each rank brings new challenges and techniques to master. Keep training consistently and you'll advance naturally.";
+    } else if (message.includes('thanks') || message.includes('thank')) {
+      return "You're very welcome! Remember, martial arts is about continuous improvement. I'm always here to help you on your journey. Keep training hard! 🥋";
+    } else {
+      return "That's an interesting question! As your AI coach, I'm here to help with your martial arts journey. Feel free to ask about techniques, training tips, or anything else you'd like to improve!";
+    }
+  };
+
+  // Context Tracking Functions
+  const initializeUserContext = (): UserContext => {
+    const defaultContext: UserContext = {
+      lastActivity: null,
+      recentActivities: [],
+      currentStreak: 0,
+      preferredTechniques: [],
+      weakAreas: [],
+      strengths: [],
+      sessionTime: 0,
+      lastLogin: new Date()
+    };
+
+    const saved = localStorage.getItem('userContext');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Convert date strings back to Date objects
+        parsed.lastLogin = new Date(parsed.lastLogin);
+        if (parsed.lastActivity) {
+          parsed.lastActivity.startTime = new Date(parsed.lastActivity.startTime);
+          if (parsed.lastActivity.endTime) {
+            parsed.lastActivity.endTime = new Date(parsed.lastActivity.endTime);
+          }
+        }
+        parsed.recentActivities = parsed.recentActivities.map((activity: any) => ({
+          ...activity,
+          startTime: new Date(activity.startTime),
+          endTime: activity.endTime ? new Date(activity.endTime) : undefined
+        }));
+        return parsed;
+      } catch (error) {
+        console.error('Error parsing saved context:', error);
+      }
+    }
+    return defaultContext;
+  };
+
+  const saveUserContext = (context: UserContext) => {
+    localStorage.setItem('userContext', JSON.stringify(context));
+  };
+
+  const trackActivity = (
+    type: UserActivity['type'],
+    title: string,
+    status: UserActivity['status'],
+    details: string,
+    accuracy?: number
+  ) => {
+    const activity: UserActivity = {
+      id: Date.now().toString(),
+      type,
+      title,
+      status,
+      startTime: new Date(),
+      details,
+      accuracy
+    };
+
+    const updatedContext = {
+      ...userContext!,
+      lastActivity: activity,
+      recentActivities: [activity, ...userContext!.recentActivities.slice(0, 9)] // Keep last 10
+    };
+
+    setUserContext(updatedContext);
+    saveUserContext(updatedContext);
+  };
+
+  const completeActivity = (accuracy?: number, insights?: { weakAreas?: string[], strengths?: string[] }) => {
+    if (userContext?.lastActivity && userContext.lastActivity.status === 'started') {
+      const completedActivity = {
+        ...userContext.lastActivity,
+        status: 'completed' as const,
+        endTime: new Date(),
+        accuracy
+      };
+
+      const updatedContext = {
+        ...userContext,
+        lastActivity: completedActivity,
+        recentActivities: [completedActivity, ...userContext.recentActivities.slice(1)],
+        currentStreak: userContext.currentStreak + 1,
+        weakAreas: insights?.weakAreas ? Array.from(new Set([...userContext.weakAreas, ...insights.weakAreas])) : userContext.weakAreas,
+        strengths: insights?.strengths ? Array.from(new Set([...userContext.strengths, ...insights.strengths])) : userContext.strengths
+      };
+
+      setUserContext(updatedContext);
+      saveUserContext(updatedContext);
+    }
+  };
+
+  const updateSessionTime = () => {
+    if (userContext) {
+      const updatedContext = {
+        ...userContext,
+        sessionTime: userContext.sessionTime + 1 // Increment by 1 minute
+      };
+      setUserContext(updatedContext);
+      saveUserContext(updatedContext);
+    }
+  };
+
+  // Initialize context on component mount
+  useEffect(() => {
+    if (user && !userContext) {
+      setUserContext(initializeUserContext());
+    }
+  }, [user]);
+
+  // Track session time
+  useEffect(() => {
+    if (userContext) {
+      const interval = setInterval(updateSessionTime, 60000); // Every minute
+      return () => clearInterval(interval);
+    }
+  }, [userContext]);
+
+  // Demo functions for testing context awareness
+  const simulatePracticeSession = () => {
+    trackActivity('practice', 'Round Kick Drills', 'started', 'Practicing round kicks with focus on form and balance');
+    setTimeout(() => {
+      completeActivity(85, { 
+        strengths: ['Balance', 'Flexibility'], 
+        weakAreas: ['Power generation'] 
+      });
+    }, 3000); // Simulate a 3-second practice session for demo
+  };
+
+  const simulateChallenge = () => {
+    trackActivity('challenge', 'Speed Challenge: 50 Kicks', 'started', 'Attempting to complete 50 kicks in under 2 minutes');
+    setTimeout(() => {
+      completeActivity(92, { 
+        strengths: ['Speed', 'Endurance'], 
+        weakAreas: ['Accuracy under pressure'] 
+      });
+    }, 5000); // Simulate a 5-second challenge for demo
+  };
+
+  const simulatePausedWorkout = () => {
+    trackActivity('workout', 'Full Body Conditioning', 'paused', 'Taking a break during intense conditioning workout');
+  };
+
+  // Enhanced Shifu response with context awareness
+  const generateContextAwareShifuResponse = (userMessage: string): string => {
+    const message = userMessage.toLowerCase();
+    const lastActivity = userContext?.lastActivity;
+    const recentActivities = userContext?.recentActivities || [];
+    
+    // Context-aware greeting
+    if (message.includes('hello') || message.includes('hi') || !message.trim()) {
+      let greeting = "Hello there, martial artist! ";
+      
+      if (lastActivity) {
+        const timeSince = Date.now() - lastActivity.startTime.getTime();
+        const hoursSince = Math.floor(timeSince / (1000 * 60 * 60));
+        
+        if (hoursSince < 2) {
+          greeting += `I see you were recently working on "${lastActivity.title}". `;
+          if (lastActivity.status === 'paused') {
+            greeting += "Would you like to continue where you left off?";
+          } else if (lastActivity.status === 'completed') {
+            greeting += "Great job completing that! Ready for your next challenge?";
+          }
+        } else if (hoursSince < 24) {
+          greeting += `Earlier today you were practicing "${lastActivity.title}". How did that go?`;
+        } else {
+          greeting += `Last time you were working on "${lastActivity.title}". Ready to get back into training?`;
+        }
+      } else {
+        greeting += "I'm excited to start training with you! What would you like to work on today?";
+      }
+      
+      return greeting;
+    }
+
+    // Context-aware responses for specific queries
+    if (message.includes('progress') || message.includes('how am i doing')) {
+      let response = "Let me tell you about your progress! ";
+      
+      if (userContext && userContext.currentStreak > 0) {
+        response += `You're on a ${userContext.currentStreak} day streak - excellent consistency! `;
+      }
+      
+      if (userContext && userContext.sessionTime > 0) {
+        response += `Today you've trained for ${userContext.sessionTime} minutes. `;
+      }
+      
+      if (userContext && userContext.strengths && userContext.strengths.length > 0) {
+        response += `Your strengths include: ${userContext.strengths.slice(0, 3).join(', ')}. `;
+      }
+      
+      if (userContext && userContext.weakAreas && userContext.weakAreas.length > 0) {
+        response += `Areas to focus on: ${userContext.weakAreas.slice(0, 2).join(', ')}.`;
+      }
+      
+      return response;
+    }
+
+    if (message.includes('continue') || message.includes('resume')) {
+      if (lastActivity?.status === 'paused' || lastActivity?.status === 'started') {
+        return `Yes! Let's continue with "${lastActivity.title}". You were doing great! Remember to ${lastActivity.details}`;
+      } else {
+        return "I don't see any paused activities. Would you like to start a new training session?";
+      }
+    }
+
+    if (message.includes('what should i practice') || message.includes('recommend')) {
+      let response = "Based on your training history, I recommend ";
+      
+      if (userContext && userContext.weakAreas && userContext.weakAreas.length > 0) {
+        response += `focusing on ${userContext.weakAreas[0]} to improve your overall technique. `;
+      } else if (recentActivities.length > 0) {
+        const lastCompleted = recentActivities.find(a => a.status === 'completed');
+        if (lastCompleted) {
+          response += `building on your recent success with "${lastCompleted.title}". `;
+        }
+      } else {
+        response += "starting with basic stances and fundamental techniques. ";
+      }
+      
+      response += "Check out the Practice page for guided routines!";
+      return response;
+    }
+
+    // Fall back to regular responses
+    return generateShifuResponse(userMessage);
+  };
+
   // Render main component
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
@@ -603,10 +961,32 @@ export default function Home() {
                   <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
                     Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
                   </h1>
-                  <p className="text-red-200 mt-2 sm:mt-3 text-base sm:text-lg md:text-xl">
-                    Perfect your Taekwondo form with AI guidance
-                  </p>
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.2 }}
+                    className="mt-4 flex flex-col sm:flex-row gap-3 items-center"
+                  >
+                    <Button
+                      onClick={openShifuChat}
+                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Talk to Shifu</span>
+                    </Button>
+                    
+                    <Button
+                      onClick={() => setShowContextDashboard(true)}
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
+                    >
+                      <Activity className="h-4 w-4" />
+                      <span>Activity</span>
+                    </Button>
+                  </motion.div>
                 </motion.div>
+
+                {/* Shifu Daily Goal */}
+                <ShifuDailyGoal />
 
                 <motion.div 
                   className="grid grid-cols-1 gap-4 pt-2 sm:pt-4 relative group w-full max-w-lg"
@@ -1296,6 +1676,322 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Shifu Guides */}
+      {showWelcomeGuide && (
+        <ShifuGuide
+          expression="happy"
+          message="Welcome to CoachT! I'm your AI coach Shifu. Let me guide you through your training journey!"
+          position="top-right"
+          onDismiss={handleGuideComplete}
+          showDelay={0}
+          autoShow={true}
+        />
+      )}
+
+      {showPracticeGuide && (
+        <ShifuGuide
+          expression="pointing"
+          message="Practice your round kicks in the Practice Library! Perfect for building fundamentals."
+          position="top-right"
+          pointingDirection="left"
+          onDismiss={() => {
+            setShowPracticeGuide(false);
+            triggerChallengeGuide();
+          }}
+          showDelay={0}
+          autoShow={true}
+        />
+      )}
+
+      {showChallengeGuide && (
+        <ShifuGuide
+          expression="pointing"
+          message="Ready for a challenge? Test your skills and compete with other martial artists!"
+          position="top-right"
+          pointingDirection="left"
+          onDismiss={() => setShowChallengeGuide(false)}
+          showDelay={0}
+          autoShow={true}
+        />
+      )}
+
+      {/* Shifu Chat Dialog */}
+      <Dialog open={showShifuChat} onOpenChange={setShowShifuChat}>
+        <DialogContent className="bg-gradient-to-br from-gray-950 to-black border border-orange-600/30 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center text-orange-400">
+              <img 
+                src="/images/shifuhappy_ct.png" 
+                alt="Shifu" 
+                className="w-8 h-8 object-contain rounded mr-3"
+              />
+              Chat with Shifu
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Chat Messages */}
+            <div className="h-64 overflow-y-auto bg-black/40 rounded-lg p-3 space-y-2">
+              {chatMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-2 rounded-lg text-sm ${
+                      message.sender === 'user'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-orange-600 text-white flex items-start space-x-2'
+                    }`}
+                  >
+                    {message.sender === 'shifu' && (
+                      <img 
+                        src="/images/shifu_coacht.png" 
+                        alt="Shifu" 
+                        className="w-5 h-5 object-contain rounded flex-shrink-0 mt-0.5"
+                      />
+                    )}
+                    <span>{message.text}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Chat Input */}
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                placeholder="Ask Shifu anything about training..."
+                className="flex-1 bg-black/40 border border-orange-600/30 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+              />
+              <Button
+                onClick={sendChatMessage}
+                disabled={!chatInput.trim()}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Context Dashboard Dialog */}
+      <Dialog open={showContextDashboard} onOpenChange={setShowContextDashboard}>
+        <DialogContent className="bg-gradient-to-br from-gray-950 to-black border border-blue-600/30 text-white max-w-2xl max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center text-blue-400">
+              <Activity className="w-6 h-6 mr-3" />
+              Activity Dashboard
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 overflow-y-auto pr-2" style={{ maxHeight: 'calc(85vh - 120px)' }}>
+            {userContext ? (
+              <>
+                {/* Current Session Overview */}
+                <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-lg p-4 border border-blue-600/20">
+                  <h3 className="text-lg font-semibold text-blue-300 mb-3 flex items-center">
+                    <Clock className="w-5 h-5 mr-2" />
+                    Current Session
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-black/40 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-white">{userContext.sessionTime}</div>
+                      <div className="text-blue-300 text-sm">Minutes Today</div>
+                    </div>
+                    <div className="bg-black/40 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-white">{userContext.currentStreak}</div>
+                      <div className="text-blue-300 text-sm">Day Streak</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Last Activity */}
+                {userContext.lastActivity && (
+                  <div className="bg-gradient-to-r from-green-900/40 to-blue-900/40 rounded-lg p-4 border border-green-600/20">
+                    <h3 className="text-lg font-semibold text-green-300 mb-3 flex items-center">
+                      <Play className="w-5 h-5 mr-2" />
+                      Latest Activity
+                    </h3>
+                    <div className="bg-black/40 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-white">{userContext.lastActivity.title}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          userContext.lastActivity.status === 'completed' ? 'bg-green-600/20 text-green-300' :
+                          userContext.lastActivity.status === 'started' ? 'bg-blue-600/20 text-blue-300' :
+                          userContext.lastActivity.status === 'paused' ? 'bg-yellow-600/20 text-yellow-300' :
+                          'bg-red-600/20 text-red-300'
+                        }`}>
+                          {userContext.lastActivity.status}
+                        </span>
+                      </div>
+                      <div className="text-gray-400 text-sm mb-2">{userContext.lastActivity.details}</div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Type: {userContext.lastActivity.type}</span>
+                        <span>{userContext.lastActivity.startTime.toLocaleTimeString()}</span>
+                      </div>
+                      {userContext.lastActivity.accuracy && (
+                        <div className="mt-2">
+                          <div className="text-xs text-gray-400 mb-1">Accuracy: {userContext.lastActivity.accuracy}%</div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full" 
+                              style={{ width: `${userContext.lastActivity.accuracy}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent Activities */}
+                {userContext.recentActivities.length > 0 && (
+                  <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-lg p-4 border border-purple-600/20">
+                    <h3 className="text-lg font-semibold text-purple-300 mb-3 flex items-center">
+                      <BarChart className="w-5 h-5 mr-2" />
+                      Recent Activities
+                    </h3>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {userContext.recentActivities.slice(0, 5).map((activity) => (
+                        <div key={activity.id} className="bg-black/40 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-white text-sm">{activity.title}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              activity.status === 'completed' ? 'bg-green-600/20 text-green-300' :
+                              activity.status === 'started' ? 'bg-blue-600/20 text-blue-300' :
+                              activity.status === 'paused' ? 'bg-yellow-600/20 text-yellow-300' :
+                              'bg-red-600/20 text-red-300'
+                            }`}>
+                              {activity.status}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {activity.type} • {activity.startTime.toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strengths & Areas to Improve */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userContext.strengths.length > 0 && (
+                    <div className="bg-gradient-to-r from-emerald-900/40 to-green-900/40 rounded-lg p-4 border border-emerald-600/20">
+                      <h3 className="text-lg font-semibold text-emerald-300 mb-3 flex items-center">
+                        <Award className="w-5 h-5 mr-2" />
+                        Strengths
+                      </h3>
+                      <div className="space-y-2">
+                        {userContext.strengths.slice(0, 3).map((strength, index) => (
+                          <div key={index} className="bg-black/40 rounded-lg p-2">
+                            <span className="text-emerald-200 text-sm">{strength}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {userContext.weakAreas.length > 0 && (
+                    <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-lg p-4 border border-amber-600/20">
+                      <h3 className="text-lg font-semibold text-amber-300 mb-3 flex items-center">
+                        <Target className="w-5 h-5 mr-2" />
+                        Focus Areas
+                      </h3>
+                      <div className="space-y-2">
+                        {userContext.weakAreas.slice(0, 3).map((area, index) => (
+                          <div key={index} className="bg-black/40 rounded-lg p-2">
+                            <span className="text-amber-200 text-sm">{area}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 rounded-lg p-4 border border-red-600/20">
+                  <h3 className="text-lg font-semibold text-red-300 mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <Button
+                      onClick={() => {
+                        trackActivity('practice', 'New Practice Session', 'started', 'Starting a new practice session');
+                        setShowContextDashboard(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>Start Practice</span>
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        trackActivity('challenge', 'New Challenge', 'started', 'Taking on a new challenge');
+                        setShowContextDashboard(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2"
+                    >
+                      <Target className="w-4 h-4" />
+                      <span>Start Challenge</span>
+                    </Button>
+                  </div>
+                  
+                  {/* Demo Section */}
+                  <div className="border-t border-red-600/20 pt-3">
+                    <h4 className="text-sm font-medium text-red-200 mb-2">Demo Context Tracking:</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        onClick={() => {
+                          simulatePracticeSession();
+                          setTimeout(() => setShowContextDashboard(false), 500);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-xs"
+                      >
+                        🥋 Simulate Practice (Round Kicks)
+                      </Button>
+                      
+                      <Button
+                        onClick={() => {
+                          simulateChallenge();
+                          setTimeout(() => setShowContextDashboard(false), 500);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white py-1 px-3 rounded text-xs"
+                      >
+                        ⚡ Simulate Challenge (Speed Test)
+                      </Button>
+                      
+                      <Button
+                        onClick={() => {
+                          simulatePausedWorkout();
+                          setTimeout(() => setShowContextDashboard(false), 500);
+                        }}
+                        className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded text-xs"
+                      >
+                        ⏸️ Simulate Paused Workout
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Try these demos, then chat with Shifu to see context awareness!
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="w-16 h-16 mx-auto text-gray-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-400 mb-2">No Activity Data</h3>
+                <p className="text-gray-500">Start training to see your activity dashboard!</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

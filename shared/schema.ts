@@ -180,3 +180,93 @@ export const insertInternshipApplicationSchema = createInsertSchema(internshipAp
 
 export type InsertInternshipApplication = z.infer<typeof insertInternshipApplicationSchema>;
 export type InternshipApplication = typeof internshipApplications.$inferSelect;
+
+// Shifu AI Coach data table
+export const shifuData = pgTable("shifu_data", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  currentBeltLevel: text("current_belt_level").notNull().default("white"),
+  lastChallengeAttempted: text("last_challenge_attempted"),
+  lastChallengeCategory: text("last_challenge_category"),
+  lastChallengeAccuracy: integer("last_challenge_accuracy"), // percentage 0-100
+  challengeHistory: jsonb("challenge_history").$type<Array<{
+    challengeId: string;
+    category: string;
+    accuracy: number;
+    completedAt: string;
+  }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertShifuDataSchema = createInsertSchema(shifuData).pick({
+  userId: true,
+  currentBeltLevel: true,
+  lastChallengeAttempted: true,
+  lastChallengeCategory: true,
+  lastChallengeAccuracy: true,
+  challengeHistory: true,
+});
+
+export type InsertShifuData = z.infer<typeof insertShifuDataSchema>;
+export type ShifuData = typeof shifuData.$inferSelect;
+
+// Shifu logs table for daily goals and streak tracking
+export const shifuLogs = pgTable("shifu_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  date: timestamp("date").notNull(),
+  dailyGoal: text("daily_goal").notNull(),
+  goalCategory: text("goal_category").notNull(),
+  targetAccuracy: integer("target_accuracy"), // percentage 0-100
+  completed: boolean("completed").default(false),
+  actualAccuracy: integer("actual_accuracy"), // percentage 0-100
+  sessionStarted: boolean("session_started").default(false),
+  currentStreak: integer("current_streak").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertShifuLogSchema = createInsertSchema(shifuLogs).pick({
+  userId: true,
+  date: true,
+  dailyGoal: true,
+  goalCategory: true,
+  targetAccuracy: true,
+  completed: true,
+  actualAccuracy: true,
+  sessionStarted: true,
+  currentStreak: true,
+});
+
+export type InsertShifuLog = z.infer<typeof insertShifuLogSchema>;
+export type ShifuLog = typeof shifuLogs.$inferSelect;
+
+// Pose references table for Shifu Says challenge
+export const poseReferences = pgTable("shifusays_references", {
+  id: serial("id").primaryKey(),
+  poseName: text("pose_name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  referenceData: jsonb("reference_data").$type<{
+    keyAngles: Record<string, number>;
+    tolerances: {
+      angleTolerance: number;
+      heightTolerance: number;
+      stanceTolerance: number;
+    };
+  }>().notNull(),
+  requiredKeypoints: jsonb("required_keypoints").$type<string[]>().notNull().default([]),
+  minConfidence: text("min_confidence").notNull().default("0.6"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPoseReferenceSchema = createInsertSchema(poseReferences).pick({
+  poseName: true,
+  displayName: true,
+  referenceData: true,
+  requiredKeypoints: true,
+  minConfidence: true,
+});
+
+export type InsertPoseReference = z.infer<typeof insertPoseReferenceSchema>;
+export type PoseReference = typeof poseReferences.$inferSelect;

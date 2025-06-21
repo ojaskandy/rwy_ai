@@ -121,6 +121,8 @@ const Challenges: React.FC = () => {
       navigate("/challenges/reaction-time");
     } else if (challengeId === "balance-beam") {
       navigate("/challenges/balance-beam");
+    } else if (challengeId === "shifu-says") {
+      navigate("/challenges/shifu-says");
     } else {
       console.log(`Challenge clicked: ${challengeId}`);
     }
@@ -206,6 +208,237 @@ const Challenges: React.FC = () => {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-400" />
               <span className="text-gray-400">+47% This Week</span>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Shifu Says - Special Featured Challenge */}
+        <motion.div 
+          className="max-w-4xl mx-auto mb-12 sm:mb-16"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+        >
+          {/* Golden Section Header */}
+          <motion.div 
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-3 mb-4">
+              <motion.div
+                className="w-2 h-2 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <span className="text-transparent bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text font-bold text-lg tracking-widest">
+                FEATURED CHALLENGE
+              </span>
+              <motion.div
+                className="w-2 h-2 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Shifu Says Challenge Card */}
+          <motion.div
+            className="relative group cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => handleChallengeClick('shifu-says', true)}
+          >
+            {/* Golden Glow Effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-amber-500/30 to-yellow-600/20 rounded-3xl blur-xl"
+              animate={{ 
+                scale: [1, 1.05, 1], 
+                opacity: [0.6, 0.8, 0.6] 
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            
+            {/* Main Card */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 p-[3px] shadow-2xl shadow-yellow-500/50">
+              <div className="relative bg-gradient-to-br from-gray-900 via-amber-950/20 to-gray-900 rounded-3xl p-8 sm:p-10 backdrop-blur-xl border border-yellow-500/20">
+                
+                {/* Shifu Avatar and Title */}
+                <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 mb-8">
+                  <motion.div 
+                    className="relative"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {/* Shifu Image with Golden Aura */}
+                    <div className="relative w-24 h-24 sm:w-32 sm:h-32">
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 rounded-full blur-md opacity-75"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                      />
+                      <div className="relative w-full h-full bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full p-1 shadow-lg shadow-yellow-500/50">
+                        <img 
+                          src="/images/shifu_coacht.png" 
+                          alt="Shifu" 
+                          className="w-full h-full object-contain rounded-full bg-gray-900"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Floating Golden Particles */}
+                    <motion.div
+                      className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full opacity-80"
+                      animate={{ 
+                        y: [-5, -15, -5],
+                        opacity: [0.8, 0.4, 0.8]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    <motion.div
+                      className="absolute -bottom-2 -left-2 w-3 h-3 bg-amber-500 rounded-full opacity-60"
+                      animate={{ 
+                        y: [-3, -10, -3],
+                        opacity: [0.6, 0.3, 0.6]
+                      }}
+                      transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                    />
+                  </motion.div>
+
+                  <div className="flex-1 text-center sm:text-left">
+                    <motion.h2 
+                      className="text-4xl sm:text-5xl font-black mb-3 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      SHIFU SAYS
+                    </motion.h2>
+                    <motion.p 
+                      className="text-amber-100 text-lg sm:text-xl mb-4"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.8 }}
+                    >
+                      Follow the master's commands in this legendary challenge of precision and reflexes
+                    </motion.p>
+                    
+                    {/* Golden Difficulty Badge */}
+                    <motion.div
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400/20 to-amber-500/20 backdrop-blur-sm border border-yellow-400/30 rounded-full px-4 py-2"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.9 }}
+                    >
+                      <Crown className="h-5 w-5 text-yellow-400" />
+                      <span className="text-yellow-300 font-bold text-sm">LEGENDARY</span>
+                      <motion.div
+                        className="w-2 h-2 bg-yellow-400 rounded-full"
+                        animate={{ scale: [1, 1.3, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Challenge Stats in Golden Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                  <div className="text-center p-4 bg-yellow-500/10 rounded-2xl border border-yellow-400/20">
+                    <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">156</div>
+                    <div className="text-amber-200 text-sm">Masters</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-500/10 rounded-2xl border border-yellow-400/20">
+                    <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">97%</div>
+                    <div className="text-amber-200 text-sm">Best Score</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-500/10 rounded-2xl border border-yellow-400/20">
+                    <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">0.8s</div>
+                    <div className="text-amber-200 text-sm">Avg Time</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-500/10 rounded-2xl border border-yellow-400/20">
+                    <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">12</div>
+                    <div className="text-amber-200 text-sm">Rounds</div>
+                  </div>
+                </div>
+
+                {/* Description and Rewards */}
+                <div className="mb-8">
+                  <div className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-2xl p-6 border border-yellow-400/20 mb-6">
+                    <h4 className="text-yellow-300 font-bold text-lg mb-3 flex items-center gap-2">
+                      <Star className="h-5 w-5" />
+                      The Master's Challenge
+                    </h4>
+                    <p className="text-amber-100 leading-relaxed">
+                      Test your reflexes and precision as Shifu calls out complex martial arts sequences. 
+                      You must perform the exact moves in perfect timing. Only true masters can achieve the golden rank!
+                    </p>
+                  </div>
+
+                  {/* Golden Rewards */}
+                  <div>
+                    <h5 className="text-yellow-300 font-semibold text-sm mb-3 tracking-wide">LEGENDARY REWARDS</h5>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-yellow-400/30 text-yellow-200 px-3 py-1 rounded-lg text-sm font-medium">
+                        500 XP
+                      </span>
+                      <span className="bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-yellow-400/30 text-yellow-200 px-3 py-1 rounded-lg text-sm font-medium">
+                        Golden Master Badge
+                      </span>
+                      <span className="bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-yellow-400/30 text-yellow-200 px-3 py-1 rounded-lg text-sm font-medium">
+                        Shifu's Blessing Title
+                      </span>
+                      <span className="bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-yellow-400/30 text-yellow-200 px-3 py-1 rounded-lg text-sm font-medium">
+                        Hall of Fame
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Golden Action Button */}
+                <motion.div
+                  className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 p-[2px] shadow-xl shadow-yellow-500/50"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 rounded-2xl p-4 text-center">
+                    <motion.div
+                      className="flex items-center justify-center gap-3 text-gray-900 font-black text-lg"
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Crown className="h-6 w-6" />
+                      <span>ACCEPT SHIFU'S CHALLENGE</span>
+                      <ChevronRight className="h-6 w-6" />
+                    </motion.div>
+                  </div>
+
+                  {/* Shimmer Effect */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    animate={{ x: [-100, 400] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  />
+                </motion.div>
+
+                {/* Floating Golden Orbs */}
+                <motion.div
+                  className="absolute top-6 right-6 w-3 h-3 bg-yellow-400 rounded-full opacity-60"
+                  animate={{ 
+                    scale: [1, 1.5, 1],
+                    opacity: [0.6, 0.3, 0.6]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute bottom-8 left-6 w-2 h-2 bg-amber-500 rounded-full opacity-50"
+                  animate={{ 
+                    scale: [1, 1.8, 1],
+                    opacity: [0.5, 0.2, 0.5]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+                />
+              </div>
             </div>
           </motion.div>
         </motion.div>

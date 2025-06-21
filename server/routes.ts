@@ -3,13 +3,15 @@ import express, { Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import shifuSaysPosesRoutes from "./routes/shifuSaysPoses";
 import { 
   insertTrackingSettingsSchema, 
   insertUserProfileSchema, 
   insertRecordingSchema, 
   type InsertRecording,
   insertEarlyAccessSchema,
-  type InsertEarlyAccess 
+  type InsertEarlyAccess,
+  type InsertInternshipApplication
 } from "@shared/schema";
 import { z } from "zod";
 import * as fs from 'fs';
@@ -69,6 +71,9 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Setup Shifu Says custom poses API
+  app.use("/api/shifu-says", shifuSaysPosesRoutes);
   
 
   
@@ -588,6 +593,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching internship applications:", error);
       next(error);
+    }
+  });
+
+  // Internship Application routes
+  app.post("/api/internship-application", upload.single('resume'), async (req, res) => {
+    try {
+      // Validate the uploaded file
+      if (!req.file) {
+        return res.status(400).json({ error: "Resume file is required" });
+      }
+
+      // Extract form data
+      const {
+        fullName,
+        email,
+        socialMediaHandle,
+        socialMediaPlatform,
+        technicalHackAnswer,
+        unorthodoxThingAnswer
+      } = req.body;
+
+      // Create file URL
+      const resumeFileUrl = `/api/resumes/${req.file.filename}`;
+
+      const applicationData: InsertInternshipApplication = {
+        fullName,
+        email,
+        socialMediaHandle: socialMediaHandle || null,
+        socialMediaPlatform: socialMediaPlatform || null,
+        technicalHackAnswer: technicalHackAnswer || null,
+        unorthodoxThingAnswer: unorthodoxThingAnswer || null,
+        resumeFileName: req.file.originalname,
+        resumeFileUrl
+      };
+
+      // Save to database
+      const application = await storage.saveInternshipApplication(applicationData);
+
+      // Send confirmation email if Resend is configured
+      if (resend) {
+        try {
+          const emailContent = `
+            <h2>Internship Application Received</h2>
+            <p>Dear ${fullName},</p>
+            <p>Thank you for your interest in interning with CoachT! We have received your application.</p>
+            <p>We will review your application and get back to you within 1-2 weeks.</p>
+            <p>Best regards,<br>The CoachT Team</p>
+          `;
+
+          await resend.emails.send({
+            from: 'CoachT Team <noreply@coacht.ai>',
+            to: email,
+            subject: 'Internship Application Received - CoachT',
+            html: emailContent,
+          });
+
+          // Log the email
+          await storage.saveEmailRecord({
+            email,
+            status: 'success',
+            source: 'internship_application',
+            responseData: { type: 'confirmation', applicationId: application.id }
+          });
+        } catch (emailError) {
+          console.error("Failed to send confirmation email:", emailError);
+          // Don't fail the application submission if email fails
+        }
+      }
+
+      res.status(201).json({ 
+        message: "Application submitted successfully!",
+        applicationId: application.id
+      });
+    } catch (error) {
+      console.error("Application submission error:", error);
+      res.status(500).json({ error: "Failed to submit application" });
+    }
+  });
+
+  // Serve resume files
+  app.get("/api/resumes/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), 'uploads', 'resumes', filename);
+    
+    // Check if file exists
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).json({ error: "File not found" });
+    }
+  });
+
+  // Admin route to get all applications
+  app.get("/api/admin/applications", async (req, res) => {
+    try {
+      const applications = await storage.getInternshipApplications();
+      res.json(applications);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Shifu AI Coach routes
+  app.get("/api/shifu/daily-goal", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const { shifuAI } = await import("./shifu");
+      
+      // Mock data for now - in production, fetch from database
+      const mockShifuData = {
+        currentBeltLevel: "green",
+        challengeHistory: [
+          { challengeId: "front-kick", category: "taekwondo", accuracy: 82, completedAt: new Date(Date.now() - 86400000).toISOString() },
+          { challengeId: "balance-pose", category: "general", accuracy: 75, completedAt: new Date(Date.now() - 172800000).toISOString() }
+        ],
+        lastChallengeCategory: "taekwondo"
+      };
+
+      const dailyGoal = shifuAI.generateDailyGoal(
+        mockShifuData.currentBeltLevel,
+        mockShifuData.challengeHistory,
+        mockShifuData.lastChallengeCategory
+      );
+
+      // Store today's goal in logs (simplified - in production save to database)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      res.json({
+        goal: dailyGoal,
+        date: today.toISOString(),
+        userId: req.user.id
+      });
+    } catch (error) {
+      console.error("Shifu daily goal error:", error);
+      res.status(500).json({ error: "Failed to generate daily goal" });
+    }
+  });
+
+  app.post("/api/shifu/start-session", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      // In production, update database to mark session as started
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Mock streak calculation
+      const currentStreak = 3; // Would be calculated from database
+
+      res.json({
+        message: "Session started successfully",
+        streak: currentStreak,
+        date: today.toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start session" });
+    }
+  });
+
+  app.post("/api/shifu/complete-goal", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const { accuracy } = req.body;
+      
+      if (typeof accuracy !== "number" || accuracy < 0 || accuracy > 100) {
+        return res.status(400).json({ error: "Invalid accuracy value" });
+      }
+
+      // In production, update database to mark goal as completed
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      res.json({
+        message: "Goal completed successfully",
+        accuracy,
+        date: today.toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to complete goal" });
+    }
+  });
+
+  app.get("/api/shifu/logs", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const limit = parseInt(req.query.limit as string) || 30;
+      
+      // Mock data for now - in production, fetch from database
+      const mockLogs = [];
+      const today = new Date();
+      
+      for (let i = 0; i < limit; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        
+        const isCompleted = Math.random() > 0.3; // 70% completion rate
+        const accuracy = isCompleted ? Math.floor(Math.random() * 30) + 70 : null;
+        
+        mockLogs.push({
+          id: i + 1,
+          userId: req.user.id,
+          date: date.toISOString(),
+          dailyGoal: i % 3 === 0 ? "Side Kick (intermediate)" : i % 3 === 1 ? "Front Punch (beginner)" : "Balance Pose (beginner)",
+          goalCategory: i % 3 === 0 ? "taekwondo" : i % 3 === 1 ? "karate" : "general",
+          targetAccuracy: 80,
+          completed: isCompleted,
+          actualAccuracy: accuracy,
+          sessionStarted: Math.random() > 0.2, // 80% session start rate
+          currentStreak: Math.max(0, 5 - Math.floor(i / 2))
+        });
+      }
+
+      res.json(mockLogs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Shifu logs" });
     }
   });
 

@@ -167,6 +167,44 @@ export default function CameraView({
   // Performance optimization variables
   const frameCountRef = useRef(0);
   const frameSkipRate = 3; // Skip frames to improve performance
+  const referenceFrameSkipRate = 6; // Skip more frames for reference video to reduce load
+  const referenceFrameCountRef = useRef(0);
+  
+  // Performance monitoring for adaptive frame skipping
+  const performanceTimestamps = useRef<number[]>([]);
+  const adaptiveFrameSkipRate = useRef(3);
+  
+  // Monitor performance and adjust frame skipping
+  const adjustPerformance = () => {
+    const now = performance.now();
+    performanceTimestamps.current.push(now);
+    
+    // Keep only last 10 timestamps
+    if (performanceTimestamps.current.length > 10) {
+      performanceTimestamps.current.shift();
+    }
+    
+    // Calculate average FPS
+    if (performanceTimestamps.current.length >= 10) {
+      const timeSpan = now - performanceTimestamps.current[0];
+      const fps = (performanceTimestamps.current.length - 1) / (timeSpan / 1000);
+      
+      // If FPS is too low and we're in split view, increase frame skipping
+      if (fps < 15 && isSplitView) {
+        const oldRate = adaptiveFrameSkipRate.current;
+        adaptiveFrameSkipRate.current = Math.min(6, adaptiveFrameSkipRate.current + 1);
+        if (adaptiveFrameSkipRate.current !== oldRate) {
+          console.log(`⚡ Performance optimization: Increased frame skip rate to ${adaptiveFrameSkipRate.current} (FPS: ${fps.toFixed(1)})`);
+        }
+      } else if (fps > 25 && !isSplitView) {
+        const oldRate = adaptiveFrameSkipRate.current;
+        adaptiveFrameSkipRate.current = Math.max(2, adaptiveFrameSkipRate.current - 1);
+        if (adaptiveFrameSkipRate.current !== oldRate) {
+          console.log(`⚡ Performance restored: Decreased frame skip rate to ${adaptiveFrameSkipRate.current} (FPS: ${fps.toFixed(1)})`);
+        }
+      }
+    }
+  };
   
   // State variables for distance measurement
   const [distanceInfo, setDistanceInfo] = useState<{
@@ -451,16 +489,20 @@ export default function CameraView({
             }
             
             // PERFORMANCE OPTIMIZATION: Skip frames to reduce CPU load
-            // Only run detection every n frames based on device performance
-            const shouldSkipFrame = frameCountRef.current % frameSkipRate !== 0;
-            frameCountRef.current = (frameCountRef.current + 1) % (frameSkipRate * 10); // Reset counter periodically
+            // Use adaptive frame skipping based on current performance
+            const currentFrameSkipRate = isSplitView ? adaptiveFrameSkipRate.current : frameSkipRate;
+            const shouldSkipFrame = frameCountRef.current % currentFrameSkipRate !== 0;
+            frameCountRef.current = (frameCountRef.current + 1) % (currentFrameSkipRate * 10); // Reset counter periodically
             
-            // Run actual pose detection
-            const poses = await detectPoses(
+            // Run actual pose detection - use non-smoothed detection in split view for better performance
+            const poses = await (isSplitView ? detectPoses : detectPoses)(
               sourceElement,
               maxPoses,
               confidenceThreshold
             );
+            
+            // Monitor performance
+            adjustPerformance();
             
             // Calculate scaling factors for pose coordinates
             const videoNativeWidth = video.videoWidth || video.width || displayWidth;
@@ -471,11 +513,15 @@ export default function CameraView({
             if (sourceElement === videoRef.current && poses && poses.length > 0) {
               setUserPose(poses[0]);
 
+              // OPTIMIZED REFERENCE VIDEO PROCESSING - Reduce frequency to improve camera performance
               if (isSplitView && referenceVideoRef.current &&
                   referenceVideoRef.current.readyState >= 2) {
-                if (!testResults.isRunning) {
+                // Only process reference video every 6th frame (half the frequency of camera)
+                referenceFrameCountRef.current = (referenceFrameCountRef.current + 1) % referenceFrameSkipRate;
+                
+                if (referenceFrameCountRef.current === 0 && !testResults.isRunning) {
                   try {
-                    // Process reference video every frame
+                    // Process reference video at reduced frequency
                     const refPoses = await detectPoses(
                       referenceVideoRef.current,
                       1,
@@ -891,7 +937,10 @@ export default function CameraView({
           1,
           confidenceThreshold
         );
-        console.log("Reference pose detection complete, found poses:", poses?.length);
+        // Reduced logging frequency for performance
+        if (Math.random() < 0.1) { // Only log 10% of the time to reduce console spam
+          console.log("📊 Reference pose data collection (visual rendering disabled for performance):", poses?.length);
+        }
 
         // Check if we have at least one pose
         if (poses && poses.length > 0) {
@@ -963,6 +1012,13 @@ export default function CameraView({
           
           const skeletonRGB = getRgbForColor(skeletonColor);
 
+          // PERFORMANCE OPTIMIZATION: Skeleton drawing disabled to improve camera performance
+          // The skeleton visual on reference video causes significant CPU load
+          // Data collection for tests continues, but visual rendering is disabled
+          console.log("🚀 Reference skeleton visual rendering disabled for performance");
+          
+          // Original skeleton drawing code commented out for performance:
+          /*
           // Draw skeleton lines
           ctx.strokeStyle = skeletonColor === 'blue' ? '#3b82f6' :
                           skeletonColor === 'green' ? '#10b981' :
@@ -1022,6 +1078,7 @@ export default function CameraView({
               }
             });
           }
+          */
           
           // Note: Angles are calculated and stored in the backend for analysis
           // but not displayed on the reference video to keep the UI clean
@@ -1036,12 +1093,12 @@ export default function CameraView({
         setTimeout(() => {
           if (animationFrameId) cancelAnimationFrame(animationFrameId);
           animationFrameId = requestAnimationFrame(detectReferencePose);
-        }, 33); // ~30fps
+        }, isSplitView ? 200 : 33); // Drastically reduce frequency in split view: ~5fps vs 30fps since no visual rendering
       } else if (refElement instanceof HTMLImageElement) {
         setTimeout(() => {
           if (animationFrameId) cancelAnimationFrame(animationFrameId);
           animationFrameId = requestAnimationFrame(detectReferencePose);
-        }, 100); // More frequent updates for images too
+        }, isSplitView ? 500 : 100); // Much lower frequency for images in split view since no visual rendering
       }
     };
 

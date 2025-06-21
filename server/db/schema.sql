@@ -39,10 +39,40 @@ CREATE TABLE pose_keypoints (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Shifu AI Coach data table
+CREATE TABLE shifu_data (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL UNIQUE,
+    current_belt_level VARCHAR(20) NOT NULL DEFAULT 'white',
+    last_challenge_attempted VARCHAR(100),
+    last_challenge_category VARCHAR(50),
+    last_challenge_accuracy INTEGER, -- percentage 0-100
+    challenge_history JSONB DEFAULT '[]',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Shifu logs table for daily goals and streak tracking
+CREATE TABLE shifu_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    date TIMESTAMP NOT NULL,
+    daily_goal TEXT NOT NULL,
+    goal_category VARCHAR(50) NOT NULL,
+    target_accuracy INTEGER, -- percentage 0-100
+    completed BOOLEAN DEFAULT FALSE,
+    actual_accuracy INTEGER, -- percentage 0-100
+    session_started BOOLEAN DEFAULT FALSE,
+    current_streak INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX idx_pose_sequences_video_timestamp ON pose_sequences(video_id, timestamp_seconds);
 CREATE INDEX idx_pose_keypoints_sequence ON pose_keypoints(sequence_id);
 CREATE INDEX idx_pose_keypoints_name ON pose_keypoints(keypoint_name);
+CREATE INDEX idx_shifu_data_user ON shifu_data(user_id);
+CREATE INDEX idx_shifu_logs_user_date ON shifu_logs(user_id, date);
 
 -- Sample data for Taekwondo forms
 INSERT INTO martial_arts_videos (name, description, category, difficulty, duration_seconds, youtube_url, thumbnail_url) VALUES
