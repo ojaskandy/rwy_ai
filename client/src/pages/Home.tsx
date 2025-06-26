@@ -6,6 +6,7 @@ import LoadingState from '@/components/LoadingState';
 import ScreenshotModal from '@/components/ScreenshotModal';
 import ShifuDailyGoal from '@/components/ShifuDailyGoal';
 import ShifuGuide, { ShifuPresets } from '@/components/ShifuGuide';
+import ShifuChat from '@/components/ShifuChat';
 import { initPoseDetection, getModels } from '@/lib/poseDetection';
 import { requestCameraPermission, getCameraStream } from '@/lib/cameraUtils';
 import { useAuth } from '@/hooks/use-auth';
@@ -180,10 +181,7 @@ export default function Home() {
   const [showChallengeGuide, setShowChallengeGuide] = useState<boolean>(false);
   const [hasShownInitialGuide, setHasShownInitialGuide] = useState<boolean>(false);
   
-  // Shifu Chat states
-  const [showShifuChat, setShowShifuChat] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'shifu', timestamp: Date}>>([]);
-  const [chatInput, setChatInput] = useState<string>('');
+  // Old Shifu Chat states removed - now using ShifuChat component
   
   // Context Tracking states
   const [showContextDashboard, setShowContextDashboard] = useState<boolean>(false);
@@ -485,61 +483,7 @@ export default function Home() {
   };
 
   // Shifu Chat functions
-  const openShifuChat = () => {
-    setShowShifuChat(true);
-    if (chatMessages.length === 0) {
-      // Add initial greeting from Shifu
-      setChatMessages([{
-        id: 1,
-        text: "Hello! I'm Shifu, your AI martial arts coach. How can I help you with your training today?",
-        sender: 'shifu',
-        timestamp: new Date()
-      }]);
-    }
-  };
-
-  const sendChatMessage = () => {
-    if (!chatInput.trim()) return;
-    
-    const userMessage = {
-      id: chatMessages.length + 1,
-      text: chatInput,
-      sender: 'user' as const,
-      timestamp: new Date()
-    };
-    
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
-    
-    // Generate context-aware Shifu response
-    setTimeout(() => {
-      const shifuResponse = generateContextAwareShifuResponse(userMessage.text);
-      setChatMessages(prev => [...prev, {
-        id: prev.length + 1,
-        text: shifuResponse,
-        sender: 'shifu',
-        timestamp: new Date()
-      }]);
-    }, 1000);
-  };
-
-  const generateShifuResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase();
-    
-    if (message.includes('help') || message.includes('guide')) {
-      return "I'm here to guide you! I can help you with training techniques, belt progression, daily goals, and proper form. What would you like to work on today?";
-    } else if (message.includes('technique') || message.includes('form')) {
-      return "Great question about technique! Remember: proper stance is your foundation. Keep your guard up, pivot on your supporting foot, and generate power from your core. Which technique are you practicing?";
-    } else if (message.includes('practice') || message.includes('train')) {
-      return "Practice makes perfect! I recommend starting with basic stances and gradually working up to combinations. The Practice page has great drills. Would you like me to suggest a routine?";
-    } else if (message.includes('belt') || message.includes('rank')) {
-      return "Your belt represents your journey and dedication! Each rank brings new challenges and techniques to master. Keep training consistently and you'll advance naturally.";
-    } else if (message.includes('thanks') || message.includes('thank')) {
-      return "You're very welcome! Remember, martial arts is about continuous improvement. I'm always here to help you on your journey. Keep training hard! 🥋";
-    } else {
-      return "That's an interesting question! As your AI coach, I'm here to help with your martial arts journey. Feel free to ask about techniques, training tips, or anything else you'd like to improve!";
-    }
-  };
+  // Old chat functions removed - now using ShifuChat component with LLM integration
 
   // Context Tracking Functions
   const initializeUserContext = (): UserContext => {
@@ -684,91 +628,7 @@ export default function Home() {
     trackActivity('workout', 'Full Body Conditioning', 'paused', 'Taking a break during intense conditioning workout');
   };
 
-  // Enhanced Shifu response with context awareness
-  const generateContextAwareShifuResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase();
-    const lastActivity = userContext?.lastActivity;
-    const recentActivities = userContext?.recentActivities || [];
-    
-    // Context-aware greeting
-    if (message.includes('hello') || message.includes('hi') || !message.trim()) {
-      let greeting = "Hello there, martial artist! ";
-      
-      if (lastActivity) {
-        const timeSince = Date.now() - lastActivity.startTime.getTime();
-        const hoursSince = Math.floor(timeSince / (1000 * 60 * 60));
-        
-        if (hoursSince < 2) {
-          greeting += `I see you were recently working on "${lastActivity.title}". `;
-          if (lastActivity.status === 'paused') {
-            greeting += "Would you like to continue where you left off?";
-          } else if (lastActivity.status === 'completed') {
-            greeting += "Great job completing that! Ready for your next challenge?";
-          }
-        } else if (hoursSince < 24) {
-          greeting += `Earlier today you were practicing "${lastActivity.title}". How did that go?`;
-        } else {
-          greeting += `Last time you were working on "${lastActivity.title}". Ready to get back into training?`;
-        }
-      } else {
-        greeting += "I'm excited to start training with you! What would you like to work on today?";
-      }
-      
-      return greeting;
-    }
-
-    // Context-aware responses for specific queries
-    if (message.includes('progress') || message.includes('how am i doing')) {
-      let response = "Let me tell you about your progress! ";
-      
-      if (userContext && userContext.currentStreak > 0) {
-        response += `You're on a ${userContext.currentStreak} day streak - excellent consistency! `;
-      }
-      
-      if (userContext && userContext.sessionTime > 0) {
-        response += `Today you've trained for ${userContext.sessionTime} minutes. `;
-      }
-      
-      if (userContext && userContext.strengths && userContext.strengths.length > 0) {
-        response += `Your strengths include: ${userContext.strengths.slice(0, 3).join(', ')}. `;
-      }
-      
-      if (userContext && userContext.weakAreas && userContext.weakAreas.length > 0) {
-        response += `Areas to focus on: ${userContext.weakAreas.slice(0, 2).join(', ')}.`;
-      }
-      
-      return response;
-    }
-
-    if (message.includes('continue') || message.includes('resume')) {
-      if (lastActivity?.status === 'paused' || lastActivity?.status === 'started') {
-        return `Yes! Let's continue with "${lastActivity.title}". You were doing great! Remember to ${lastActivity.details}`;
-      } else {
-        return "I don't see any paused activities. Would you like to start a new training session?";
-      }
-    }
-
-    if (message.includes('what should i practice') || message.includes('recommend')) {
-      let response = "Based on your training history, I recommend ";
-      
-      if (userContext && userContext.weakAreas && userContext.weakAreas.length > 0) {
-        response += `focusing on ${userContext.weakAreas[0]} to improve your overall technique. `;
-      } else if (recentActivities.length > 0) {
-        const lastCompleted = recentActivities.find(a => a.status === 'completed');
-        if (lastCompleted) {
-          response += `building on your recent success with "${lastCompleted.title}". `;
-        }
-      } else {
-        response += "starting with basic stances and fundamental techniques. ";
-      }
-      
-      response += "Check out the Practice page for guided routines!";
-      return response;
-    }
-
-    // Fall back to regular responses
-    return generateShifuResponse(userMessage);
-  };
+  // Old context-aware response function removed - now using LLM integration
 
   // Render main component
   return (
@@ -965,16 +825,8 @@ export default function Home() {
                     initial={{ opacity: 0, y: 10 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.2 }}
-                    className="mt-4 flex flex-col sm:flex-row gap-3 items-center"
+                    className="mt-4 flex justify-center"
                   >
-                    <Button
-                      onClick={openShifuChat}
-                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      <span>Talk to Shifu</span>
-                    </Button>
-                    
                     <Button
                       onClick={() => setShowContextDashboard(true)}
                       className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
@@ -1716,69 +1568,7 @@ export default function Home() {
         />
       )}
 
-      {/* Shifu Chat Dialog */}
-      <Dialog open={showShifuChat} onOpenChange={setShowShifuChat}>
-        <DialogContent className="bg-gradient-to-br from-gray-950 to-black border border-orange-600/30 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center text-orange-400">
-              <img 
-                src="/images/shifuhappy_ct.png" 
-                alt="Shifu" 
-                className="w-8 h-8 object-contain rounded mr-3"
-              />
-              Chat with Shifu
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Chat Messages */}
-            <div className="h-64 overflow-y-auto bg-black/40 rounded-lg p-3 space-y-2">
-              {chatMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                      message.sender === 'user'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-orange-600 text-white flex items-start space-x-2'
-                    }`}
-                  >
-                    {message.sender === 'shifu' && (
-                      <img 
-                        src="/images/shifu_coacht.png" 
-                        alt="Shifu" 
-                        className="w-5 h-5 object-contain rounded flex-shrink-0 mt-0.5"
-                      />
-                    )}
-                    <span>{message.text}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Chat Input */}
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-                placeholder="Ask Shifu anything about training..."
-                className="flex-1 bg-black/40 border border-orange-600/30 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
-              />
-              <Button
-                onClick={sendChatMessage}
-                disabled={!chatInput.trim()}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-              >
-                Send
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Old Shifu Chat Dialog removed - now using ShifuChat component */}
 
       {/* Context Dashboard Dialog */}
       <Dialog open={showContextDashboard} onOpenChange={setShowContextDashboard}>
@@ -1992,6 +1782,14 @@ export default function Home() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Shifu AI Chat */}
+      <ShifuChat 
+        position="bottom-right"
+        autoShow={true}
+        showDelay={3000}
+        size="medium"
+      />
     </div>
   );
 }

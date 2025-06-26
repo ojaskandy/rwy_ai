@@ -18,6 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Resend } from 'resend';
 import multer from "multer";
+import { OpenAI } from 'openai';
 
 // Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
@@ -74,6 +75,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup Shifu Says custom poses API
   app.use("/api/shifu-says", shifuSaysPosesRoutes);
+  
+  // Initialize OpenAI client for Shifu chat
+  const openaiClient = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: "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",
+  });
+
+  // Shifu's personality and context
+  const SHIFU_SYSTEM_PROMPT = `You are Master Shifu from Kung Fu Panda, now serving as an AI coach for CoachT, a martial arts training application. You are wise, encouraging, and speak with the distinctive voice and mannerisms of Master Shifu.
+
+Your role:
+- Act as a taekwondo expert and martial arts master
+- Provide guidance, encouragement, and wisdom to users
+- Help users solve problems through the CoachT app or external resources
+- Answer questions about martial arts, training, discipline, and life philosophy
+- Speak in Shifu's characteristic style: wise, sometimes stern but always caring, with occasional references to inner peace and balance
+
+Key personality traits:
+- Wise and patient, but can be firm when needed
+- Uses metaphors and analogies from nature and martial arts
+- Emphasizes the importance of practice, discipline, and inner peace
+- Occasionally references concepts from Kung Fu Panda (chi, inner peace, etc.)
+- Encouraging but realistic about the hard work required for mastery
+
+CoachT App Features you can reference:
+- Practice Library with various martial arts techniques
+- Shifu Says challenge (a Simon Says-style game with martial arts moves)
+- Progress tracking and achievements
+- Camera-based pose detection for training
+- Daily goals and challenges
+
+Always stay in character as Master Shifu and provide helpful, encouraging guidance while maintaining his distinctive personality.`;
+
+  // Shifu chat endpoint
+  app.post('/api/shifu/chat', async (req, res) => {
+    try {
+      const { message, conversationHistory = [] } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      // Build conversation with system prompt
+      const messages = [
+        { role: 'system', content: SHIFU_SYSTEM_PROMPT },
+        ...conversationHistory,
+        { role: 'user', content: message }
+      ];
+
+      const completion = await openaiClient.chat.completions.create({
+        model: "openai/gpt-4o",
+        messages: messages,
+        max_tokens: 500,
+        temperature: 0.7,
+      }, {
+        headers: {
+          "HTTP-Referer": "https://coacht.app",
+          "X-Title": "CoachT - Martial Arts Training App",
+        }
+      });
+
+      const response = completion.choices[0].message.content;
+
+      // Determine Shifu's expression based on response content
+      let expression = 'neutral';
+      const responseText = response?.toLowerCase() || '';
+      
+      if (responseText.includes('excellent') || responseText.includes('good') || responseText.includes('proud') || responseText.includes('well done')) {
+        expression = 'happy';
+      } else if (responseText.includes('practice') || responseText.includes('focus') || responseText.includes('remember') || responseText.includes('must')) {
+        expression = 'pointing';
+      } else if (responseText.includes('difficult') || responseText.includes('challenge') || responseText.includes('struggle') || responseText.includes('patience')) {
+        expression = 'sad';
+      }
+
+      res.json({
+        message: response,
+        expression,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Shifu chat error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get response from Shifu',
+        message: "Hmm... even a master sometimes needs a moment to gather his thoughts. Please try again, young grasshopper."
+      });
+    }
+  });
+
+  // Get daily wisdom/tip
+  app.get('/api/shifu/daily-wisdom', async (req, res) => {
+    try {
+      const completion = await openaiClient.chat.completions.create({
+        model: "openai/gpt-4o",
+        messages: [
+          { role: 'system', content: SHIFU_SYSTEM_PROMPT },
+          { role: 'user', content: 'Please provide a short daily wisdom or training tip for martial arts practitioners. Keep it under 100 words and in your characteristic style.' }
+        ],
+        max_tokens: 150,
+        temperature: 0.8,
+      }, {
+        headers: {
+          "HTTP-Referer": "https://coacht.app",
+          "X-Title": "CoachT - Martial Arts Training App",
+        }
+      });
+
+      const wisdom = completion.choices[0].message.content;
+
+      res.json({
+        wisdom,
+        expression: 'neutral',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Daily wisdom error:', error);
+      res.json({
+        wisdom: "Today, remember: The journey of a thousand miles begins with a single step. Practice with patience, young warrior.",
+        expression: 'neutral',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
   
 
   
@@ -702,36 +828,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { shifuAI } = await import("./shifu");
-      
-      // Mock data for now - in production, fetch from database
-      const mockShifuData = {
-        currentBeltLevel: "green",
-        challengeHistory: [
-          { challengeId: "front-kick", category: "taekwondo", accuracy: 82, completedAt: new Date(Date.now() - 86400000).toISOString() },
-          { challengeId: "balance-pose", category: "general", accuracy: 75, completedAt: new Date(Date.now() - 172800000).toISOString() }
+      // Generate daily goal using LLM
+      const completion = await openaiClient.chat.completions.create({
+        model: "openai/gpt-4o",
+        messages: [
+          { role: 'system', content: SHIFU_SYSTEM_PROMPT },
+          { role: 'user', content: 'Generate a daily martial arts goal for today. Keep it concise and motivating, under 50 words. Format as: "Goal: [specific technique or practice] - [brief description]"' }
         ],
-        lastChallengeCategory: "taekwondo"
-      };
+        max_tokens: 100,
+        temperature: 0.8,
+      }, {
+        headers: {
+          "HTTP-Referer": "https://coacht.app",
+          "X-Title": "CoachT - Martial Arts Training App",
+        }
+      });
 
-      const dailyGoal = shifuAI.generateDailyGoal(
-        mockShifuData.currentBeltLevel,
-        mockShifuData.challengeHistory,
-        mockShifuData.lastChallengeCategory
-      );
+      const goalText = completion.choices[0].message.content || "Horse Stance (beginner) - Hold for 30 seconds, focus on balance and breathing";
 
       // Store today's goal in logs (simplified - in production save to database)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       res.json({
-        goal: dailyGoal,
+        goal: {
+          dailyGoal: goalText,
+          goalCategory: "taekwondo",
+          targetAccuracy: 80
+        },
         date: today.toISOString(),
         userId: req.user.id
       });
     } catch (error) {
       console.error("Shifu daily goal error:", error);
-      res.status(500).json({ error: "Failed to generate daily goal" });
+      // Fallback goal
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      res.json({
+        goal: {
+          dailyGoal: "Horse Stance (beginner) - Hold for 30 seconds, focus on balance and breathing",
+          goalCategory: "taekwondo",
+          targetAccuracy: 80
+        },
+        date: today.toISOString(),
+        userId: req.user.id
+      });
     }
   });
 
