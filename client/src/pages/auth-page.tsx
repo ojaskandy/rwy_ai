@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MobileWarningDialog from "@/components/MobileWarningDialog";
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -35,7 +36,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation, showMobileWarning, setShowMobileWarning } = useAuth();
+  const { user, registerMutation, googleLoginMutation, showMobileWarning, setShowMobileWarning } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
   const [isMobile, setIsMobile] = useState(false);
@@ -47,15 +48,9 @@ export default function AuthPage() {
   const [gradientVisible, setGradientVisible] = useState(false);
   
   // Password visibility
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   
-  // Form handlers
-  const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" },
-  });
-  
+  // Form handler for registration only
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -116,14 +111,67 @@ export default function AuthPage() {
     return () => clearInterval(typingInterval);
   }, []);
   
-  // Form submission
-  const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+  // Google OAuth success handler
+  const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+    googleLoginMutation.mutate(credentialResponse);
+  };
+
+  // Google OAuth error handler
+  const handleGoogleError = () => {
+    console.error('Google login failed');
   };
   
+  // Form submission for registration
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
   };
+
+  // If user is logged in, show confirmation
+  if (user) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
+        {/* Background gradients */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-red-700/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-red-700/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-red-700/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
+        </div>
+        
+        <motion.div
+          className="w-full max-w-md px-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="border-red-900/30 bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-green-400">
+                ✅ Successfully Logged In!
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Redirecting to your dashboard...
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              {user.picture && (
+                <img 
+                  src={user.picture} 
+                  alt="Profile" 
+                  className="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-red-500"
+                />
+              )}
+              <p className="text-white text-lg mb-2">
+                Welcome, <span className="font-semibold text-red-400">{user.name || user.username}</span>!
+              </p>
+              {user.email && (
+                <p className="text-gray-400 text-sm">{user.email}</p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
@@ -224,7 +272,7 @@ export default function AuthPage() {
                   </TabsTrigger>
                 </TabsList>
                 
-                {/* Login Form */}
+                {/* Google OAuth Login */}
                 <TabsContent value="login" className="m-0">
                   <CardHeader>
                     <CardTitle className="text-xl sm:text-2xl font-bold">
@@ -233,96 +281,41 @@ export default function AuthPage() {
                       </span>
                     </CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-300">
-                      Enter your credentials to access your CoachT dashboard
+                      Continue with Google to access your CoachT dashboard
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent>
-                    <Form {...loginForm}>
-                      <form id="login-form" onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                        <FormField
-                          control={loginForm.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-white">Username</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="Enter your username" 
-                                  {...field} 
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
-                                />
-                              </FormControl>
-                              <FormMessage className="text-red-400" />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={loginForm.control}
-                          name="password"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-white">Password</FormLabel>
-                              <div className="relative">
-                                <FormControl>
-                                  <Input 
-                                    type={showLoginPassword ? "text" : "password"}
-                                    placeholder="Enter your password" 
-                                    {...field}
-                                    className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 pr-10"
-                                  />
-                                </FormControl>
-                                <button 
-                                  type="button"
-                                  onClick={() => setShowLoginPassword(!showLoginPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                                >
-                                  <span className="material-icons text-xl">
-                                    {showLoginPassword ? "visibility_off" : "visibility"}
-                                  </span>
-                                </button>
-                              </div>
-                              <FormMessage className="text-red-400" />
-                            </FormItem>
-                          )}
-                        />
-                      </form>
-                    </Form>
-                  </CardContent>
-                  
-                  <CardFooter className="flex flex-col gap-4">
-                    {/* Display login error */}
-                    {loginMutation.isError && (
-                      <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3">
+                  <CardContent className="flex flex-col items-center space-y-4">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      text="continue_with"
+                      shape="pill"
+                      theme="filled_black"
+                      size="large"
+                      width={300}
+                    />
+                    
+                    {/* Display Google login error */}
+                    {googleLoginMutation.isError && (
+                      <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 w-full">
                         <div className="flex items-center">
                           <span className="material-icons text-red-400 mr-2">error</span>
                           <span className="text-red-300 text-sm">
-                            {loginMutation.error?.message || 'Invalid username or password'}
+                            {googleLoginMutation.error?.message || 'Google login failed'}
                           </span>
                         </div>
                       </div>
                     )}
                     
-                    <Button 
-                      type="submit"
-                      form="login-form"
-                      className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white py-5"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? (
-                        <div className="flex items-center">
-                          <span className="material-icons animate-spin mr-2">autorenew</span>
-                          Signing In...
-                        </div>
-                      ) : (
-                        <>
-                          <span className="material-icons mr-2">login</span>
-                          Sign In
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
+                    {/* Loading state */}
+                    {googleLoginMutation.isPending && (
+                      <div className="flex items-center text-gray-300">
+                        <span className="material-icons animate-spin mr-2">autorenew</span>
+                        Signing you in...
+                      </div>
+                    )}
+                  </CardContent>
                 </TabsContent>
                 
                 {/* Register Form */}
