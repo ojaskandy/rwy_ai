@@ -32,7 +32,12 @@ const ShifuSaysChallenge: React.FC = () => {
   const [showCamera, setShowCamera] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showPoseImages, setShowPoseImages] = useState(false); // Toggle for pose reference images
+  const [showPosePopup, setShowPosePopup] = useState(false); // Temporary pose pop-up
+  const [popupPoseImage, setPopupPoseImage] = useState<string>(''); // Current pop-up pose image
   const [currentDetectedPose, setCurrentDetectedPose] = useState<string>('No Pose');
+
+  // Consecutive non-Shifu command tracking
+  const [consecutiveNonShifuCommands, setConsecutiveNonShifuCommands] = useState<number>(0);
 
   // Camera and pose detection refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -64,18 +69,33 @@ const ShifuSaysChallenge: React.FC = () => {
     setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${info}`]);
   };
 
-  // Calculate response time based on level and command type
+  // Calculate response time based on level and command type - AGGRESSIVE scaling after level 1
   const getResponseTime = (isShifuSays: boolean, currentLevel: number): number => {
-    // Base times: Normal = 3.5s, Shifu Says = 4.0s
-    const baseTime = isShifuSays ? 4.0 : 3.5;
+    // Level 1 is easy to get players started
+    if (currentLevel === 1) {
+      return isShifuSays ? 4.0 : 3.5;
+    }
     
-    // Reduce time by 0.2s per level (but minimum 1.0s for normal, 1.5s for Shifu Says)
-    const timeReduction = (currentLevel - 1) * 0.2;
-    const minTime = isShifuSays ? 1.5 : 1.0;
+    // Levels 2-10: Aggressive difficulty scaling
+    const timings: { [key: number]: [number, number] } = {
+      // [normal, shifuSays] for each level
+      2: [2.0, 2.5],
+      3: [1.5, 2.0], 
+      4: [1.2, 1.5],
+      5: [1.0, 1.2],
+      6: [0.9, 1.0],
+      7: [0.8, 0.9],
+      8: [0.7, 0.8],
+      9: [0.6, 0.7],
+      10: [0.5, 0.5]  // Level 10: Lightning fast!
+    };
     
-    const finalTime = Math.max(baseTime - timeReduction, minTime);
+    // Cap at level 10 for levels beyond
+    const level = Math.min(currentLevel, 10);
+    const [normalTime, shifuTime] = timings[level] || [0.5, 0.5];
+    const finalTime = isShifuSays ? shifuTime : normalTime;
     
-    console.log(`🕐 Response time calculation: Level ${currentLevel}, ${isShifuSays ? 'Shifu Says' : 'Normal'} = ${finalTime}s (base: ${baseTime}s, reduction: ${timeReduction}s)`);
+    console.log(`🕐 NEW DIFFICULTY: Level ${currentLevel}, ${isShifuSays ? 'Shifu Says' : 'Normal'} = ${finalTime}s`);
     
     return finalTime;
   };
@@ -112,7 +132,8 @@ const ShifuSaysChallenge: React.FC = () => {
   // Start move timer with dynamic timing based on level
   const startMoveTimer = () => {
     const responseTime = getResponseTime(isShifuSaysRef.current, level);
-    console.log(`⏰ Starting ${responseTime}s timer for move: "${currentMoveRef.current}", isShifuSays: ${isShifuSaysRef.current}, level: ${level}`);
+    console.log(`⏰ TIMER SETUP: Level ${level}, ${isShifuSaysRef.current ? 'Shifu Says' : 'Normal'} command`);
+    console.log(`⏰ EXACT TIMING: Starting ${responseTime}s timer for move: "${currentMoveRef.current}"`);
     
     // Clear any existing timer
     if (moveTimerRef.current) {
@@ -134,10 +155,18 @@ const ShifuSaysChallenge: React.FC = () => {
     }, 100);
     
     moveTimerRef.current = timerInterval as any;
+    
+    console.log(`⏰ TIMER ACTIVE: ${responseTime}s countdown started!`);
   };
 
   // Handle what happens when timer expires
   const handleMoveTimeout = () => {
+    // GAME OVER PROTECTION - Don't handle timeout if game is over
+    if (gameState === 'gameover' || gameStateRef.current === 'gameover') {
+      console.log(`🛑 BLOCKED: handleMoveTimeout called but game is over!`);
+      return;
+    }
+    
     console.log(`⏰ TIMER EXPIRED! | Move: "${currentMoveRef.current}" | isShifuSays: ${isShifuSaysRef.current} | User moved: ${moveMatchedRef.current}`);
     
     if (isShifuSaysRef.current) {
@@ -152,6 +181,12 @@ const ShifuSaysChallenge: React.FC = () => {
 
   // Advance to next move and increment score
   const advanceToNextMove = () => {
+    // GAME OVER PROTECTION - Don't advance if game is over
+    if (gameState === 'gameover' || gameStateRef.current === 'gameover') {
+      console.log(`🛑 BLOCKED: advanceToNextMove called but game is over!`);
+      return;
+    }
+    
     console.log(`🎯 ADVANCING TO NEXT MOVE | Current Score: ${score}`);
     
     // Play success sound
@@ -170,13 +205,14 @@ const ShifuSaysChallenge: React.FC = () => {
       
       // Level up every 5 successful moves
       const newLevel = Math.floor(newScore / 5) + 1;
-      if (newLevel > level) {
+      if (newLevel > level && newLevel <= 10) { // Cap at level 10
         setLevel(newLevel);
-        console.log(`🎉 LEVEL UP! New level: ${newLevel}`);
+        console.log(`🎉 LEVEL UP! From ${level} to ${newLevel} (Score: ${newScore})`);
+        console.log(`🎯 NEW TIMINGS: Normal=${getResponseTime(false, newLevel)}s, Shifu Says=${getResponseTime(true, newLevel)}s`);
         
         // Show level up notification briefly
         setTimeout(() => {
-          addDebugInfo(`Level Up! Now Level ${newLevel}`);
+          addDebugInfo(`Level Up! Now Level ${newLevel} - Timing: ${getResponseTime(true, newLevel)}s`);
         }, 100);
       }
       
@@ -236,11 +272,24 @@ const ShifuSaysChallenge: React.FC = () => {
     return `/sounds/${baseFolder}/${prefix} ${move}.mp3`;
   };
 
-  // Pose image file mapping
+  // Pose image file mapping - matches actual filenames in /poses/ directory
   const getPoseImageFile = (move: string): string => {
-    // Convert move name to lowercase and replace spaces with underscores
-    const imageName = move.toLowerCase().replace(/\s+/g, '_');
-    return `/poses/${imageName}.png`; // Assumes PNG format, can also support JPG
+    const imageMap: { [key: string]: string } = {
+      'Left High Block': 'ctlefthighblock.png',
+      'Right High Block': 'ctrighthighblock.png',
+      'Left Mid Block': 'ctleftmidblock.png',
+      'Right Mid Block': 'ctrightmidblock.png',
+      'Left Punch': 'ctleftpunch.png',
+      'Right Punch': 'ctrightpunch.png',
+      'Left Kick': 'ctleftkick.png',
+      'Right Kick': 'ctrightkick.png',
+      'X Block': 'ctxblock.png'
+    };
+    
+    const filename = imageMap[move];
+    const fullPath = `/poses/${filename}`;
+    console.log(`🖼️ Pose image mapping: "${move}" -> ${fullPath}`);
+    return fullPath;
   };
 
   // Random move selection with audio
@@ -257,9 +306,26 @@ const ShifuSaysChallenge: React.FC = () => {
     const selectedMove = availableMoves[randomIndex];
     console.log(`🚨 Random move selected: "${selectedMove}" (index ${randomIndex})`);
     
-    // 70% chance for Shifu Says, 30% for normal
-    const shifuSays = Math.random() < 0.7;
-    console.log(`🚨 Shifu Says flag: ${shifuSays}`);
+    // Anti-consecutive logic: Force Shifu Says if too many non-Shifu commands in a row
+    let shifuSays;
+    if (consecutiveNonShifuCommands >= 2) {
+      // Force Shifu Says to break the streak
+      shifuSays = true;
+      console.log(`🚨 FORCED Shifu Says: Too many non-Shifu commands (${consecutiveNonShifuCommands}) - resetting streak`);
+      setConsecutiveNonShifuCommands(0); // Reset counter
+    } else {
+      // Normal 80% chance for Shifu Says, 20% for normal
+      shifuSays = Math.random() < 0.8;
+      console.log(`🚨 Shifu Says flag: ${shifuSays} (80% chance)`);
+      
+      // Update consecutive counter
+      if (!shifuSays) {
+        setConsecutiveNonShifuCommands(prev => prev + 1);
+        console.log(`🚨 Non-Shifu command #${consecutiveNonShifuCommands + 1} in a row`);
+      } else {
+        setConsecutiveNonShifuCommands(0); // Reset when Shifu Says
+      }
+    }
     
     console.log(`🚨 ABOUT TO SET STATE: setCurrentMove("${selectedMove}")`);
     setCurrentMove(selectedMove);
@@ -273,6 +339,23 @@ const ShifuSaysChallenge: React.FC = () => {
     
     console.log(`🔥 BACKEND IMMEDIATELY SYNCED: currentMoveRef="${currentMoveRef.current}", isShifuSaysRef=${isShifuSaysRef.current}`);
     
+    // Show pose image pop-up if enabled
+    if (showPoseImages) {
+      const poseImagePath = getPoseImageFile(selectedMove);
+      console.log(`🖼️ POSE POPUP: Showing popup for "${selectedMove}" with image: ${poseImagePath}`);
+      setPopupPoseImage(poseImagePath);
+      setShowPosePopup(true);
+      console.log(`🖼️ POSE POPUP: showPosePopup set to true`);
+      
+      // Hide pop-up after 1 second
+      setTimeout(() => {
+        console.log(`🖼️ POSE POPUP: Hiding popup after 1 second`);
+        setShowPosePopup(false);
+      }, 1000);
+    } else {
+      console.log(`🖼️ POSE POPUP: Pose images are disabled (showPoseImages = ${showPoseImages})`);
+    }
+    
     // Play audio
     const audioPath = getAudioFile(selectedMove, shifuSays);
     console.log(`🚨 Audio path: ${audioPath}`);
@@ -285,25 +368,25 @@ const ShifuSaysChallenge: React.FC = () => {
     audio.addEventListener('loadedmetadata', () => {
       const audioDuration = audio.duration;
       const responseTime = getResponseTime(shifuSays, level);
-      const totalDelay = (audioDuration * 1000) + (responseTime * 1000); // Convert to milliseconds
+      const totalDelay = audioDuration * 1000; // ONLY audio duration - no double counting!
       
-      console.log(`🎵 Audio duration: ${audioDuration.toFixed(2)}s, response time: ${responseTime}s, total delay: ${(totalDelay/1000).toFixed(2)}s`);
+      console.log(`🎵 FIXED TIMING: Audio=${audioDuration.toFixed(2)}s, Response=${responseTime}s, Total=${(audioDuration + responseTime).toFixed(2)}s`);
       
-      // Start the response timer AFTER audio finishes + buffer time
+      // Start the response timer AFTER audio finishes
       setTimeout(() => {
-        console.log(`🎵 Audio finished (${audioDuration.toFixed(2)}s), starting ${responseTime}s timer now...`);
+        console.log(`🎵 Audio finished (${audioDuration.toFixed(2)}s), starting ${responseTime}s response timer now...`);
         setAudioPlaying(false); // Clear audio playing indicator
-        startMoveTimer();
+        startMoveTimer(); // This will start the correct responseTime duration
       }, totalDelay);
     });
     
     // Fallback in case metadata doesn't load
     audio.addEventListener('error', () => {
       const responseTime = getResponseTime(shifuSays, level);
-      const fallbackDelay = 3000 + (responseTime * 1000); // 3s audio estimate + response time
-      console.warn(`⚠️ Could not get audio duration, using fallback delay of ${fallbackDelay/1000}s`);
+      const fallbackDelay = 3000; // ONLY 3s audio estimate - no double counting!
+      console.warn(`⚠️ Could not get audio duration, using fallback: 3s audio + ${responseTime}s response = ${(3 + responseTime).toFixed(2)}s total`);
       setTimeout(() => {
-        console.log(`🎵 Fallback timer starting...`);
+        console.log(`🎵 Fallback timer starting ${responseTime}s response timer...`);
         setAudioPlaying(false);
         startMoveTimer();
       }, fallbackDelay);
@@ -326,7 +409,7 @@ const ShifuSaysChallenge: React.FC = () => {
       const responseTime = getResponseTime(shifuSays, level);
       setTimeout(() => {
         startMoveTimer();
-      }, 2000 + (responseTime * 1000)); // 2s audio estimate + response time
+      }, 2000); // ONLY 2s audio estimate - no double counting!
     });
     
     console.log(`🚨 selectRandomMove() COMPLETED! Audio playing... Timer will start after audio finishes + 2s`);
@@ -417,8 +500,9 @@ const ShifuSaysChallenge: React.FC = () => {
               console.log(`🎯 POSE: "${currentPose}" | Game: "${gameState}" | Command: "${currentMove}"`);
             }
             
-            // 🎯 BULLETPROOF POSE MATCHING - ALWAYS check when game is playing (use ref for immediate sync)
-            if (gameState === 'playing' || gameStateRef.current === 'playing') {
+            // 🎯 BULLETPROOF POSE MATCHING - ONLY check when game is playing (use ref for immediate sync)
+            if (gameStateRef.current === 'playing') {
+              
               // FRONTEND-BACKEND SYNC VERIFICATION - Check DOM vs React state vs Refs
               const frontendCommand = document.querySelector('[data-testid="current-command"]')?.textContent || 'NOT_FOUND';
               const frontendPose = document.querySelector('[data-testid="current-pose"]')?.textContent || 'NOT_FOUND';
@@ -452,28 +536,47 @@ const ShifuSaysChallenge: React.FC = () => {
                 if (hasMovedFromRest || hasMovedToSpecificPose || (hasMovedToAnyPose && !audioPlaying)) {
                   console.log(`🎉 USER MOVED! From: "${lastDetectedPose}" | To: "${currentPose}" | Expected: "${currentMoveRef.current}" | isShifuSays: ${isShifuSaysRef.current}`);
                   
-                  // IMMEDIATELY prevent multiple triggers
-                  setMoveMatched(true);
-                  moveMatchedRef.current = true; // 🔥 IMMEDIATE backend sync
-                  
-                  // Clear the timer since user moved
-                  if (moveTimerRef.current) {
-                    clearTimeout(moveTimerRef.current);
-                    moveTimerRef.current = null;
+                  // FINAL GAME OVER CHECK before any action
+                  if (gameStateRef.current === 'gameover') {
+                    console.log(`🛑 BLOCKED: Movement detected but game is over! Ignoring.`);
+                    return;
                   }
                   
                   if (!isShifuSaysRef.current) {
                     // Normal move was said and user moved AT ALL - WRONG! (should have ignored)
                     console.log(`❌ WRONG! User moved when Shifu didn't say to! Detected: "${currentPose}"`);
+                    
+                    // IMMEDIATELY prevent multiple triggers
+                    setMoveMatched(true);
+                    moveMatchedRef.current = true; // 🔥 IMMEDIATE backend sync
+                    
+                    // Clear the timer since user moved
+                    if (moveTimerRef.current) {
+                      clearTimeout(moveTimerRef.current);
+                      moveTimerRef.current = null;
+                    }
+                    
                     handleGameOver(`You moved when Shifu didn't say to! You did "${currentPose}" but should have stayed still.`);
                   } else if (currentPose === currentMoveRef.current) {
                     // Shifu said move and user did the CORRECT move - RIGHT!
                     console.log(`✅ CORRECT! User did "${currentPose}" when Shifu said to!`);
+                    
+                    // IMMEDIATELY prevent multiple triggers
+                    setMoveMatched(true);
+                    moveMatchedRef.current = true; // 🔥 IMMEDIATE backend sync
+                    
+                    // Clear the timer since user moved correctly
+                    if (moveTimerRef.current) {
+                      clearTimeout(moveTimerRef.current);
+                      moveTimerRef.current = null;
+                    }
+                    
                     advanceToNextMove();
                   } else {
-                    // Shifu said move but user did WRONG move - WRONG!
-                    console.log(`❌ WRONG! User did "${currentPose}" but Shifu said "${currentMoveRef.current}"!`);
-                    handleGameOver(`You did the wrong move! Shifu said "${currentMoveRef.current}" but you did "${currentPose}".`);
+                    // Shifu said move but user did WRONG move - IGNORE and keep waiting for correct move or timeout
+                    console.log(`⚠️ IGNORE: User did "${currentPose}" but Shifu said "${currentMoveRef.current}" - waiting for correct move or timeout`);
+                    // DON'T set moveMatched to true - keep detecting movements
+                    // DON'T clear timer - let it continue until timeout or correct move
                   }
                 }
               }
@@ -673,7 +776,7 @@ const ShifuSaysChallenge: React.FC = () => {
     
     // Calculate leg angles (hip-knee-ankle for each leg)
     const leftLegAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-    const rightLegAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
+      const rightLegAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
     
     // Calculate the absolute difference between leg angles
     const angleDifference = Math.abs(leftLegAngle - rightLegAngle);
@@ -686,11 +789,11 @@ const ShifuSaysChallenge: React.FC = () => {
       if (leftLegAngle < rightLegAngle) {
         // Left leg is more bent, so it's a left kick
         console.log(`✅ LEFT KICK detected: Left leg angle ${leftLegAngle.toFixed(1)}° < Right leg angle ${rightLegAngle.toFixed(1)}°`);
-        return 'Left Kick';
+      return 'Left Kick';
       } else {
         // Right leg is more bent, so it's a right kick  
         console.log(`✅ RIGHT KICK detected: Right leg angle ${rightLegAngle.toFixed(1)}° < Left leg angle ${leftLegAngle.toFixed(1)}°`);
-        return 'Right Kick';
+      return 'Right Kick';
       }
     }
     
@@ -1115,6 +1218,7 @@ const ShifuSaysChallenge: React.FC = () => {
     currentMoveRef.current = null; // 🔥 IMMEDIATE backend sync
     setShowCheckMark(false);
     setLastDetectedPose('No Pose'); // Reset pose tracking
+    setConsecutiveNonShifuCommands(0); // Reset consecutive counter
     
     console.log(`🎮 Setting gameState to: "countdown" | Command: "${currentMove}" | Current Pose: "${currentDetectedPose}"`);
     setGameState('countdown');
@@ -1147,7 +1251,7 @@ const ShifuSaysChallenge: React.FC = () => {
         console.log(`🚨 setCountdown(null) called`);
         
         console.log(`🚨 ABOUT TO SET: setGameState("playing")`);
-        setGameState('playing');
+    setGameState('playing');
         gameStateRef.current = 'playing'; // 🔥 IMMEDIATE backend sync
         console.log(`🚨 setGameState("playing") called + gameStateRef.current = "playing"`);
         
@@ -1189,11 +1293,43 @@ const ShifuSaysChallenge: React.FC = () => {
     setCountdown(null);
     setAudioPlaying(false);
     setLastDetectedPose('No Pose');
+    setShowPosePopup(false); // Reset pose popup
+    setPopupPoseImage(''); // Clear popup image
+    setConsecutiveNonShifuCommands(0); // Reset consecutive counter
     
     console.log(`🔄 Game reset to waiting state`);
   };
 
   // Cleanup effects and helper functions removed - will be rebuilt
+
+  // Debug: Track showPosePopup state changes
+  useEffect(() => {
+    console.log(`🖼️ POPUP STATE: showPosePopup changed to: ${showPosePopup} | Image: ${popupPoseImage}`);
+  }, [showPosePopup, popupPoseImage]);
+
+  // Debug: Track showPoseImages state changes
+  useEffect(() => {
+    console.log(`🖼️ TOGGLE STATE: showPoseImages changed to: ${showPoseImages}`);
+  }, [showPoseImages]);
+
+  // Debug: Track currentMove state changes
+  useEffect(() => {
+    console.log(`📝 🎯 CURRENTMOVE STATE CHANGED: "${currentMove}"`);
+    console.log(`📝 🎯 UI should now display: "${isShifuSays ? 'Shifu says: ' : ''}${currentMove}"`);
+  }, [currentMove]);
+
+  // Debug: Log all level timings on game start
+  useEffect(() => {
+    if (gameState === 'playing') {
+      console.log(`🎯 DIFFICULTY VERIFICATION - Current Level: ${level}`);
+      console.log(`📊 ALL LEVEL TIMINGS:`);
+      for (let i = 1; i <= 10; i++) {
+        const normalTime = getResponseTime(false, i);
+        const shifuTime = getResponseTime(true, i);
+        console.log(`   Level ${i}: Normal=${normalTime}s, Shifu Says=${shifuTime}s`);
+      }
+    }
+  }, [gameState, level]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-yellow-950/20 text-white relative overflow-hidden">
@@ -1268,18 +1404,7 @@ const ShifuSaysChallenge: React.FC = () => {
                   Skeleton Active
                 </div>
               )}
-              {/* Pose Images Toggle */}
-              <button
-                onClick={() => setShowPoseImages(!showPoseImages)}
-                className={`rounded-lg px-3 py-1 text-sm flex items-center gap-2 transition-colors ${
-                  showPoseImages 
-                    ? 'bg-purple-500/20 border border-purple-500/50 text-purple-400'
-                    : 'bg-gray-500/20 border border-gray-500/50 text-gray-400 hover:bg-purple-500/10'
-                }`}
-              >
-                <span className="text-lg">🖼️</span>
-                {showPoseImages ? 'Pose Images ON' : 'Pose Images OFF'}
-              </button>
+
             </div>
           </div>
 
@@ -1411,6 +1536,32 @@ const ShifuSaysChallenge: React.FC = () => {
                         🎵 Test Audio
                       </Button>
                       
+                      {/* Pose Images Toggle */}
+                      <div className="mb-6">
+                        <button
+                          onClick={() => {
+                            const newValue = !showPoseImages;
+                            console.log(`🖼️ TOGGLE: Pose images toggled from ${showPoseImages} to ${newValue}`);
+                            setShowPoseImages(newValue);
+                          }}
+                          className={`rounded-lg px-4 py-3 text-sm flex items-center gap-3 transition-colors mx-auto ${
+                            showPoseImages 
+                              ? 'bg-purple-500/20 border border-purple-500/50 text-purple-400'
+                              : 'bg-gray-500/20 border border-gray-500/50 text-gray-400 hover:bg-purple-500/10'
+                          }`}
+                        >
+                          <span className="text-xl">🖼️</span>
+                          <div className="text-left">
+                            <div className="font-semibold">
+                              {showPoseImages ? 'Pose Images: ON' : 'Pose Images: OFF'}
+                    </div>
+                            <div className="text-xs opacity-75">
+                              {showPoseImages ? 'Pop-up will show pose reference' : 'Click to enable pose references'}
+                    </div>
+                  </div>
+                        </button>
+                      </div>
+                      
                     <Button 
                     onClick={() => {
                       // Start the proper challenge with countdown
@@ -1428,7 +1579,7 @@ const ShifuSaysChallenge: React.FC = () => {
                 <div className="text-center bg-black/80 backdrop-blur-sm rounded-3xl p-8 border border-yellow-500/30 max-w-2xl">
                   <div className="text-8xl font-bold text-yellow-400 mb-4 animate-pulse">
                     {countdown}
-                  </div>
+            </div>
                   <div className="text-3xl text-white mb-4 font-bold">Get Ready!</div>
                   <div className="text-lg text-gray-300 mb-2">
                     📍 Step back and ensure your entire body is visible
@@ -1452,27 +1603,12 @@ const ShifuSaysChallenge: React.FC = () => {
                         {currentMove}
                       </p>
                       
-                      {/* Pose Reference Image */}
-                      {showPoseImages && (
-                        <div className="mb-4">
-                          <img
-                            src={getPoseImageFile(currentMove)}
-                            alt={`${currentMove} pose reference`}
-                            className="mx-auto max-w-48 max-h-48 rounded-lg border-2 border-purple-400/50 shadow-lg"
-                            onError={(e) => {
-                              // Hide image if it fails to load
-                              e.currentTarget.style.display = 'none';
-                              console.log(`⚠️ Pose image not found: ${getPoseImageFile(currentMove)}`);
-                            }}
-                          />
-                          <p className="text-purple-300 text-sm mt-2">📸 Reference Pose</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+
+                  </div>
+              )}
                   <div className="text-gray-400 text-sm">
                     Score: {score} • {audioPlaying ? '🎵 Listen...' : `${moveTimer.toFixed(1)}s`}
-                  </div>
+            </div>
                 </div>
             )}
 
@@ -1499,10 +1635,39 @@ const ShifuSaysChallenge: React.FC = () => {
               </div>
       </div>
 
+            {/* Pose Image Pop-up */}
+      <AnimatePresence>
+        {showPosePopup && (
+                <motion.div 
+            className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="bg-black/90 backdrop-blur-sm rounded-3xl p-6 border-2 border-purple-500/50 shadow-2xl max-w-sm">
+              <img
+                src={popupPoseImage}
+                alt="Pose reference"
+                className="mx-auto max-w-48 max-h-48 rounded-lg border border-purple-400/30"
+                onLoad={() => {
+                  console.log(`✅ POSE POPUP: Image loaded successfully: ${popupPoseImage}`);
+                }}
+                onError={(e) => {
+                  console.error(`❌ POSE POPUP: Image failed to load: ${popupPoseImage}`);
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <p className="text-purple-300 text-center text-sm mt-3 font-semibold">📸 Pose Reference</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
       {/* Game Over Modal */}
             <AnimatePresence>
         {showGameOver && (
-                <motion.div 
+                  <motion.div 
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1511,7 +1676,7 @@ const ShifuSaysChallenge: React.FC = () => {
                     <motion.div
               className="bg-gradient-to-br from-gray-900 to-black border border-red-500/50 rounded-3xl p-8 max-w-md w-full mx-4 text-center"
               initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                    animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ type: "spring", duration: 0.5 }}
             >
@@ -1525,7 +1690,7 @@ const ShifuSaysChallenge: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Crown className="h-6 w-6 text-yellow-400" />
                     <span className="text-3xl font-bold text-yellow-400">{score}</span>
-                    </div>
+                      </div>
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-purple-400 flex items-center justify-center text-black text-sm font-bold">L</div>
                     <span className="text-3xl font-bold text-purple-400">{level}</span>
