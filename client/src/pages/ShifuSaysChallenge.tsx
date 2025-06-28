@@ -1636,7 +1636,7 @@ const ShifuSaysChallenge: React.FC = () => {
       </div>
 
             {/* Pose Image Pop-up */}
-      <AnimatePresence>
+            <AnimatePresence>
         {showPosePopup && (
                 <motion.div 
             className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none"
