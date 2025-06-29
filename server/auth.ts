@@ -19,7 +19,7 @@ const scryptAsync = promisify(scrypt);
 
 // Initialize Google OAuth client
 const googleClient = new OAuth2Client(
-  process.env.VITE_GOOGLE_CLIENT_ID,
+  process.env.VITE_GOOGLE_CLIENT_ID || process.env.IOS_GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET
 );
 
