@@ -4,13 +4,43 @@ import { useAuth } from '@/hooks/use-auth';
 import UserProfileCard from '@/components/UserProfileCard';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from '../hooks/use-theme';
+import { Capacitor } from '@capacitor/core';
 
 export default function Landing() {
   const [scrollY, setScrollY] = useState(0);
   const [routineNotes, setRoutineNotes] = useState('');
-  const { user, isLoading, logoutMutation } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const [, navigate] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Handle login button click - detect Capacitor and open system browser or navigate
+  const handleLoginClick = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        setIsLoading(true);
+        // For native platforms, open in system browser
+        // @ts-ignore - Capacitor global may not be typed
+        if ((window as any).Capacitor?.Plugins?.Browser) {
+          await (window as any).Capacitor.Plugins.Browser.open({ 
+            url: 'https://www.coacht.xyz/auth'
+          });
+        } else {
+          // Fallback to window.open
+          window.open('https://www.coacht.xyz/auth', '_system');
+        }
+      } catch (error) {
+        console.error('Failed to open login in system browser:', error);
+        // Fallback to normal navigation
+        navigate('/auth');
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Normal web browser - navigate to /auth route
+      navigate('/auth');
+    }
+  };
   
   // Add scroll effect
   useEffect(() => {
@@ -142,12 +172,16 @@ export default function Landing() {
               </>
             ) : (
               <>
-                <Link to="/auth">
-                  <button className="px-5 py-2 rounded-md border border-red-700/50 text-red-500 hover:bg-red-900/20 transition duration-300 flex items-center space-x-1">
-                    <span className="material-icons text-sm">login</span>
-                    <span>Login</span>
-                  </button>
-                </Link>
+                <button 
+                  onClick={handleLoginClick}
+                  disabled={isLoading}
+                  className="px-5 py-2 rounded-md border border-red-700/50 text-red-500 hover:bg-red-900/20 transition duration-300 flex items-center space-x-1 disabled:opacity-50"
+                >
+                  <span className="material-icons text-sm">
+                    {isLoading ? 'hourglass_empty' : 'login'}
+                  </span>
+                  <span>{isLoading ? 'Opening...' : 'Login'}</span>
+                </button>
                 <Link to="/auth?tab=register">
                   <button className="px-5 py-2 rounded-md bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white transition duration-300 flex items-center space-x-1">
                     <span className="material-icons text-sm">person_add</span>
@@ -299,19 +333,19 @@ export default function Landing() {
               </div>
 
               {/* Launch button with advanced animation */}
-              <Link to="/auth">
-                <div className="inline-block relative group animate-fade-in mt-6">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-400 rounded-lg blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
-                  <div className={`relative px-12 py-6 ${isDarkMode ? 'bg-black border-red-800/50' : 'bg-white border-red-300/50'} border rounded-lg leading-none flex items-center`}>
-                    <span className="flex items-center space-x-5">
-                      <span className="pr-6 text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
-                        LAUNCH APP
-                      </span>
+              <button onClick={handleLoginClick} disabled={isLoading} className="inline-block relative group animate-fade-in mt-6 disabled:opacity-50">
+                <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-400 rounded-lg blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
+                <div className={`relative px-12 py-6 ${isDarkMode ? 'bg-black border-red-800/50' : 'bg-white border-red-300/50'} border rounded-lg leading-none flex items-center`}>
+                  <span className="flex items-center space-x-5">
+                    <span className="pr-6 text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
+                      {isLoading ? 'OPENING...' : 'LAUNCH APP'}
                     </span>
-                    <span className="material-icons text-red-500 text-xl group-hover:translate-x-2 transition-transform">arrow_forward</span>
-                  </div>
+                  </span>
+                  <span className="material-icons text-red-500 text-xl group-hover:translate-x-2 transition-transform">
+                    {isLoading ? 'hourglass_empty' : 'arrow_forward'}
+                  </span>
                 </div>
-              </Link>
+              </button>
             </div>
           </div>
         )}
