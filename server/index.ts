@@ -1,10 +1,22 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 
 const app = express();
+
+// Configure CORS for Google OAuth
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://www.coacht.xyz', 'https://coacht.xyz'] 
+    : ['http://localhost:5001', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
+
 // Increased payload size limits to handle larger image uploads (10MB)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

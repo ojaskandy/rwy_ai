@@ -4,6 +4,7 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { OAuth2Client } from "google-auth-library";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
@@ -15,6 +16,12 @@ declare global {
 
 // Convert callback-based scrypt to Promise-based
 const scryptAsync = promisify(scrypt);
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(
+  process.env.VITE_GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
 
 // Hash password for storage
 async function hashPassword(password: string): Promise<string> {
@@ -59,6 +66,8 @@ export function setupAuth(app: Express): void {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? ".coacht.xyz" : undefined,
     }
   };
 
@@ -157,6 +166,184 @@ export function setupAuth(app: Express): void {
       if (err) return next(err);
       res.sendStatus(200);
     });
+  });
+
+  // Web Google OAuth login endpoint
+  app.post("/api/auth/google", async (req, res, next) => {
+    try {
+      const { credential } = req.body;
+      
+      if (!credential) {
+        return res.status(400).json({ message: "No credential provided" });
+      }
+
+      // Verify the Google ID token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.VITE_GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ message: "Invalid Google token" });
+      }
+
+      const { email, name, picture } = payload;
+
+      if (!email) {
+        return res.status(400).json({ message: "No email provided by Google" });
+      }
+
+      // Generate a smart username
+      let username;
+      if (name) {
+        // Extract first name from full name
+        const firstName = name.split(' ')[0];
+        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ''); // Remove special characters
+      } else {
+        // Use email prefix without domain
+        username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      }
+
+      // Check if user already exists by email as username (for existing users)
+      let user = await storage.getUserByUsername(email);
+
+      if (!user) {
+        // Check if the preferred username is already taken
+        const existingUserWithUsername = await storage.getUserByUsername(username);
+        if (existingUserWithUsername) {
+          // If username is taken, append a number
+          let counter = 1;
+          let uniqueUsername = `${username}${counter}`;
+          while (await storage.getUserByUsername(uniqueUsername)) {
+            counter++;
+            uniqueUsername = `${username}${counter}`;
+          }
+          username = uniqueUsername;
+        }
+
+        // Create a new user with the smart username
+        user = await storage.createUser({
+          username: username,
+          password: '', // Empty password for OAuth users
+        });
+        
+        // Create user profile with additional Google data
+        await storage.createUserProfile({
+          userId: user.id,
+          profileImageUrl: picture || '',
+        });
+      }
+
+      // Log the user in
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or find user" });
+      }
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.json({
+          id: user.id,
+          username: user.username,
+          email: email,
+          name: name || user.username,
+          picture: picture,
+          authProvider: 'google'
+        });
+      });
+    } catch (error) {
+      console.error("Web Google OAuth error:", error);
+      res.status(400).json({ message: "Google authentication failed" });
+    }
+  });
+
+  // Mobile Google login endpoint
+  app.post("/api/mobile-login", async (req, res, next) => {
+    try {
+      const { idToken } = req.body;
+      
+      if (!idToken) {
+        return res.status(400).json({ message: "No ID token provided" });
+      }
+
+      // Verify the Google ID token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.VITE_GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ message: "Invalid Google token" });
+      }
+
+      const { email, name, picture } = payload;
+
+      if (!email) {
+        return res.status(400).json({ message: "No email provided by Google" });
+      }
+
+             // Generate a smart username
+       let username;
+       if (name) {
+         // Extract first name from full name
+         const firstName = name.split(' ')[0];
+         username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ''); // Remove special characters
+       } else {
+         // Use email prefix without domain
+         username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+       }
+
+       // Check if user already exists by email as username (for existing users)
+       let user = await storage.getUserByUsername(email);
+
+       if (!user) {
+         // Check if the preferred username is already taken
+         const existingUserWithUsername = await storage.getUserByUsername(username);
+         if (existingUserWithUsername) {
+           // If username is taken, append a number
+           let counter = 1;
+           let uniqueUsername = `${username}${counter}`;
+           while (await storage.getUserByUsername(uniqueUsername)) {
+             counter++;
+             uniqueUsername = `${username}${counter}`;
+           }
+           username = uniqueUsername;
+         }
+
+         // Create a new user with the smart username
+         user = await storage.createUser({
+           username: username,
+           password: '', // Empty password for OAuth users
+         });
+         
+         // Create user profile with additional Google data
+         await storage.createUserProfile({
+           userId: user.id,
+           profileImageUrl: picture || '',
+         });
+       }
+
+             // Log the user in
+       if (!user) {
+         return res.status(500).json({ message: "Failed to create or find user" });
+       }
+
+       req.login(user, (err) => {
+         if (err) return next(err);
+         res.json({
+           id: user.id,
+           username: user.username,
+           email: email,
+           name: name || user.username,
+           picture: picture,
+           authProvider: 'google'
+         });
+       });
+    } catch (error) {
+      console.error("Mobile Google OAuth error:", error);
+      res.status(400).json({ message: "Mobile Google authentication failed" });
+    }
   });
 
   // Get current user

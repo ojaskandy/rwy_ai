@@ -1,10 +1,15 @@
 import { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { CredentialResponse } from '@react-oauth/google';
 
 // Define types for auth
 type User = {
   id: number;
   username: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+  authProvider?: 'local' | 'google';
 };
 
 type LoginCredentials = {
@@ -21,6 +26,7 @@ type AuthContextType = {
   user: User | null;
   loginMutation: any;
   registerMutation: any;
+  googleLoginMutation: any;
   logoutMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
@@ -136,6 +142,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
 
+  // Google OAuth login mutation
+  const googleLoginMutation = useMutation({
+    mutationFn: async (credentialResponse: CredentialResponse) => {
+      console.log('Google login attempt');
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Google login failed');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data: User) => {
+      setUser(data);
+      console.log('Google login successful:', data);
+      
+      // Show mobile warning if on a mobile device and warning hasn't been shown
+      const mobileWarningShown = sessionStorage.getItem('mobileWarningShown');
+      if (isMobileDevice && !mobileWarningShown) {
+        setShowMobileWarning(true);
+        sessionStorage.setItem('mobileWarningShown', 'true');
+      }
+    },
+    onError: (error: Error) => {
+      console.error('Google login failed:', error.message);
+    }
+  });
+
   // Real logout mutation that calls the server
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -161,6 +203,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     loginMutation,
     registerMutation,
+    googleLoginMutation,
     logoutMutation,
     showMobileWarning,
     setShowMobileWarning,
