@@ -20,7 +20,7 @@ const scryptAsync = promisify(scrypt);
 // Initialize Google OAuth client
 const googleClient = new OAuth2Client(
   process.env.VITE_GOOGLE_CLIENT_ID || process.env.IOS_GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET
+  process.env.GOOGLE_CLIENT_SECRET,
 );
 
 // Hash password for storage
@@ -31,27 +31,30 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 // Securely compare supplied password with stored hash
-async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+async function comparePasswords(
+  supplied: string,
+  stored: string,
+): Promise<boolean> {
   console.log("Comparing passwords - supplied:", supplied);
   console.log("Stored hash:", stored);
-  
-  if (!stored || !stored.includes('.')) {
+
+  if (!stored || !stored.includes(".")) {
     console.log("Invalid stored password format");
     return false;
   }
-  
+
   const [hashed, salt] = stored.split(".");
   console.log("Extracted salt:", salt);
-  
+
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  
+
   console.log("Hashed buffer length:", hashedBuf.length);
   console.log("Supplied buffer length:", suppliedBuf.length);
-  
+
   const result = timingSafeEqual(hashedBuf, suppliedBuf);
   console.log("Password comparison result:", result);
-  
+
   return result;
 }
 
@@ -68,7 +71,7 @@ export function setupAuth(app: Express): void {
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       domain: process.env.NODE_ENV === "production" ? ".coacht.xyz" : undefined,
-    }
+    },
   };
 
   app.set("trust proxy", 1);
@@ -82,21 +85,21 @@ export function setupAuth(app: Express): void {
       try {
         console.log("Login attempt for username:", username);
         const user = await storage.getUserByUsername(username);
-        
+
         if (!user) {
           console.log("User not found:", username);
           return done(null, false, { message: "Invalid username or password" });
         }
-        
+
         console.log("User found, comparing passwords...");
         const passwordMatch = await comparePasswords(password, user.password);
         console.log("Password match result:", passwordMatch);
-        
+
         if (!passwordMatch) {
           console.log("Password mismatch for user:", username);
           return done(null, false, { message: "Invalid username or password" });
         }
-        
+
         console.log("Login successful for user:", username);
         return done(null, user);
       } catch (error) {
@@ -110,7 +113,7 @@ export function setupAuth(app: Express): void {
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
-  
+
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -147,17 +150,26 @@ export function setupAuth(app: Express): void {
 
   // Login route
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      }
-      
-      req.login(user, (err) => {
+    passport.authenticate(
+      "local",
+      (
+        err: Error | null,
+        user: Express.User | false,
+        info: { message: string } | undefined,
+      ) => {
         if (err) return next(err);
-        return res.json(user);
-      });
-    })(req, res, next);
+        if (!user) {
+          return res
+            .status(401)
+            .json({ message: info?.message || "Invalid credentials" });
+        }
+
+        req.login(user, (err) => {
+          if (err) return next(err);
+          return res.json(user);
+        });
+      },
+    )(req, res, next);
   });
 
   // Logout route
@@ -172,7 +184,7 @@ export function setupAuth(app: Express): void {
   app.post("/api/auth/google", async (req, res, next) => {
     try {
       const { credential } = req.body;
-      
+
       if (!credential) {
         return res.status(400).json({ message: "No credential provided" });
       }
@@ -198,11 +210,14 @@ export function setupAuth(app: Express): void {
       let username;
       if (name) {
         // Extract first name from full name
-        const firstName = name.split(' ')[0];
-        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ''); // Remove special characters
+        const firstName = name.split(" ")[0];
+        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
       } else {
         // Use email prefix without domain
-        username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        username = email
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
       }
 
       // Check if user already exists by email as username (for existing users)
@@ -210,7 +225,8 @@ export function setupAuth(app: Express): void {
 
       if (!user) {
         // Check if the preferred username is already taken
-        const existingUserWithUsername = await storage.getUserByUsername(username);
+        const existingUserWithUsername =
+          await storage.getUserByUsername(username);
         if (existingUserWithUsername) {
           // If username is taken, append a number
           let counter = 1;
@@ -225,19 +241,21 @@ export function setupAuth(app: Express): void {
         // Create a new user with the smart username
         user = await storage.createUser({
           username: username,
-          password: '', // Empty password for OAuth users
+          password: "", // Empty password for OAuth users
         });
-        
+
         // Create user profile with additional Google data
         await storage.createUserProfile({
           userId: user.id,
-          profileImageUrl: picture || '',
+          profileImageUrl: picture || "",
         });
       }
 
       // Log the user in
       if (!user) {
-        return res.status(500).json({ message: "Failed to create or find user" });
+        return res
+          .status(500)
+          .json({ message: "Failed to create or find user" });
       }
 
       req.login(user, (err) => {
@@ -248,7 +266,7 @@ export function setupAuth(app: Express): void {
           email: email,
           name: name || user.username,
           picture: picture,
-          authProvider: 'google'
+          authProvider: "google",
         });
       });
     } catch (error) {
@@ -261,7 +279,7 @@ export function setupAuth(app: Express): void {
   app.post("/api/mobile-login", async (req, res, next) => {
     try {
       const { idToken } = req.body;
-      
+
       if (!idToken) {
         return res.status(400).json({ message: "No ID token provided" });
       }
@@ -269,7 +287,10 @@ export function setupAuth(app: Express): void {
       // Verify the Google ID token
       const ticket = await googleClient.verifyIdToken({
         idToken: idToken,
-        audience: process.env.VITE_GOOGLE_CLIENT_ID,
+        audience: [
+          process.env.VITE_GOOGLE_CLIENT_ID,
+          process.env.IOS_GOOGLE_CLIENT_ID,
+        ],
       });
 
       const payload = ticket.getPayload();
@@ -283,63 +304,69 @@ export function setupAuth(app: Express): void {
         return res.status(400).json({ message: "No email provided by Google" });
       }
 
-             // Generate a smart username
-       let username;
-       if (name) {
-         // Extract first name from full name
-         const firstName = name.split(' ')[0];
-         username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ''); // Remove special characters
-       } else {
-         // Use email prefix without domain
-         username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-       }
+      // Generate a smart username
+      let username;
+      if (name) {
+        // Extract first name from full name
+        const firstName = name.split(" ")[0];
+        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
+      } else {
+        // Use email prefix without domain
+        username = email
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+      }
 
-       // Check if user already exists by email as username (for existing users)
-       let user = await storage.getUserByUsername(email);
+      // Check if user already exists by email as username (for existing users)
+      let user = await storage.getUserByUsername(email);
 
-       if (!user) {
-         // Check if the preferred username is already taken
-         const existingUserWithUsername = await storage.getUserByUsername(username);
-         if (existingUserWithUsername) {
-           // If username is taken, append a number
-           let counter = 1;
-           let uniqueUsername = `${username}${counter}`;
-           while (await storage.getUserByUsername(uniqueUsername)) {
-             counter++;
-             uniqueUsername = `${username}${counter}`;
-           }
-           username = uniqueUsername;
-         }
+      if (!user) {
+        // Check if the preferred username is already taken
+        const existingUserWithUsername =
+          await storage.getUserByUsername(username);
+        if (existingUserWithUsername) {
+          // If username is taken, append a number
+          let counter = 1;
+          let uniqueUsername = `${username}${counter}`;
+          while (await storage.getUserByUsername(uniqueUsername)) {
+            counter++;
+            uniqueUsername = `${username}${counter}`;
+          }
+          username = uniqueUsername;
+        }
 
-         // Create a new user with the smart username
-         user = await storage.createUser({
-           username: username,
-           password: '', // Empty password for OAuth users
-         });
-         
-         // Create user profile with additional Google data
-         await storage.createUserProfile({
-           userId: user.id,
-           profileImageUrl: picture || '',
-         });
-       }
+        // Create a new user with the smart username
+        user = await storage.createUser({
+          username: username,
+          password: "", // Empty password for OAuth users
+        });
 
-             // Log the user in
-       if (!user) {
-         return res.status(500).json({ message: "Failed to create or find user" });
-       }
+        // Create user profile with additional Google data
+        await storage.createUserProfile({
+          userId: user.id,
+          profileImageUrl: picture || "",
+        });
+      }
 
-       req.login(user, (err) => {
-         if (err) return next(err);
-         res.json({
-           id: user.id,
-           username: user.username,
-           email: email,
-           name: name || user.username,
-           picture: picture,
-           authProvider: 'google'
-         });
-       });
+      // Log the user in
+      if (!user) {
+        return res
+          .status(500)
+          .json({ message: "Failed to create or find user" });
+      }
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.json({
+          id: user.id,
+          username: user.username,
+          email: email,
+          name: name || user.username,
+          picture: picture,
+          authProvider: "google",
+        });
+      });
     } catch (error) {
       console.error("Mobile Google OAuth error:", error);
       res.status(400).json({ message: "Mobile Google authentication failed" });
