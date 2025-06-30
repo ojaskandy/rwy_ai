@@ -275,101 +275,343 @@ export function setupAuth(app: Express): void {
     }
   });
 
+  // Test endpoint for debugging mobile tokens
+  app.post("/api/debug-token", async (req, res) => {
+    try {
+      const { idToken } = req.body;
+      
+      console.log("=== TOKEN DEBUG ENDPOINT ===");
+      console.log("Raw token received:", idToken);
+      console.log("Token length:", idToken?.length);
+      console.log("Token type:", typeof idToken);
+      
+      if (!idToken) {
+        return res.json({ error: "No token provided" });
+      }
+      
+      // Clean the token
+      const cleanToken = idToken.trim().replace(/\s/g, '');
+      
+      // Basic format checks
+      const formatChecks = {
+        original: idToken,
+        cleaned: cleanToken,
+        originalLength: idToken.length,
+        cleanedLength: cleanToken.length,
+        hasThreeParts: cleanToken.split('.').length === 3,
+        startsWithEy: cleanToken.startsWith('ey'),
+        containsSpecialChars: /[^A-Za-z0-9._-]/.test(cleanToken),
+        hasUrlEncoding: cleanToken.includes('%'),
+        parts: cleanToken.split('.').map((part: string) => ({
+          length: part.length,
+          firstChars: part.substring(0, 10),
+          lastChars: part.substring(-10),
+        })),
+      };
+      
+      // Try to decode JWT parts
+      let decodedInfo = null;
+      try {
+        const parts = cleanToken.split('.');
+        if (parts.length >= 2) {
+          // Add padding if needed
+          const addPadding = (str: string) => {
+            while (str.length % 4) {
+              str += '=';
+            }
+            return str;
+          };
+          
+          const header = JSON.parse(Buffer.from(addPadding(parts[0]), 'base64').toString());
+          const payload = JSON.parse(Buffer.from(addPadding(parts[1]), 'base64').toString());
+          
+          decodedInfo = {
+            header,
+            payload: {
+              iss: payload.iss,
+              aud: payload.aud,
+              sub: payload.sub,
+              email: payload.email,
+              exp: payload.exp,
+              iat: payload.iat,
+            },
+          };
+        }
+      } catch (decodeError) {
+        const errorMessage = decodeError instanceof Error ? decodeError.message : "Unknown decode error";
+        decodedInfo = { error: "Failed to decode JWT", details: errorMessage };
+      }
+      
+      // Try Google verification
+      let verificationResult = null;
+      try {
+        const audiences = [
+          process.env.VITE_GOOGLE_CLIENT_ID,
+          process.env.IOS_GOOGLE_CLIENT_ID,
+        ].filter((id): id is string => Boolean(id));
+        
+        const ticket = await googleClient.verifyIdToken({
+          idToken: cleanToken,
+          audience: audiences,
+        });
+        
+        verificationResult = { success: true, payload: ticket.getPayload() };
+      } catch (verifyError) {
+        const errorMessage = verifyError instanceof Error ? verifyError.message : "Unknown verification error";
+        const errorType = verifyError instanceof Error ? verifyError.constructor.name : "UnknownError";
+        verificationResult = { 
+          success: false, 
+          error: errorMessage,
+          errorType: errorType,
+        };
+      }
+      
+      console.log("Debug results:", {
+        formatChecks,
+        decodedInfo,
+        verificationResult,
+      });
+      
+      res.json({
+        formatChecks,
+        decodedInfo,
+        verificationResult,
+        environment: {
+          hasWebClientId: !!process.env.VITE_GOOGLE_CLIENT_ID,
+          hasIosClientId: !!process.env.IOS_GOOGLE_CLIENT_ID,
+          hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+        },
+      });
+      
+    } catch (error) {
+      console.error("Debug endpoint error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Mobile Google login endpoint
   app.post("/api/mobile-login", async (req, res, next) => {
     try {
       const { idToken } = req.body;
 
+      console.log("=== MOBILE LOGIN BACKEND DEBUG ===");
+      console.log("Received ID token:", idToken);
+      console.log("Token length:", idToken?.length);
+      console.log("Token type:", typeof idToken);
+      console.log("Token first 50 chars:", idToken?.substring(0, 50));
+      console.log("Token last 50 chars:", idToken?.substring(-50));
+      console.log("Token format:", {
+        hasThreeParts: idToken?.split('.').length,
+        startsWithEy: idToken?.startsWith('ey'),
+        containsSpecialChars: /[^A-Za-z0-9._-]/.test(idToken || ''),
+        hasUrlEncoding: idToken?.includes('%'),
+        hasSpaces: idToken?.includes(' '),
+        hasNewlines: idToken?.includes('\n'),
+        rawLength: idToken?.length,
+        trimmedLength: idToken?.trim().length,
+      });
+      console.log("Environment variables:");
+      console.log("- VITE_GOOGLE_CLIENT_ID:", process.env.VITE_GOOGLE_CLIENT_ID);
+      console.log("- IOS_GOOGLE_CLIENT_ID:", process.env.IOS_GOOGLE_CLIENT_ID);
+      console.log("- GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "[SET]" : "[NOT SET]");
+
       if (!idToken) {
         return res.status(400).json({ message: "No ID token provided" });
       }
 
-      // Verify the Google ID token
-      const ticket = await googleClient.verifyIdToken({
-        idToken: idToken,
-        audience: [
+      // Clean the token
+      const cleanToken = idToken.trim().replace(/\s/g, '');
+      console.log("Cleaned token length:", cleanToken.length);
+      console.log("Token changed after cleaning:", cleanToken !== idToken);
+
+      // Pre-validate JWT format before Google verification
+      const tokenParts = cleanToken.split('.');
+      if (tokenParts.length !== 3) {
+        console.error("❌ Invalid JWT format: expected 3 parts, got", tokenParts.length);
+        return res.status(400).json({ 
+          message: "Invalid JWT format", 
+          details: `Expected 3 parts, got ${tokenParts.length}` 
+        });
+      }
+
+      // Try to decode the header and payload for debugging
+      try {
+        const header = JSON.parse(Buffer.from(tokenParts[0], 'base64').toString());
+        const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+        console.log("Decoded JWT header:", header);
+        console.log("Decoded JWT payload summary:", {
+          iss: payload.iss,
+          aud: payload.aud,
+          sub: payload.sub,
+          email: payload.email,
+          exp: payload.exp,
+          iat: payload.iat,
+        });
+        
+        // Check if audience matches our expected client IDs
+        const expectedAudiences = [
           process.env.VITE_GOOGLE_CLIENT_ID,
           process.env.IOS_GOOGLE_CLIENT_ID,
-        ],
-      });
-
-      const payload = ticket.getPayload();
-      if (!payload) {
-        return res.status(400).json({ message: "Invalid Google token" });
+        ].filter(Boolean);
+        
+        console.log("Expected audiences:", expectedAudiences);
+        console.log("Token audience:", payload.aud);
+        console.log("Audience match:", expectedAudiences.includes(payload.aud));
+        
+      } catch (decodeError) {
+        console.error("Failed to decode JWT for debugging:", decodeError);
       }
 
-      const { email, name, picture } = payload;
+      // Verify the Google ID token
+      const audiences = [
+        process.env.VITE_GOOGLE_CLIENT_ID,
+        process.env.IOS_GOOGLE_CLIENT_ID,
+      ].filter((id): id is string => Boolean(id));
+      
+      console.log("Attempting to verify token with audiences:", audiences);
 
-      if (!email) {
-        return res.status(400).json({ message: "No email provided by Google" });
-      }
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: cleanToken,
+          audience: audiences,
+        });
 
-      // Generate a smart username
-      let username;
-      if (name) {
-        // Extract first name from full name
-        const firstName = name.split(" ")[0];
-        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
-      } else {
-        // Use email prefix without domain
-        username = email
-          .split("@")[0]
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, "");
-      }
+        console.log("✅ Token verification successful!");
+        const payload = ticket.getPayload();
+        console.log("Token payload:", {
+          iss: payload?.iss,
+          aud: payload?.aud,
+          sub: payload?.sub,
+          email: payload?.email,
+          email_verified: payload?.email_verified,
+          exp: payload?.exp,
+          iat: payload?.iat,
+        });
 
-      // Check if user already exists by email as username (for existing users)
-      let user = await storage.getUserByUsername(email);
-
-      if (!user) {
-        // Check if the preferred username is already taken
-        const existingUserWithUsername =
-          await storage.getUserByUsername(username);
-        if (existingUserWithUsername) {
-          // If username is taken, append a number
-          let counter = 1;
-          let uniqueUsername = `${username}${counter}`;
-          while (await storage.getUserByUsername(uniqueUsername)) {
-            counter++;
-            uniqueUsername = `${username}${counter}`;
-          }
-          username = uniqueUsername;
+        if (!payload) {
+          return res.status(400).json({ message: "Invalid Google token" });
         }
 
-        // Create a new user with the smart username
-        user = await storage.createUser({
-          username: username,
-          password: "", // Empty password for OAuth users
+        const { email, name, picture } = payload;
+
+        if (!email) {
+          return res.status(400).json({ message: "No email provided by Google" });
+        }
+
+        // Generate a smart username
+        let username;
+        if (name) {
+          // Extract first name from full name
+          const firstName = name.split(" ")[0];
+          username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
+        } else {
+          // Use email prefix without domain
+          username = email
+            .split("@")[0]
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
+        }
+
+        // Check if user already exists by email as username (for existing users)
+        let user = await storage.getUserByUsername(email);
+
+        if (!user) {
+          // Check if the preferred username is already taken
+          const existingUserWithUsername =
+            await storage.getUserByUsername(username);
+          if (existingUserWithUsername) {
+            // If username is taken, append a number
+            let counter = 1;
+            let uniqueUsername = `${username}${counter}`;
+            while (await storage.getUserByUsername(uniqueUsername)) {
+              counter++;
+              uniqueUsername = `${username}${counter}`;
+            }
+            username = uniqueUsername;
+          }
+
+          // Create a new user with the smart username
+          user = await storage.createUser({
+            username: username,
+            password: "", // Empty password for OAuth users
+          });
+
+          // Create user profile with additional Google data
+          await storage.createUserProfile({
+            userId: user.id,
+            profileImageUrl: picture || "",
+          });
+        }
+
+        // Log the user in
+        if (!user) {
+          return res
+            .status(500)
+            .json({ message: "Failed to create or find user" });
+        }
+
+        req.login(user, (err) => {
+          if (err) return next(err);
+          console.log("Mobile login successful for user:", user.username);
+          console.log("=== END MOBILE LOGIN DEBUG ===");
+          res.json({
+            id: user.id,
+            username: user.username,
+            email: email,
+            name: name || user.username,
+            picture: picture,
+            authProvider: "google",
+          });
         });
 
-        // Create user profile with additional Google data
-        await storage.createUserProfile({
-          userId: user.id,
-          profileImageUrl: picture || "",
-        });
+      } catch (verificationError) {
+        console.error("❌ Token verification failed:", verificationError);
+        
+        // Check for specific error messages
+        if (verificationError instanceof Error) {
+          console.error("Verification error details:", {
+            message: verificationError.message,
+            name: verificationError.name,
+            stack: verificationError.stack,
+          });
+          
+          // Check for the specific "string did not match expected pattern" error
+          if (verificationError.message.includes("string did not match the expected pattern")) {
+            console.error("🔍 PATTERN MISMATCH ERROR DETECTED!");
+            console.error("This usually means the JWT format is malformed");
+            console.error("Token being verified:", cleanToken.substring(0, 100) + "...");
+            
+            return res.status(400).json({ 
+              message: "JWT format error", 
+              details: "Token format does not match expected JWT pattern",
+              hint: "Check if token is properly base64 encoded"
+            });
+          }
+          
+          if (verificationError.message.includes("audience")) {
+            return res.status(400).json({ 
+              message: "Audience mismatch", 
+              details: verificationError.message 
+            });
+          }
+        }
+        
+        throw verificationError; // Re-throw if not handled above
       }
 
-      // Log the user in
-      if (!user) {
-        return res
-          .status(500)
-          .json({ message: "Failed to create or find user" });
-      }
-
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.json({
-          id: user.id,
-          username: user.username,
-          email: email,
-          name: name || user.username,
-          picture: picture,
-          authProvider: "google",
-        });
-      });
     } catch (error) {
       console.error("Mobile Google OAuth error:", error);
-      res.status(400).json({ message: "Mobile Google authentication failed" });
+      if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+      }
+      console.log("=== END MOBILE LOGIN DEBUG (ERROR) ===");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ message: "Mobile Google authentication failed", details: errorMessage });
     }
   });
 

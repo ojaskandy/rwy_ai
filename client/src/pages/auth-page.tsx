@@ -57,9 +57,16 @@ if (
   Capacitor.getPlatform() === "ios" ||
   Capacitor.getPlatform() === "android"
 ) {
+  // Use the same client ID that the backend expects
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 
+                   import.meta.env.VITE_IOS_GOOGLE_CLIENT_ID ||
+                   "269594573382-27n2ur2h48vceeh3vd0k7dudnf2ak74c.apps.googleusercontent.com"; // fallback
+
+  console.log("Initializing GoogleAuth with client ID:", clientId);
+  
   GoogleAuth.initialize({
     scopes: ["profile", "email"],
-    clientId: "269594573382-27n2ur2h48vceeh3vd0k7dudnf2ak74c.apps.googleusercontent.com",
+    clientId: clientId,
   });
 }
 
@@ -141,14 +148,134 @@ export default function AuthPage() {
 
   const handleNativeGoogleLogin = async () => {
     try {
+      console.log("🚀 Starting mobile Google login...");
       await GoogleAuth.signOut();
       const user = await GoogleAuth.signIn();
-      console.log("Google user:", user);
+      
+      // Add comprehensive debugging
+      console.log("=== MOBILE GOOGLE LOGIN DEBUG ===");
+      console.log("Full user object:", JSON.stringify(user, null, 2));
+      console.log("Authentication object:", JSON.stringify(user.authentication, null, 2));
+      console.log("ID Token:", user.authentication.idToken);
+      console.log("ID Token length:", user.authentication.idToken?.length);
+      console.log("ID Token first 50 chars:", user.authentication.idToken?.substring(0, 50));
+      console.log("ID Token last 50 chars:", user.authentication.idToken?.substring(-50));
+      console.log("ID Token format check:", {
+        hasThreeParts: user.authentication.idToken?.split('.').length === 3,
+        startsWithEy: user.authentication.idToken?.startsWith('ey'),
+        containsSpecialChars: /[^A-Za-z0-9._-]/.test(user.authentication.idToken || ''),
+        hasUrlEncoding: user.authentication.idToken?.includes('%'),
+        hasSpaces: user.authentication.idToken?.includes(' '),
+        hasNewlines: user.authentication.idToken?.includes('\n'),
+      });
+      console.log("Access Token:", user.authentication.accessToken);
+      console.log("Access Token length:", user.authentication.accessToken?.length);
+      
+      // Check for all possible token fields
+      console.log("All authentication fields:", Object.keys(user.authentication));
+      
+      // Try to decode the JWT header to see what algorithm it uses
+      try {
+        const tokenParts = user.authentication.idToken?.split('.');
+        if (tokenParts && tokenParts.length >= 2) {
+          const header = JSON.parse(atob(tokenParts[0]));
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log("JWT Header:", header);
+          console.log("JWT Payload (audience, issuer, etc.):", {
+            iss: payload.iss,
+            aud: payload.aud,
+            exp: payload.exp,
+            iat: payload.iat,
+            email: payload.email,
+          });
+        }
+      } catch (jwtError) {
+        console.error("Failed to decode JWT:", jwtError);
+      }
+      
+      console.log("=== END DEBUG ===");
+
+      // Verify we have a valid JWT token format
+      const idToken = user.authentication.idToken;
+      if (!idToken) {
+        throw new Error("No ID token received from Google");
+      }
+
+      // Clean the token (remove any whitespace/newlines)
+      const cleanToken = idToken.trim().replace(/\s/g, '');
+      
+      // Basic JWT format validation
+      const tokenParts = cleanToken.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error(`Invalid JWT format: expected 3 parts, got ${tokenParts.length}`);
+      }
+
+      if (!cleanToken.startsWith('ey')) {
+        throw new Error("ID token doesn't appear to be a valid JWT (doesn't start with 'ey')");
+      }
+
+      console.log("✅ Token validation passed, sending to backend...");
       await googleLoginMutation?.mutate({
-        idToken: user.authentication.idToken,
+        idToken: cleanToken,
       });
     } catch (error) {
-      console.error("Native Google login failed:", error);
+      console.error("❌ Native Google login failed:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+      
+      // Alternative: Try using serverAuthCode if available
+      try {
+        const user = await GoogleAuth.signIn();
+        if (user.authentication && 'serverAuthCode' in user.authentication) {
+          console.log("🔄 Attempting fallback with serverAuthCode...");
+          const serverAuthCode = (user.authentication as any).serverAuthCode;
+          console.log("Server Auth Code:", serverAuthCode);
+          
+          // You would need to implement a different endpoint for this
+          // For now, just log it
+          console.log("📝 Consider implementing server auth code flow");
+        }
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
+    }
+  };
+
+  // Debug function to test token without login
+  const handleDebugToken = async () => {
+    try {
+      console.log("🔍 Starting token debug test...");
+      await GoogleAuth.signOut();
+      const user = await GoogleAuth.signIn();
+      
+      const idToken = user.authentication.idToken;
+      if (!idToken) {
+        console.error("No token received for debugging");
+        return;
+      }
+
+      console.log("📤 Sending token to debug endpoint...");
+      const response = await fetch("/api/debug-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const debugResult = await response.json();
+      console.log("🔍 DEBUG ENDPOINT RESULTS:", debugResult);
+      
+      // Show results in alert for easy viewing
+      alert(`Debug Results:\n${JSON.stringify(debugResult, null, 2)}`);
+      
+    } catch (error) {
+      console.error("Debug test failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Debug failed: ${errorMessage}`);
     }
   };
 
@@ -189,61 +316,62 @@ export default function AuthPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-black to-orange-900/20"
+          style={{
+            opacity: gradientVisible ? 1 : 0,
+            transition: 'opacity 1s ease-in-out'
+          }}
+        />
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative z-10 text-center"
+        >
+          <h1 
+            className={`text-6xl md:text-8xl font-bold mb-8 transition-all duration-1000 ${
+              logoContrast 
+                ? 'bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-400 drop-shadow-2xl' 
+                : 'text-white drop-shadow-lg'
+            }`}
+            style={{
+              filter: logoContrast ? 'drop-shadow(0 0 30px rgba(239, 68, 68, 0.5))' : 'none'
+            }}
+          >
+            {typedText}
+            <span className="animate-pulse">|</span>
+          </h1>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
-      <MobileWarningDialog open={showMobileWarning} onOpenChange={setShowMobileWarning} />
-
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-          <motion.div
-            className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-red-500 via-red-600 to-red-700"
-            initial={{ y: "-100%" }}
-            animate={{ y: gradientVisible ? "0%" : "-100%" }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
-          />
-          <motion.div
-            className={`relative z-20 flex flex-col items-center ${logoContrast ? "scale-110" : "scale-100"}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            <div className={`flex flex-col items-center ${logoContrast ? "ring-4 ring-black p-4 rounded-xl bg-red-600" : ""}`}>
-              <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)] mb-4`}>
-                <span className="material-icons text-white text-5xl">sports_martial_arts</span>
-              </div>
-              <h1 className="text-6xl md:text-8xl font-bold relative inline-block text-white">
-                <span className="relative">
-                  {typedText}
-                  <span className="inline-block h-[0.8em] w-[3px] ml-[2px] bg-white animate-blink"></span>
-                </span>
-              </h1>
-            </div>
-          </motion.div>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative">
+      <MobileWarningDialog 
+        isOpen={showMobileWarning} 
+        onClose={() => setShowMobileWarning(false)} 
+      />
+      
+      <motion.div
+        className="w-full max-w-md px-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-300 mb-2">
+            Welcome to CoachT
+          </h1>
+          <p className="text-gray-400">Your AI martial arts training companion</p>
         </div>
-      )}
 
-      {!loading && (
-        <>
-          <motion.div
-            className="relative z-10 mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)]">
-                <span className="material-icons text-white text-2xl">sports_martial_arts</span>
-              </div>
-              <h1 className="text-3xl font-bold text-white">CoachT</h1>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="w-full max-w-md px-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+        <div className="w-full">
             <Card className="border-red-900/30 bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg">
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-2 bg-black/50 border-b border-gray-800 rounded-none">
@@ -260,18 +388,28 @@ export default function AuthPage() {
                   </CardHeader>
                   <CardContent className="flex flex-col items-center space-y-4">
                     {isNative ? (
-                      <button
-                        onClick={handleNativeGoogleLogin}
-                        className="w-[300px] bg-[#4285f4] hover:bg-[#357ae8] text-white font-medium py-3 px-6 rounded-full flex items-center justify-center gap-3 transition-colors"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                          <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        Continue with Google
-                      </button>
+                      <div className="flex flex-col items-center space-y-3">
+                        <button
+                          onClick={handleNativeGoogleLogin}
+                          className="w-[300px] bg-[#4285f4] hover:bg-[#357ae8] text-white font-medium py-3 px-6 rounded-full flex items-center justify-center gap-3 transition-colors"
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          </svg>
+                          Continue with Google
+                        </button>
+                        
+                        {/* Debug button for testing */}
+                        <button
+                          onClick={handleDebugToken}
+                          className="w-[300px] bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-full text-sm transition-colors"
+                        >
+                          🔍 Debug Token (Test Only)
+                        </button>
+                      </div>
                     ) : (
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
@@ -305,9 +443,9 @@ export default function AuthPage() {
                 </TabsContent>
               </Tabs>
             </Card>
-          </motion.div>
-        </>
-      )}
-    </div>
-  );
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 }
