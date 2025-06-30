@@ -23,9 +23,11 @@ export interface IStorage {
   // User related methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserLastPractice(userId: number, date?: Date): Promise<User>;
   incrementRecordingsCount(userId: number): Promise<number>;
+  completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User>;
   
   // User profile methods
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
@@ -122,6 +124,25 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        fullName: profileData.fullName,
+        username: profileData.username,
+        taekwondoExperience: profileData.taekwondoExperience,
+        profileCompleted: true,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

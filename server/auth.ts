@@ -206,45 +206,39 @@ export function setupAuth(app: Express): void {
         return res.status(400).json({ message: "No email provided by Google" });
       }
 
-      // Generate a smart username
-      let username;
-      if (name) {
-        // Extract first name from full name
-        const firstName = name.split(" ")[0];
-        username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
-      } else {
-        // Use email prefix without domain
-        username = email
+      // Check if user already exists by email
+      let user = email ? await storage.getUserByEmail(email) : undefined;
+
+      if (!user) {
+        // Generate a temporary username from email (will be customizable during profile setup)
+        let tempUsername = email
           .split("@")[0]
           .toLowerCase()
           .replace(/[^a-z0-9]/g, "");
-      }
 
-      // Check if user already exists by email as username (for existing users)
-      let user = await storage.getUserByUsername(email);
-
-      if (!user) {
-        // Check if the preferred username is already taken
-        const existingUserWithUsername =
-          await storage.getUserByUsername(username);
+        // Ensure the temporary username is unique
+        const existingUserWithUsername = await storage.getUserByUsername(tempUsername);
         if (existingUserWithUsername) {
-          // If username is taken, append a number
           let counter = 1;
-          let uniqueUsername = `${username}${counter}`;
+          let uniqueUsername = `${tempUsername}${counter}`;
           while (await storage.getUserByUsername(uniqueUsername)) {
             counter++;
-            uniqueUsername = `${username}${counter}`;
+            uniqueUsername = `${tempUsername}${counter}`;
           }
-          username = uniqueUsername;
+          tempUsername = uniqueUsername;
         }
 
-        // Create a new user with the smart username
+        // Create a new user with Google info
         user = await storage.createUser({
-          username: username,
-          password: "", // Empty password for OAuth users
+          username: tempUsername,
+          email: email || "",
+          fullName: name || "",
+          password: "",
+          picture: picture || "",
+          authProvider: "google",
         });
 
-        // Create user profile with additional Google data
+        // Create user profile
         await storage.createUserProfile({
           userId: user.id,
           profileImageUrl: picture || "",
@@ -499,45 +493,39 @@ export function setupAuth(app: Express): void {
           return res.status(400).json({ message: "No email provided by Google" });
         }
 
-        // Generate a smart username
-        let username;
-        if (name) {
-          // Extract first name from full name
-          const firstName = name.split(" ")[0];
-          username = firstName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove special characters
-        } else {
-          // Use email prefix without domain
-          username = email
+        // Check if user already exists by email
+        let user = email ? await storage.getUserByEmail(email) : undefined;
+
+        if (!user) {
+          // Generate a temporary username from email (will be customizable during profile setup)
+          let tempUsername = email
             .split("@")[0]
             .toLowerCase()
             .replace(/[^a-z0-9]/g, "");
-        }
 
-        // Check if user already exists by email as username (for existing users)
-        let user = await storage.getUserByUsername(email);
-
-        if (!user) {
-          // Check if the preferred username is already taken
-          const existingUserWithUsername =
-            await storage.getUserByUsername(username);
+          // Ensure the temporary username is unique
+          const existingUserWithUsername = await storage.getUserByUsername(tempUsername);
           if (existingUserWithUsername) {
-            // If username is taken, append a number
             let counter = 1;
-            let uniqueUsername = `${username}${counter}`;
+            let uniqueUsername = `${tempUsername}${counter}`;
             while (await storage.getUserByUsername(uniqueUsername)) {
               counter++;
-              uniqueUsername = `${username}${counter}`;
+              uniqueUsername = `${tempUsername}${counter}`;
             }
-            username = uniqueUsername;
+            tempUsername = uniqueUsername;
           }
 
-          // Create a new user with the smart username
+          // Create a new user with Google info
           user = await storage.createUser({
-            username: username,
-            password: "", // Empty password for OAuth users
+            username: tempUsername,
+            email: email || "",
+            fullName: name || "",
+            password: "",
+            picture: picture || "",
+            authProvider: "google",
           });
 
-          // Create user profile with additional Google data
+          // Create user profile
           await storage.createUserProfile({
             userId: user.id,
             profileImageUrl: picture || "",

@@ -8,14 +8,16 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { CredentialResponse } from "@react-oauth/google";
 
-// Define types for auth
+// Define types for auth - updated for new schema
 type User = {
   id: number;
   username: string;
   email?: string;
-  name?: string;
+  fullName?: string;
   picture?: string;
   authProvider?: "local" | "google";
+  profileCompleted?: boolean;
+  taekwondoExperience?: string;
 };
 
 type LoginCredentials = {
@@ -28,11 +30,18 @@ type RegisterCredentials = {
   password: string;
 };
 
+type ProfileSetupData = {
+  fullName: string;
+  username: string;
+  taekwondoExperience: string;
+};
+
 type AuthContextType = {
   user: User | null;
   loginMutation: any;
   registerMutation: any;
   googleLoginMutation: any;
+  completeProfileMutation: any;
   logoutMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
@@ -70,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener("resize", checkMobileDevice);
   }, []);
 
-  // Login mutation
+  // Login mutation (legacy - for existing users)
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const response = await fetch("/api/login", {
@@ -102,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     },
   });
 
-  // Register mutation
+  // Register mutation (legacy - for existing users)
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
       const response = await fetch("/api/register", {
@@ -177,6 +186,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     },
   });
 
+  // Complete profile mutation for first-time users
+  const completeProfileMutation = useMutation({
+    mutationFn: async (profileData: ProfileSetupData) => {
+      const response = await fetch("/api/complete-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Profile completion failed");
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data: User) => {
+      setUser(data);
+      console.log("Profile completion successful:", data);
+    },
+    onError: (error: Error) => {
+      console.error("Profile completion failed:", error.message);
+    },
+  });
+
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -203,6 +238,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loginMutation,
     registerMutation,
     googleLoginMutation,
+    completeProfileMutation,
     logoutMutation,
     showMobileWarning,
     setShowMobileWarning,

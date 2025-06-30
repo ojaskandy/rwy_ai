@@ -72,6 +72,45 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+
+  // Profile completion route
+  app.post("/api/complete-profile", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { profileSetupSchema } = await import("@shared/schema");
+      const result = profileSetupSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      // Check if username is already taken
+      const existingUser = await storage.getUserByUsername(result.data.username);
+      if (existingUser && existingUser.id !== req.user.id) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+
+      // Complete the user profile
+      const updatedUser = await storage.completeUserProfile(req.user.id, result.data);
+      
+      res.json({
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+        picture: updatedUser.picture,
+        profileCompleted: updatedUser.profileCompleted,
+        taekwondoExperience: updatedUser.taekwondoExperience,
+        authProvider: updatedUser.authProvider,
+      });
+    } catch (error) {
+      console.error("Profile completion error:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
   
   // Setup Shifu Says custom poses API
   app.use("/api/shifu-says", shifuSaysPosesRoutes);

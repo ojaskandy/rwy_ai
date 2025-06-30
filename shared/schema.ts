@@ -2,11 +2,17 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Basic user schema, not critical for the application's core functionality
+// Updated user schema for Google-only authentication with profile setup
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email").unique(), // Google email, unique but can be null for legacy users
+  fullName: text("full_name"), // User's real name from profile setup
+  password: text("password").default(""), // Optional for OAuth users
+  picture: text("picture"), // Google profile picture URL
+  authProvider: text("auth_provider").default("google"), // "google" or "local" for legacy users
+  profileCompleted: boolean("profile_completed").default(false), // Whether user completed initial setup
+  taekwondoExperience: text("taekwondo_experience"), // "less_than_1_year", "1_3_years", "3_5_years", "5_plus_years"
   lastPracticeDate: timestamp("last_practice_date"),
   recordingsCount: integer("recordings_count").default(0),
   goal: text("goal").default(""),
@@ -14,13 +20,28 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Schema for initial user creation (Google OAuth)
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
+  fullName: true,
   password: true,
+  picture: true,
+  authProvider: true,
+});
+
+// Schema for profile completion
+export const profileSetupSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  taekwondoExperience: z.enum(["less_than_1_year", "1_3_years", "3_5_years", "5_plus_years"], {
+    required_error: "Please select your taekwondo experience level"
+  }),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type ProfileSetup = z.infer<typeof profileSetupSchema>;
 
 // User profile schema for storing additional information
 export const userProfiles = pgTable("user_profiles", {
