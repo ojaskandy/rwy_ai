@@ -131,7 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     },
   });
 
-  // ✅ Google OAuth login mutation — supports web & mobile
+  // Google OAuth login mutation — supports web & native
   const googleLoginMutation = useMutation({
     mutationFn: async (data: { credential?: string; idToken?: string }) => {
       let url = "/api/auth/google";
