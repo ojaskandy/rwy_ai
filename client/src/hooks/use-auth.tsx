@@ -231,6 +231,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onSuccess: (data: User) => {
       setUser(data);
       console.log("Profile completion successful:", data);
+      // Force navigation to app after profile completion
+      window.location.href = '/app';
     },
     onError: (error: Error) => {
       console.error("Profile completion failed:", error.message);
