@@ -38,6 +38,7 @@ type ProfileSetupData = {
 
 type AuthContextType = {
   user: User | null;
+  isCheckingSession: boolean;
   loginMutation: any;
   registerMutation: any;
   googleLoginMutation: any;
@@ -58,8 +59,32 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(false);
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
+
+  // Check for existing session on app load
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const response = await fetch("/api/user", {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          console.log("Existing session found:", userData);
+        }
+      } catch (error) {
+        console.log("No existing session found");
+      } finally {
+        setIsCheckingSession(false);
+      }
+    };
+
+    checkExistingSession();
+  }, []);
 
   // Check if device is mobile
   useEffect(() => {
@@ -235,6 +260,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const value = {
     user,
+    isCheckingSession,
     loginMutation,
     registerMutation,
     googleLoginMutation,

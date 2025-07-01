@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import CameraView from '@/components/CameraView';
 import PermissionDialog from '@/components/PermissionDialog';
 import LoadingState from '@/components/LoadingState';
@@ -16,7 +16,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone, Sword, Target, X, MessageCircle, Activity
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Sword, Target, X, MessageCircle, Activity, Camera
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -106,6 +106,9 @@ function CurrentPageTimer() {
 }
 
 export default function Home() {
+  // Navigation
+  const [, navigate] = useLocation();
+  
   // Auth and theme contexts
   const { user, logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -605,21 +608,21 @@ export default function Home() {
 
   // Demo functions for testing context awareness
   const simulatePracticeSession = () => {
-    trackActivity('practice', 'Round Kick Drills', 'started', 'Practicing round kicks with focus on form and balance');
+    trackActivity('practice', 'Shifu Says Practice', 'started', 'Following Shifu\'s pose commands with AI pose detection');
     setTimeout(() => {
       completeActivity(85, { 
-        strengths: ['Balance', 'Flexibility'], 
-        weakAreas: ['Power generation'] 
+        strengths: ['Balance', 'Form'], 
+        weakAreas: ['Speed'] 
       });
     }, 3000); // Simulate a 3-second practice session for demo
   };
 
   const simulateChallenge = () => {
-    trackActivity('challenge', 'Speed Challenge: 50 Kicks', 'started', 'Attempting to complete 50 kicks in under 2 minutes');
+    trackActivity('challenge', 'Max Punches Challenge', 'started', 'Testing maximum punches in 30 seconds with pose detection');
     setTimeout(() => {
       completeActivity(92, { 
-        strengths: ['Speed', 'Endurance'], 
-        weakAreas: ['Accuracy under pressure'] 
+        strengths: ['Speed', 'Power'], 
+        weakAreas: ['Form consistency'] 
       });
     }, 5000); // Simulate a 5-second challenge for demo
   };
@@ -878,6 +881,17 @@ export default function Home() {
                     </motion.button>
                   </Link>
 
+                  {/* Snap Feedback */}
+                  <Link href="/snap-feedback">
+                    <motion.button
+                      className={`w-full py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Camera className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="whitespace-nowrap">Snap Feedback</span>
+                    </motion.button>
+                  </Link>
+
                   {/* Workouts */}
                   <Link href="/workouts">
                     <motion.button
@@ -888,6 +902,8 @@ export default function Home() {
                       <span className="whitespace-nowrap">Workouts</span>
                     </motion.button>
                   </Link>
+
+
                 </motion.div>
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
@@ -1711,65 +1727,28 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <Button
                       onClick={() => {
-                        trackActivity('practice', 'New Practice Session', 'started', 'Starting a new practice session');
                         setShowContextDashboard(false);
+                        navigate('/challenges/shifu-says');
                       }}
                       className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2"
                     >
                       <Play className="w-4 h-4" />
-                      <span>Start Practice</span>
+                      <span>Shifu Says</span>
                     </Button>
                     
                     <Button
                       onClick={() => {
-                        trackActivity('challenge', 'New Challenge', 'started', 'Taking on a new challenge');
                         setShowContextDashboard(false);
+                        navigate('/snap-feedback');
                       }}
                       className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2"
                     >
-                      <Target className="w-4 h-4" />
-                      <span>Start Challenge</span>
+                      <Camera className="w-4 h-4" />
+                      <span>Snap Feedback</span>
                     </Button>
                   </div>
                   
-                  {/* Demo Section */}
-                  <div className="border-t border-red-600/20 pt-3">
-                    <h4 className="text-sm font-medium text-red-200 mb-2">Demo Context Tracking:</h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      <Button
-                        onClick={() => {
-                          simulatePracticeSession();
-                          setTimeout(() => setShowContextDashboard(false), 500);
-                        }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-xs"
-                      >
-                        🥋 Simulate Practice (Round Kicks)
-                      </Button>
-                      
-                      <Button
-                        onClick={() => {
-                          simulateChallenge();
-                          setTimeout(() => setShowContextDashboard(false), 500);
-                        }}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white py-1 px-3 rounded text-xs"
-                      >
-                        ⚡ Simulate Challenge (Speed Test)
-                      </Button>
-                      
-                      <Button
-                        onClick={() => {
-                          simulatePausedWorkout();
-                          setTimeout(() => setShowContextDashboard(false), 500);
-                        }}
-                        className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded text-xs"
-                      >
-                        ⏸️ Simulate Paused Workout
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Try these demos, then chat with Shifu to see context awareness!
-                    </p>
-                  </div>
+
                 </div>
               </>
             ) : (

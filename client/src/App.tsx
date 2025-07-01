@@ -31,6 +31,7 @@ import JumpingJacksWorkout from "@/pages/JumpingJacksWorkout";
 import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
 import InternshipApplication from "@/pages/InternshipApplication";
 import AdminApplications from "@/pages/AdminApplications";
+import SnapFeedback from "@/pages/SnapFeedback";
 
 function Router() {
   return (
@@ -82,6 +83,9 @@ function Router() {
 
       {/* Live Routine Demo */}
       <ProtectedRoute path="/live-routine" component={LiveRoutineDemo} />
+      
+      {/* Snap Feedback */}
+      <ProtectedRoute path="/snap-feedback" component={SnapFeedback} />
 
       {/* Authentication page (also accessible directly) */}
       <Route path="/auth" component={AuthPage} />

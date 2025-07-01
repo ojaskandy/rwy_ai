@@ -117,7 +117,10 @@ export function setupAuth(app: Express): void {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      if (!user) {
+        return done(null, false);
+      }
+      done(null, user as Express.User);
     } catch (error) {
       done(error);
     }
@@ -252,15 +255,17 @@ export function setupAuth(app: Express): void {
           .json({ message: "Failed to create or find user" });
       }
 
-      req.login(user, (err) => {
+      req.login(user as Express.User, (err) => {
         if (err) return next(err);
         res.json({
           id: user.id,
           username: user.username,
-          email: email,
-          name: name || user.username,
-          picture: picture,
-          authProvider: "google",
+          email: user.email || email || "",
+          fullName: user.fullName || name || "",
+          picture: user.picture || picture || "",
+          authProvider: user.authProvider || "google",
+          profileCompleted: user.profileCompleted || false,
+          taekwondoExperience: user.taekwondoExperience,
         });
       });
     } catch (error) {
@@ -539,17 +544,19 @@ export function setupAuth(app: Express): void {
             .json({ message: "Failed to create or find user" });
         }
 
-        req.login(user, (err) => {
+        req.login(user as Express.User, (err) => {
           if (err) return next(err);
           console.log("Mobile login successful for user:", user.username);
           console.log("=== END MOBILE LOGIN DEBUG ===");
           res.json({
             id: user.id,
             username: user.username,
-            email: email,
-            name: name || user.username,
-            picture: picture,
-            authProvider: "google",
+            email: user.email || email || "",
+            fullName: user.fullName || name || "",
+            picture: user.picture || picture || "",
+            authProvider: user.authProvider || "google",
+            profileCompleted: user.profileCompleted || false,
+            taekwondoExperience: user.taekwondoExperience,
           });
         });
 

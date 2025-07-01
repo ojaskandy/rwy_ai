@@ -60,6 +60,7 @@ if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
 export default function AuthPage() {
   const {
     user,
+    isCheckingSession,
     googleLoginMutation,
     completeProfileMutation,
     showMobileWarning,
@@ -85,7 +86,8 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
-    if (user) {
+    // Only handle user navigation after session check is complete
+    if (!isCheckingSession && user) {
       if (user.profileCompleted) {
         navigate("/app");
       } else {
@@ -95,7 +97,7 @@ export default function AuthPage() {
         profileForm.setValue("username", user.username || "");
       }
     }
-  }, [user, navigate, profileForm]);
+  }, [user, isCheckingSession, navigate, profileForm]);
 
   useEffect(() => {
     let text = "CoachT";
@@ -173,7 +175,8 @@ export default function AuthPage() {
     completeProfileMutation?.mutate(data);
   };
 
-  if (loading) {
+  // Show loading while checking session or during animation
+  if (loading || isCheckingSession) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div 

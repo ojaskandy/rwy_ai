@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useLocation } from 'wouter';
 
 interface ShifuRecommendation {
   dailyGoal: string;
@@ -63,6 +64,7 @@ export default function ShifuDailyGoal() {
   const [hasStartedSession, setHasStartedSession] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Fetch today's daily goal
   const { data: goalData, isLoading, error } = useQuery<ShifuGoalResponse, Error>({
@@ -103,8 +105,41 @@ export default function ShifuDailyGoal() {
     }
   };
 
+  const getNavigationPath = (goalText: string): string => {
+    const goal = goalText.replace(/['"]/g, '').trim(); // Remove quotes and trim
+    
+    // Challenge routes
+    if (goal === "Max Punches Challenge") return "/challenges/max-punches";
+    if (goal === "Viper's Reflexes Challenge") return "/challenges/vipers-reflexes";
+    if (goal === "Balance Beam Breaker Challenge") return "/challenges/balance-beam-breaker";
+    if (goal === "Shifu Says Challenge") return "/challenges/shifu-says";
+    
+    // Practice moves - go to practice library and filter
+    if (["Front Kick", "Side Kick", "Round Kick", "Back Kick", "Axe Kick", "Fighting Stance"].includes(goal)) {
+      return `/practice?move=${encodeURIComponent(goal)}`;
+    }
+    
+    // Forms - go to start live routine
+    if (["Taegeuk Il Jang", "Taegeuk Ee Jang", "Heian Shodan", "Heian Nidan"].includes(goal)) {
+      return `/start-live-routine?form=${encodeURIComponent(goal)}`;
+    }
+    
+    // Default fallback
+    return "/practice";
+  };
+
   const handleStartSession = () => {
-    startSessionMutation.mutate();
+    if (goalData?.goal?.dailyGoal) {
+      const path = getNavigationPath(goalData.goal.dailyGoal);
+      startSessionMutation.mutate();
+      
+      // Navigate after a short delay to show the encouragement animation
+      setTimeout(() => {
+        setLocation(path);
+      }, 1500);
+    } else {
+      startSessionMutation.mutate();
+    }
   };
 
   if (isLoading) {
@@ -183,10 +218,7 @@ export default function ShifuDailyGoal() {
               
               {/* Reasoning with Shifu quote */}
               <div className="pt-3 border-t border-red-600/20">
-                <div className="flex items-start space-x-2">
-                  <ShifuCharacter expression="encouraging" size="small" />
-                  <p className="text-gray-300 text-sm italic flex-1">"{goal.reasoning}"</p>
-                </div>
+                <p className="text-gray-300 text-sm italic">"{goal.reasoning}"</p>
               </div>
             </div>
 

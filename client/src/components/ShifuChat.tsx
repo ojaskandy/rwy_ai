@@ -297,7 +297,7 @@ export default function ShifuChat({
                   onKeyPress={handleKeyPress}
                   placeholder="Ask Master Shifu for guidance..."
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 text-gray-900 bg-white border-gray-300 focus:border-amber-500 focus:ring-amber-500"
                 />
                 <Button
                   onClick={sendMessage}

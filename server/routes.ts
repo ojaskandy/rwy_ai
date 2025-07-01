@@ -115,10 +115,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Shifu Says custom poses API
   app.use("/api/shifu-says", shifuSaysPosesRoutes);
   
-  // Initialize OpenAI client for Shifu chat
-  const openaiClient = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: "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",
+  // Initialize DeepSeek client for text-based chat
+  const deepseekClient = new OpenAI({
+    baseURL: "https://api.deepseek.com",
+    apiKey: "sk-04692ca706b84a4ebd09612b69f50d89",
+  });
+
+  // Initialize OpenAI client for vision-based analysis (GPT-4V for image analysis)
+  const visionClient = new OpenAI({
+    apiKey: "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",
   });
 
   // Shifu's personality and context
@@ -147,6 +152,66 @@ CoachT App Features you can reference:
 
 Always stay in character as Master Shifu and provide helpful, encouraging guidance while maintaining his distinctive personality.`;
 
+  // Snap Feedback endpoint - for AI analysis of photos
+  app.post('/api/snap-feedback', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { image, userId } = req.body;
+
+      if (!image) {
+        return res.status(400).json({ error: 'Image data is required' });
+      }
+
+      // Construct the prompt for martial arts technique analysis
+      const analysisPrompt = `You are Master Shifu, a wise martial arts teacher. Analyze this technique photo and give concise feedback in your characteristic calm, encouraging style.
+
+Be brief but insightful (under 100 words). Focus on:
+- What they're doing well (encourage first)
+- One key improvement needed (be specific)
+- A practical tip to practice
+
+Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good form..." or "I see potential..."`;
+
+      const completion = await visionClient.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: analysisPrompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${image}`,
+                  detail: 'high'
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 150,
+        temperature: 0.7,
+      });
+
+      const feedback = completion.choices[0].message.content;
+
+      res.json({
+        feedback: feedback,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Snap feedback error:', error);
+      res.status(500).json({ 
+        error: 'Failed to analyze image',
+        message: "I'm having trouble analyzing the image right now. Please try again in a moment."
+      });
+    }
+  });
+
   // Shifu chat endpoint
   app.post('/api/shifu/chat', async (req, res) => {
     try {
@@ -163,16 +228,15 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
         { role: 'user', content: message }
       ];
 
-      const completion = await openaiClient.chat.completions.create({
-        model: "openai/gpt-4o",
-        messages: messages,
-        max_tokens: 500,
+      const completion = await visionClient.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: 'system', content: SHIFU_SYSTEM_PROMPT + ' Keep all responses under 50 words. Be concise and wise.' },
+          ...conversationHistory,
+          { role: 'user', content: message }
+        ],
+        max_tokens: 60,
         temperature: 0.7,
-      }, {
-        headers: {
-          "HTTP-Referer": "https://coacht.app",
-          "X-Title": "CoachT - Martial Arts Training App",
-        }
       });
 
       const response = completion.choices[0].message.content;
@@ -207,22 +271,20 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
   // Get daily wisdom/tip
   app.get('/api/shifu/daily-wisdom', async (req, res) => {
     try {
-      const completion = await openaiClient.chat.completions.create({
-        model: "openai/gpt-4o",
+      const completion = await visionClient.chat.completions.create({
+        model: "gpt-4o",
         messages: [
           { role: 'system', content: SHIFU_SYSTEM_PROMPT },
-          { role: 'user', content: 'Please provide a short daily wisdom or training tip for martial arts practitioners. Keep it under 100 words and in your characteristic style.' }
+          { role: 'user', content: 'Give one sentence of martial arts wisdom in Shifu style. Maximum 15 words. Be inspirational but brief. Return only the wisdom, no quotes or extra text.' }
         ],
-        max_tokens: 150,
+        max_tokens: 30,
         temperature: 0.8,
-      }, {
-        headers: {
-          "HTTP-Referer": "https://coacht.app",
-          "X-Title": "CoachT - Martial Arts Training App",
-        }
       });
 
-      const wisdom = completion.choices[0].message.content;
+      let wisdom = completion.choices[0].message.content || "Practice makes progress, not perfection.";
+      
+      // Remove quotes if present
+      wisdom = wisdom.replace(/^["']|["']$/g, '');
 
       res.json({
         wisdom,
@@ -233,7 +295,7 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
     } catch (error) {
       console.error('Daily wisdom error:', error);
       res.json({
-        wisdom: "Today, remember: The journey of a thousand miles begins with a single step. Practice with patience, young warrior.",
+        wisdom: "Practice makes progress, not perfection.",
         expression: 'neutral',
         timestamp: new Date().toISOString()
       });
@@ -353,11 +415,11 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
     }
     
     try {
-      const schema = insertTrackingSettingsSchema.pick({
-        shoulderWidthCalibration: true,
-        distanceCalibration: true,
-        cameraSettings: true,
-        preferredRoutines: true,
+      const schema = z.object({
+        shoulderWidthCalibration: z.number().optional(),
+        distanceCalibration: z.number().optional(),
+        cameraSettings: z.record(z.any()).optional(),
+        preferredRoutines: z.array(z.string()).optional(),
       });
       
       const result = schema.safeParse(req.body);
@@ -868,22 +930,20 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
 
     try {
       // Generate daily goal using LLM
-      const completion = await openaiClient.chat.completions.create({
-        model: "openai/gpt-4o",
+      const completion = await visionClient.chat.completions.create({
+        model: "gpt-4o",
         messages: [
           { role: 'system', content: SHIFU_SYSTEM_PROMPT },
-          { role: 'user', content: 'Generate a daily martial arts goal for today. Keep it concise and motivating, under 50 words. Format as: "Goal: [specific technique or practice] - [brief description]"' }
+          { role: 'user', content: 'Pick ONE specific item from CoachT app: CHALLENGES: "Max Punches Challenge", "Viper\'s Reflexes Challenge", "Balance Beam Breaker Challenge", "Shifu Says Challenge". PRACTICE MOVES: "Front Kick", "Side Kick", "Round Kick", "Back Kick", "Axe Kick", "Fighting Stance". FORMS: "Taegeuk Il Jang", "Taegeuk Ee Jang", "Heian Shodan", "Heian Nidan". Return ONLY the exact name, nothing else.' }
         ],
-        max_tokens: 100,
+        max_tokens: 20,
         temperature: 0.8,
-      }, {
-        headers: {
-          "HTTP-Referer": "https://coacht.app",
-          "X-Title": "CoachT - Martial Arts Training App",
-        }
       });
 
-      const goalText = completion.choices[0].message.content || "Horse Stance (beginner) - Hold for 30 seconds, focus on balance and breathing";
+      let goalText = completion.choices[0].message.content || "Front Kick";
+      
+      // Remove quotes if present
+      goalText = goalText.replace(/^["']|["']$/g, '').trim();
 
       // Store today's goal in logs (simplified - in production save to database)
       const today = new Date();
@@ -892,8 +952,10 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
       res.json({
         goal: {
           dailyGoal: goalText,
-          goalCategory: "taekwondo",
-          targetAccuracy: 80
+          category: "taekwondo",
+          targetAccuracy: 80,
+          difficulty: "intermediate",
+          reasoning: "Focus and precision lead to mastery, young warrior."
         },
         date: today.toISOString(),
         userId: req.user.id
@@ -906,9 +968,11 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
       
       res.json({
         goal: {
-          dailyGoal: "Horse Stance (beginner) - Hold for 30 seconds, focus on balance and breathing",
-          goalCategory: "taekwondo",
-          targetAccuracy: 80
+          dailyGoal: "Front Kick",
+          category: "taekwondo",
+          targetAccuracy: 80,
+          difficulty: "intermediate",
+          reasoning: "Focus and precision lead to mastery, young warrior."
         },
         date: today.toISOString(),
         userId: req.user.id
