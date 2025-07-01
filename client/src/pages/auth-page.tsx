@@ -88,9 +88,12 @@ export default function AuthPage() {
   useEffect(() => {
     // Only handle user navigation after session check is complete
     if (!isCheckingSession && user) {
+      console.log("Auth check complete. User:", user);
       if (user.profileCompleted) {
-        navigate("/app");
+        console.log("Profile completed, navigating to /app");
+        navigate("/app", { replace: true });
       } else {
+        console.log("Profile not completed, showing setup form");
         setShowProfileSetup(true);
         // Pre-fill form with existing data
         profileForm.setValue("fullName", user.fullName || "");
@@ -172,7 +175,16 @@ export default function AuthPage() {
   };
 
   const onProfileSetupSubmit = (data: ProfileSetupFormValues) => {
-    completeProfileMutation?.mutate(data);
+    console.log("Submitting profile setup data:", data);
+    completeProfileMutation?.mutate(data, {
+      onSuccess: (updatedUser) => {
+        console.log("Profile setup successful, user updated:", updatedUser);
+        navigate("/app", { replace: true });
+      },
+      onError: (error) => {
+        console.error("Profile setup failed:", error);
+      }
+    });
   };
 
   // Show loading while checking session or during animation
