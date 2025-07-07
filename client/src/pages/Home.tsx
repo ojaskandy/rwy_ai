@@ -639,7 +639,7 @@ export default function Home() {
       {/* Mobile-optimized Header */}
       <header className="bg-gradient-to-r from-black to-red-950/90 border-b border-red-900/30 px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/welcome" className="cursor-pointer">
+          <Link to="/app" className="cursor-pointer">
             <h1 className="text-lg sm:text-2xl font-bold gradient-heading flex items-center group z-50 relative">
               <motion.span 
                 className="material-icons text-red-600 mr-1 sm:mr-2 text-base sm:text-lg"

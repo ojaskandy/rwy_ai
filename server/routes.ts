@@ -19,6 +19,7 @@ import * as path from 'path';
 import { Resend } from 'resend';
 import multer from "multer";
 import { OpenAI } from 'openai';
+import Lmnt from 'lmnt-node';
 
 // Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
@@ -118,13 +119,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize DeepSeek client for text-based chat
   const deepseekClient = new OpenAI({
     baseURL: "https://api.deepseek.com",
-    apiKey: "sk-04692ca706b84a4ebd09612b69f50d89",
+    apiKey: process.env.DEEPSEEK_API_KEY || "",
   });
 
   // Initialize OpenAI client for vision-based analysis (GPT-4V for image analysis)
   const visionClient = new OpenAI({
-    apiKey: "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",
+    apiKey: process.env.OPENAI_API_KEY || "",
   });
+
+  // Initialize LMNT client for text-to-speech
+  const lmnt = new Lmnt({ apiKey: process.env.LMNT_API_KEY });
 
   // Shifu's personality and context
   const SHIFU_SYSTEM_PROMPT = `You are Master Shifu from Kung Fu Panda, now serving as an AI coach for CoachT, a martial arts training application. You are wise, encouraging, and speak with the distinctive voice and mannerisms of Master Shifu.
@@ -166,14 +170,14 @@ Always stay in character as Master Shifu and provide helpful, encouraging guidan
       }
 
       // Construct the prompt for martial arts technique analysis
-      const analysisPrompt = `You are Master Shifu, a wise martial arts teacher. Analyze this technique photo and give concise feedback in your characteristic calm, encouraging style.
+      const analysisPrompt = `You are an experienced martial arts instructor analyzing a technique photo. Provide concise, practical feedback in a calm, professional tone.
 
-Be brief but insightful (under 100 words). Focus on:
+Be brief but insightful (under 80 words). Focus on:
 - What they're doing well (encourage first)
 - One key improvement needed (be specific)
 - A practical tip to practice
 
-Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good form..." or "I see potential..."`;
+Use natural, conversational language. Start with phrases like "Good form..." or "I see..." or "Nice work on..."`;
 
       const completion = await visionClient.chat.completions.create({
         model: "gpt-4o",
@@ -192,7 +196,7 @@ Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good
             ]
           }
         ],
-        max_tokens: 150,
+        max_tokens: 100,
         temperature: 0.7,
       });
 
@@ -231,11 +235,11 @@ Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good
       const completion = await visionClient.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: 'system', content: SHIFU_SYSTEM_PROMPT + ' Keep all responses under 50 words. Be concise and wise.' },
+          { role: 'system', content: SHIFU_SYSTEM_PROMPT + ' Keep all responses under 25 words. Be extremely concise, wise, and direct. Use short sentences.' },
           ...conversationHistory,
           { role: 'user', content: message }
         ],
-        max_tokens: 60,
+        max_tokens: 35,
         temperature: 0.7,
       });
 
@@ -298,6 +302,46 @@ Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good
         wisdom: "Practice makes progress, not perfection.",
         expression: 'neutral',
         timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Text-to-speech endpoint for Shifu feedback
+  app.post('/api/shifu/speak', async (req, res) => {
+    try {
+      const { text } = req.body;
+
+      if (!text) {
+        return res.status(400).json({ error: 'Text is required' });
+      }
+
+      if (!process.env.LMNT_API_KEY) {
+        return res.status(500).json({ error: 'LMNT API key not configured' });
+      }
+
+      // Generate speech using LMNT Node.js client
+      const response = await lmnt.speech.generate({
+        text: text,
+        voice: '93c572e9-63a8-452f-ba4d-c3f5641bbdd2', // Using the custom "shifu" voice
+        format: 'mp3',
+        speed: 0.9 // Slightly slower for more contemplative delivery
+      });
+
+      // Collect the audio stream as a binary array buffer
+      const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+      // Set appropriate headers for audio streaming
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Disposition', 'inline; filename="shifu-speech.mp3"');
+      
+      // Send the audio buffer back to the client
+      res.send(audioBuffer);
+
+    } catch (error) {
+      console.error('Text-to-speech error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate speech',
+        message: 'Unable to generate audio at this time. Please try again later.'
       });
     }
   });
@@ -1068,6 +1112,139 @@ Use Shifu's warm, wise tone. Start with phrases like "Young warrior..." or "Good
       res.status(500).json({ error: "Failed to fetch Shifu logs" });
     }
   });
+
+  // Helper function to calculate consistency (lower standard deviation = more consistent)
+  const calculateConsistency = (angles: number[]): number => {
+    const mean = angles.reduce((sum: number, angle: number) => sum + angle, 0) / angles.length;
+    const variance = angles.reduce((sum: number, angle: number) => sum + Math.pow(angle - mean, 2), 0) / angles.length;
+    const stdDev = Math.sqrt(variance);
+    return Math.max(0, 100 - (stdDev * 2)); // Convert to 0-100 scale where 100 is most consistent
+  };
+
+  // Add new route for routine analysis with natural language feedback
+  app.post('/api/routine-analysis', async (req, res) => {
+  try {
+    const { userAngleData, instructorAngleData, routineType = 'martial arts routine', overallScore = 0 } = req.body;
+    
+    if (!userAngleData || !instructorAngleData) {
+      return res.status(400).json({ error: 'Missing angle data' });
+    }
+
+    // Perform DTW analysis on joint angles
+    const performanceData = [];
+    const jointNames = Object.keys(userAngleData.angles);
+    let totalDtwScore = 0;
+    let validJoints = 0;
+
+    // Calculate DTW scores for each joint
+    jointNames.forEach(joint => {
+      if (userAngleData.angles[joint] && instructorAngleData.angles[joint]) {
+        const userAngles = userAngleData.angles[joint];
+        const instructorAngles = instructorAngleData.angles[joint];
+        
+        if (userAngles.length >= 3 && instructorAngles.length >= 3) {
+          // Calculate differences and consistency
+          const userAvg = userAngles.reduce((a, b) => a + b, 0) / userAngles.length;
+          const instructorAvg = instructorAngles.reduce((a, b) => a + b, 0) / instructorAngles.length;
+          const difference = Math.abs(userAvg - instructorAvg);
+          
+          // Calculate consistency (inverse of standard deviation)
+          const userVariance = userAngles.reduce((acc, val) => acc + Math.pow(val - userAvg, 2), 0) / userAngles.length;
+          const userStdDev = Math.sqrt(userVariance);
+          const consistency = Math.max(0, 100 - (userStdDev * 2)); // Convert to percentage
+          
+          // Calculate DTW score based on difference (lower difference = higher score)
+          const dtwScore = Math.max(0, 100 - (difference * 2));
+          
+          performanceData.push({
+            joint,
+            userAverage: Math.round(userAvg),
+            instructorAverage: Math.round(instructorAvg),
+            difference: Math.round(difference),
+            consistency: Math.round(consistency),
+            userRange: `${Math.min(...userAngles).toFixed(1)}° - ${Math.max(...userAngles).toFixed(1)}°`,
+            instructorRange: `${Math.min(...instructorAngles).toFixed(1)}° - ${Math.max(...instructorAngles).toFixed(1)}°`,
+            dtwScore: Math.round(dtwScore)
+          });
+          
+          totalDtwScore += dtwScore;
+          validJoints++;
+        }
+      }
+    });
+
+    // Calculate overall DTW score
+    const avgDtwScore = validJoints > 0 ? Math.round(totalDtwScore / validJoints) : 0;
+    
+    // Use the more reliable score (prefer DTW analysis if available)
+    const reliableScore = avgDtwScore > 0 ? avgDtwScore : Math.min(100, Math.max(0, overallScore));
+
+    // Prepare data for LLM analysis
+    const analysisData = {
+      overallScore: reliableScore,
+      totalJoints: jointNames.length,
+      validJoints,
+      performanceData: performanceData.slice(0, 5), // Limit to top 5 for brevity
+      avgDifference: performanceData.length > 0 ? 
+        Math.round(performanceData.reduce((acc, joint) => acc + joint.difference, 0) / performanceData.length) : 0
+    };
+
+    // LLM prompt for analysis
+    const prompt = `As Master Shifu, analyze this martial arts performance:
+
+Overall Score: ${reliableScore}%
+Joints Analyzed: ${validJoints}/${jointNames.length}
+Average Angle Difference: ${analysisData.avgDifference}°
+
+Top Joint Analysis:
+${performanceData.slice(0, 3).map(joint => 
+  `- ${joint.joint}: ${joint.difference}° off, ${joint.consistency}% consistent`
+).join('\n')}
+
+Provide concise feedback in 80-100 words:
+- Overall assessment
+- 2-3 specific improvements
+- Encouraging martial arts wisdom
+
+Format as natural paragraph, no bullet points.`;
+
+    const completion = await visionClient.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are Master Shifu, a wise martial arts instructor. Provide encouraging yet specific feedback about technique performance."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 200,
+      temperature: 0.7
+    });
+
+    const feedback = completion.choices[0]?.message?.content || "Your dedication to training shows promise. Continue practicing with focus and patience.";
+
+    res.json({
+      success: true,
+      feedback,
+      techniqueTips: "Focus on consistency and proper form alignment.",
+      performanceData,
+      overallScore: reliableScore,
+      dtwScore: avgDtwScore,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error in routine analysis:', error);
+    res.status(500).json({ 
+      error: 'Failed to analyze routine',
+      success: false,
+      feedback: "Your effort in training is commendable. Keep practicing with dedication and you will see improvement."
+    });
+    }
+});
 
   const httpServer = createServer(app);
   return httpServer;

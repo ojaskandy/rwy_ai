@@ -32,79 +32,85 @@ import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
 import InternshipApplication from "@/pages/InternshipApplication";
 import AdminApplications from "@/pages/AdminApplications";
 import SnapFeedback from "@/pages/SnapFeedback";
+import GlobalDock from "@/components/GlobalDock";
 
 function Router() {
   return (
-    <Switch>
-      {/* Authentication page as default */}
-      <Route path="/" component={AuthPage} />
+    <>
+      <Switch>
+        {/* Authentication page as default */}
+        <Route path="/" component={AuthPage} />
 
-      {/* Welcome page with silhouette zoom interaction */}
-      <Route path="/welcome" component={WelcomePage} />
+        {/* Welcome page with silhouette zoom interaction */}
+        <Route path="/welcome" component={WelcomePage} />
 
-      {/* Marketing landing page moved to /renovate */}
-      <Route path="/renovate" component={MarketingLanding} />
+        {/* Marketing landing page moved to /renovate */}
+        <Route path="/renovate" component={MarketingLanding} />
 
-      {/* User dashboard after login - This might be redundant if /app is the main target */}
-      {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
-      <Route path="/dashboard" component={Landing} />
+        {/* User dashboard after login - This might be redundant if /app is the main target */}
+        {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
+        <Route path="/dashboard" component={Landing} />
 
-      {/* Main application with camera tracking */}
-      <ProtectedRoute path="/app" component={Home} />
+        {/* Main application with camera tracking */}
+        <ProtectedRoute path="/app" component={Home} />
 
-      {/* Practice page with moves library */}
-      <ProtectedRoute path="/practice" component={Practice} />
+        {/* Practice page with moves library */}
+        <ProtectedRoute path="/practice" component={Practice} />
 
-      {/* User profile page */}
-      <ProtectedRoute path="/profile" component={Profile} />
+        {/* User profile page */}
+        <ProtectedRoute path="/profile" component={Profile} />
 
-      {/* Challenges page */}
-      <ProtectedRoute path="/challenges" component={Challenges} />
+        {/* Challenges page */}
+        <ProtectedRoute path="/challenges" component={Challenges} />
 
-      {/* Workouts page */}
-      <ProtectedRoute path="/workouts" component={Workouts} />
+        {/* Workouts page */}
+        <ProtectedRoute path="/workouts" component={Workouts} />
 
-      {/* Max Punches Challenge page */}
-      <ProtectedRoute path="/challenges/max-punches" component={MaxPunchesChallenge} />
+        {/* Max Punches Challenge page */}
+        <ProtectedRoute path="/challenges/max-punches" component={MaxPunchesChallenge} />
 
-      {/* Viper's Reflexes Challenge page */}
-      <Route path="/challenges/reaction-time" component={ReactionTimeChallenge} />
+        {/* Viper's Reflexes Challenge page */}
+        <Route path="/challenges/reaction-time" component={ReactionTimeChallenge} />
 
-      {/* Balance Beam Challenge page */}
-      <Route path="/challenges/balance-beam" component={BalanceBeamBreakerChallenge} />
+        {/* Balance Beam Challenge page */}
+        <Route path="/challenges/balance-beam" component={BalanceBeamBreakerChallenge} />
 
-      {/* Shifu Says Challenge page */}
-      <Route path="/challenges/shifu-says" component={ShifuSaysChallenge} />
+        {/* Shifu Says Challenge page */}
+        <Route path="/challenges/shifu-says" component={ShifuSaysChallenge} />
 
-      {/* Workout pages */}
-      <Route path="/workouts/pushups" component={PushupsWorkout} />
-      <Route path="/workouts/crunches" component={CrunchesWorkout} />
-      <Route path="/workouts/jumping-jacks" component={JumpingJacksWorkout} />
+        {/* Workout pages */}
+        <Route path="/workouts/pushups" component={PushupsWorkout} />
+        <Route path="/workouts/crunches" component={CrunchesWorkout} />
+        <Route path="/workouts/jumping-jacks" component={JumpingJacksWorkout} />
 
-      {/* Live Routine Demo */}
-      <Route path="/live-routine" component={LiveRoutineDemo} />
+        {/* Live Routine Demo */}
+        <Route path="/live-routine" component={LiveRoutineDemo} />
 
-      {/* Snap Feedback */}
-      <Route path="/snap-feedback" component={SnapFeedback} />
+        {/* Snap Feedback */}
+        <Route path="/snap-feedback" component={SnapFeedback} />
 
-      {/* Authentication page (also accessible directly) */}
-      <Route path="/auth" component={AuthPage} />
+        {/* Authentication page (also accessible directly) */}
+        <Route path="/auth" component={AuthPage} />
 
-      {/* Early access signup page */}
-      <Route path="/early-access" component={EarlyAccess} />
+        {/* Early access signup page */}
+        <Route path="/early-access" component={EarlyAccess} />
 
-      {/* Early access landing page for mobile users */}
-      <Route path="/early" component={MobileLandingPage} />
+        {/* Early access landing page for mobile users */}
+        <Route path="/early" component={MobileLandingPage} />
 
-      {/* Internship application page */}
-      <Route path="/internship" component={InternshipApplication} />
+        {/* Internship application page */}
+        <Route path="/internship" component={InternshipApplication} />
 
-      {/* Admin applications page */}
-      <Route path="/admin/applications" component={AdminApplications} />
+        {/* Admin applications page */}
+        <Route path="/admin/applications" component={AdminApplications} />
 
-      {/* 404 page */}
-      <Route component={NotFound} />
-    </Switch>
+        {/* 404 page */}
+        <Route component={NotFound} />
+      </Switch>
+      
+      {/* Global iOS-style dock */}
+      <GlobalDock />
+    </>
   );
 }
 

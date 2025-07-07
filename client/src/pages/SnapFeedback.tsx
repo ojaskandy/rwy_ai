@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Camera, RotateCcw, Send, Loader2, Zap, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Camera, RotateCcw, Send, Loader2, Zap, Image as ImageIcon, X, Volume2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
@@ -21,6 +21,10 @@ const SnapFeedback: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [showFlash, setShowFlash] = useState(false);
+  const [showRedBorder, setShowRedBorder] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
   // Initialize camera on mount
   useEffect(() => {
@@ -30,13 +34,16 @@ const SnapFeedback: React.FC = () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      // Cleanup audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+      }
     };
   }, [cameraFacing]);
 
   const initializeCamera = async () => {
     try {
-      setError('');
-      
       // Stop existing stream
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -53,6 +60,7 @@ const SnapFeedback: React.FC = () => {
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(newStream);
       setHasPermission(true);
+      setError('');
 
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
@@ -71,6 +79,10 @@ const SnapFeedback: React.FC = () => {
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
+    // Trigger flash and red border effects
+    setShowFlash(true);
+    setShowRedBorder(true);
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -87,6 +99,16 @@ const SnapFeedback: React.FC = () => {
     // Get image data as base64
     const photoData = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedPhoto(photoData);
+
+    // Hide flash after 150ms
+    setTimeout(() => {
+      setShowFlash(false);
+    }, 150);
+
+    // Hide red border after 1 second
+    setTimeout(() => {
+      setShowRedBorder(false);
+    }, 1000);
   };
 
   const uploadPhoto = () => {
@@ -104,6 +126,59 @@ const SnapFeedback: React.FC = () => {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const playFeedbackAudio = async (text: string) => {
+    try {
+      setIsPlayingAudio(true);
+
+      // Stop any currently playing audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+      }
+
+      const response = await fetch('/api/shifu/speak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      setCurrentAudio(audio);
+
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsPlayingAudio(false);
+    }
+  };
+
+  const stopAudio = () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setIsPlayingAudio(false);
+    }
   };
 
   const getFeedback = async () => {
@@ -147,10 +222,37 @@ const SnapFeedback: React.FC = () => {
     setCapturedPhoto(null);
     setFeedback('');
     setError('');
+    // Stop any playing audio
+    stopAudio();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900/20 text-white flex flex-col">
+    <div className={`min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900/20 text-white flex flex-col transition-all duration-1000 ${showRedBorder ? 'border-4 border-red-500' : ''}`}>
+      {/* Flash Effect */}
+      <AnimatePresence>
+        {showFlash && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-white z-50 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Hidden canvas for photo capture */}
+      <canvas ref={canvasRef} className="hidden" />
+      
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
       {/* Top Navigation Strip */}
       <div className="w-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 shadow-lg z-50 border-b border-red-500/20">
         <div className="flex items-center justify-between">
@@ -306,12 +408,25 @@ const SnapFeedback: React.FC = () => {
                   <Zap className="h-5 w-5 mr-2" />
                   AI Analysis
                 </h3>
-                <button
-                  onClick={() => setFeedback('')}
-                  className="p-2 hover:bg-red-600/20 rounded-full transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-400 hover:text-white" />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => isPlayingAudio ? stopAudio() : playFeedbackAudio(feedback)}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+                    disabled={!feedback}
+                  >
+                    {isPlayingAudio ? (
+                      <Loader2 className="h-4 w-4 text-white animate-spin" />
+                    ) : (
+                      <Volume2 className="h-4 w-4 text-white" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setFeedback('')}
+                    className="p-2 hover:bg-red-600/20 rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-400 hover:text-white" />
+                  </button>
+                </div>
               </div>
               
               <div className="text-gray-200 whitespace-pre-wrap leading-relaxed">
@@ -337,18 +452,6 @@ const SnapFeedback: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Hidden canvas for photo capture */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-      
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        style={{ display: 'none' }}
-      />
     </div>
   );
 };
