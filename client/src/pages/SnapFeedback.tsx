@@ -5,6 +5,7 @@ import { ArrowLeft, Camera, RotateCcw, Send, Loader2, Zap, Image as ImageIcon, X
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas } from '@/lib/cameraUtils';
 
 const SnapFeedback: React.FC = () => {
   const [, navigate] = useLocation();
