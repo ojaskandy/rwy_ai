@@ -33,6 +33,7 @@ import MobileWarningDialog from "@/components/MobileWarningDialog";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { Capacitor } from "@capacitor/core";
+import { loginWithMagicLink } from "../loginWithMagicLink";
 
 // Profile setup schema
 const profileSetupSchema = z.object({
@@ -72,6 +73,7 @@ export default function AuthPage() {
   const [typedText, setTypedText] = useState("");
   const [logoContrast, setLogoContrast] = useState(false);
   const [gradientVisible, setGradientVisible] = useState(false);
+  const [email, setEmail] = useState("");
 
   const isNative = Capacitor.isNativePlatform();
   const isIOS = Capacitor.getPlatform() === "ios";
@@ -172,6 +174,14 @@ export default function AuthPage() {
     } catch (error) {
       console.error("Native Google login failed:", error);
     }
+  };
+
+  const handleMagicLogin = async () => {
+    if (!email) {
+      alert("Please enter your email address");
+      return;
+    }
+    await loginWithMagicLink(email);
   };
 
   const onProfileSetupSubmit = (data: ProfileSetupFormValues) => {
@@ -403,6 +413,30 @@ export default function AuthPage() {
                 width={300}
               />
             )}
+
+            {/* Magic Link Section */}
+            <div className="w-full max-w-[300px] space-y-3">
+              <div className="flex items-center">
+                <div className="flex-1 border-t border-gray-600"></div>
+                <div className="px-3 text-gray-400 text-sm">Or use Magic Link</div>
+                <div className="flex-1 border-t border-gray-600"></div>
+              </div>
+              
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+              />
+              
+              <Button
+                onClick={handleMagicLogin}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium py-3 rounded-full transition-all transform hover:scale-[1.02]"
+              >
+                Send Magic Link
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
