@@ -10,7 +10,7 @@ export const users = pgTable("users", {
   fullName: text("full_name"), // User's real name from profile setup
   password: text("password").default(""), // Optional for OAuth users
   picture: text("picture"), // Google profile picture URL
-  authProvider: text("auth_provider").default("google"), // "google" or "local" for legacy users
+  authProvider: text("auth_provider").default("google"), // "google", "local", or "guest" for different auth methods
   profileCompleted: boolean("profile_completed").default(false), // Whether user completed initial setup
   taekwondoExperience: text("taekwondo_experience"), // "less_than_1_year", "1_3_years", "3_5_years", "5_plus_years"
   lastPracticeDate: timestamp("last_practice_date"),

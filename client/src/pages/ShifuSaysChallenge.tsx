@@ -7,7 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
 import { detectMartialArtsPoseAdvanced, analyzePoseFromKeypoints, updateReferencePose } from '@/lib/poseAnalysis';
-import { getCameraStream, initializeMobileVideo, setupMobileCanvas, isMobileDevice, requestCameraPermission } from '@/lib/cameraUtils';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas, isMobileDevice, requestCameraPermission, initializeMobileCamera, initializeCameraWithUserGesture } from '@/lib/cameraUtils';
 import PoseAnalyzer from '@/components/PoseAnalyzer';
 
 // Game interfaces removed - will be rebuilt
@@ -82,20 +82,43 @@ const ShifuSaysChallenge: React.FC = () => {
     setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${info}`]);
   };
 
-  // Camera permission handler
+  // Camera permission handler with mobile optimization
   const handleCameraPermission = async () => {
     try {
       setCameraError(null);
       console.log('Requesting camera permission...');
-      const granted = await requestCameraPermission();
+      addDebugInfo('Requesting camera permission...');
+      
+      // Use mobile-optimized camera initialization
+      const isMobile = isMobileDevice();
+      let granted = false;
+      
+      if (isMobile) {
+        console.log('Mobile device detected - using mobile camera initialization');
+        addDebugInfo('Mobile device detected');
+        
+        // Try mobile camera initialization
+        const stream = await initializeMobileCamera();
+        if (stream) {
+          granted = true;
+          // Stop the stream immediately after permission check
+          stream.getTracks().forEach(track => track.stop());
+        }
+      } else {
+        // Desktop camera permission
+        granted = await requestCameraPermission();
+      }
       
       if (granted) {
         setHasCameraPermission(true);
         console.log('Camera permission granted');
         addDebugInfo('Camera permission granted');
       } else {
-        setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
+        setCameraError(isMobile 
+          ? 'Camera permission denied. Please allow camera access and ensure no other apps are using the camera.'
+          : 'Camera permission denied. Please allow camera access in your browser settings.');
         console.error('Camera permission denied');
+        addDebugInfo('Camera permission denied');
       }
     } catch (error: any) {
       setCameraError(error.message || 'Failed to access camera');

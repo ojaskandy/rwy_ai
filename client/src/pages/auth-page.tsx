@@ -64,6 +64,7 @@ export default function AuthPage() {
     isCheckingSession,
     googleLoginMutation,
     completeProfileMutation,
+    guestLoginMutation,
     showMobileWarning,
     setShowMobileWarning,
   } = useAuth();
@@ -182,6 +183,17 @@ export default function AuthPage() {
       return;
     }
     await loginWithMagicLink(email);
+  };
+
+  const handleGuestLogin = () => {
+    guestLoginMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/app", { replace: true });
+      },
+      onError: (error) => {
+        console.error("Guest login failed:", error);
+      }
+    });
   };
 
   const onProfileSetupSubmit = (data: ProfileSetupFormValues) => {
@@ -435,6 +447,23 @@ export default function AuthPage() {
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium py-3 rounded-full transition-all transform hover:scale-[1.02]"
               >
                 Send Magic Link
+              </Button>
+            </div>
+
+            {/* Guest Login Section */}
+            <div className="w-full max-w-[300px] space-y-3">
+              <div className="flex items-center">
+                <div className="flex-1 border-t border-gray-600"></div>
+                <div className="px-3 text-gray-400 text-sm">Or try without signup</div>
+                <div className="flex-1 border-t border-gray-600"></div>
+              </div>
+              
+              <Button
+                onClick={handleGuestLogin}
+                disabled={guestLoginMutation.isPending}
+                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 rounded-full transition-all transform hover:scale-[1.02] disabled:opacity-50"
+              >
+                {guestLoginMutation.isPending ? "Setting up..." : "Bypass as guest"}
               </Button>
             </div>
           </CardContent>

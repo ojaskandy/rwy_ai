@@ -691,6 +691,45 @@ export function setupAuth(app: Express): void {
     }
   });
 
+  // Guest login endpoint
+  app.post("/api/guest-login", async (req, res, next) => {
+    try {
+      // Create a guest user with a unique username based on timestamp
+      const guestUsername = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const guestUser = await storage.createUser({
+        username: guestUsername,
+        email: null,
+        password: null, // Guest users don't have passwords
+        fullName: "Guest User",
+        picture: null,
+        authProvider: "guest",
+        profileCompleted: true, // Skip profile setup for guests
+        taekwondoExperience: "beginner",
+      });
+
+      // Log the guest user in automatically
+      req.login(guestUser, (err) => {
+        if (err) return next(err);
+        console.log("Guest login successful for user:", guestUser.username);
+        res.json({
+          id: guestUser.id,
+          username: guestUser.username,
+          email: guestUser.email,
+          fullName: guestUser.fullName,
+          picture: guestUser.picture,
+          authProvider: guestUser.authProvider,
+          profileCompleted: guestUser.profileCompleted,
+          taekwondoExperience: guestUser.taekwondoExperience,
+        });
+      });
+    } catch (error) {
+      console.error("Guest login error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Guest login failed", details: errorMessage });
+    }
+  });
+
   // Get current user
   app.get("/api/user", (req, res) => {
     if (req.isAuthenticated()) {

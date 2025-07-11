@@ -15,7 +15,7 @@ type User = {
   email?: string;
   fullName?: string;
   picture?: string;
-  authProvider?: "local" | "google";
+  authProvider?: "local" | "google" | "guest";
   profileCompleted?: boolean;
   taekwondoExperience?: string;
 };
@@ -44,6 +44,7 @@ type AuthContextType = {
   googleLoginMutation: any;
   completeProfileMutation: any;
   logoutMutation: any;
+  guestLoginMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
   isMobileDevice: boolean;
@@ -239,6 +240,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     },
   });
 
+  // Guest login mutation
+  const guestLoginMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/guest-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Guest login failed");
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data: User) => {
+      setUser(data);
+      console.log("Guest login successful:", data);
+    },
+    onError: (error: Error) => {
+      console.error("Guest login failed:", error.message);
+    },
+  });
+
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -268,6 +294,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     googleLoginMutation,
     completeProfileMutation,
     logoutMutation,
+    guestLoginMutation,
     showMobileWarning,
     setShowMobileWarning,
     isMobileDevice,
