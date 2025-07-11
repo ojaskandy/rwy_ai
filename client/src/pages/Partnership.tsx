@@ -28,8 +28,8 @@ export default function Partnership() {
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-red-900/40 to-orange-900/40" />
+        {/* Cursor-style Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-700 via-red-600 to-blue-600" />
         
         <div className="relative z-10 px-6 py-20 text-center">
           <motion.h1 
@@ -49,25 +49,14 @@ export default function Partnership() {
             Built to make you extraordinarily skilled, CoachT is the best way to train with AI.
           </motion.p>
 
-          {/* Statistics */}
+          {/* Highlighted Stat */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="grid md:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto"
+            className="text-center mb-8"
           >
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-400 mb-2">93%</div>
-              <div className="text-gray-300 text-sm">of parents prefer tech-forward schools</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-400 mb-2">30%</div>
-              <div className="text-gray-300 text-sm">increase in student skill progression</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-400 mb-2">50%</div>
-              <div className="text-gray-300 text-sm">time savings for instructors</div>
-            </div>
+            <div className="text-2xl font-semibold text-white mb-2">93% of parents prefer tech-forward schools</div>
           </motion.div>
           
           <motion.div 
@@ -77,7 +66,7 @@ export default function Partnership() {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Button 
-              className="bg-white text-black hover:bg-gray-100 px-8 py-3"
+              className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-lg font-semibold"
               onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
             >
               Schedule a Demo
@@ -85,9 +74,14 @@ export default function Partnership() {
             <Button 
               variant="outline" 
               className="border-white text-white hover:bg-white hover:text-black px-8 py-3"
-              onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+              onClick={() => {
+                const testimonialsSection = document.getElementById('testimonials');
+                if (testimonialsSection) {
+                  testimonialsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             >
-              Schedule a Demo
+              See Testimonials
             </Button>
           </motion.div>
         </div>
@@ -120,28 +114,28 @@ export default function Partnership() {
       </div>
 
       {/* Statistics Details Section */}
-      <div className="py-20 px-6">
+      <div className="py-20 px-6 bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-3 gap-12 text-center">
             <div className="space-y-4">
-              <div className="text-5xl font-bold text-red-400">93%</div>
-              <h3 className="text-xl font-semibold text-white">Parent Preference</h3>
+              <div className="text-5xl font-bold text-red-400">$15k+</div>
+              <h3 className="text-xl font-semibold text-white">Additional Revenue</h3>
               <p className="text-gray-300">
-                93% of parents prefer tech-forward schools that embrace innovative training methods and cutting-edge technology.
+                Schools using CoachT generate an additional $15,000+ in revenue through increased enrollment and premium programs.
               </p>
             </div>
             <div className="space-y-4">
               <div className="text-5xl font-bold text-red-400">30%</div>
-              <h3 className="text-xl font-semibold text-white">Faster Progress</h3>
+              <h3 className="text-xl font-semibold text-white">Student Retention</h3>
               <p className="text-gray-300">
-                Schools using CoachT report a 30% increase in student skill progression in just one semester.
+                Experience a 30% increase in student retention rates with engaging AI-powered training that keeps students motivated.
               </p>
             </div>
             <div className="space-y-4">
-              <div className="text-5xl font-bold text-red-400">50%</div>
-              <h3 className="text-xl font-semibold text-white">Time Savings</h3>
+              <div className="text-5xl font-bold text-red-400">15%</div>
+              <h3 className="text-xl font-semibold text-white">New Students</h3>
               <p className="text-gray-300">
-                Instructors save up to 50% of class time previously spent on repetitive corrections — allowing more focus on individual growth and advanced techniques.
+                Attract 15% more new students with innovative technology that sets your school apart from traditional competitors.
               </p>
             </div>
           </div>
@@ -237,7 +231,7 @@ export default function Partnership() {
       </div>
 
       {/* Testimonials */}
-      <div className="py-20 px-6">
+      <div id="testimonials" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-4">Loved by world-class martial artists</h2>
