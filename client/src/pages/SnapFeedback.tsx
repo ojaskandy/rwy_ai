@@ -29,6 +29,11 @@ const SnapFeedback: React.FC = () => {
   // Initialize camera on mount
   useEffect(() => {
     initializeCamera();
+    
+    // Prevent body scroll when component mounts
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
     return () => {
       // Cleanup camera stream
       if (stream) {
@@ -39,6 +44,8 @@ const SnapFeedback: React.FC = () => {
         currentAudio.pause();
         currentAudio.src = '';
       }
+      // Restore original scroll behavior
+      document.body.style.overflow = originalStyle;
     };
   }, [cameraFacing]);
 
@@ -227,7 +234,7 @@ const SnapFeedback: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900/20 text-white flex flex-col transition-all duration-1000 ${showRedBorder ? 'border-4 border-red-500' : ''}`}>
+    <div className={`snap-feedback-page bg-gradient-to-br from-black via-gray-900 to-red-900/20 text-white flex flex-col transition-all duration-1000 ${showRedBorder ? 'border-4 border-red-500' : ''}`}>
       {/* Flash Effect */}
       <AnimatePresence>
         {showFlash && (
@@ -274,9 +281,9 @@ const SnapFeedback: React.FC = () => {
       </div>
 
       {/* Mobile-First Camera Interface */}
-      <div className="relative flex-1 flex flex-col">
+      <div className="relative flex-1 flex flex-col min-h-0">
         {/* Camera Feed */}
-        <div className="flex-1 relative bg-black">
+        <div className="flex-1 relative bg-black overflow-hidden">
           {!capturedPhoto ? (
             // Live Camera View
             <>
@@ -333,8 +340,8 @@ const SnapFeedback: React.FC = () => {
           )}
         </div>
 
-        {/* Bottom Controls */}
-        <div className="bg-black/90 p-6">
+        {/* Bottom Controls - Fixed at bottom */}
+        <div className="bg-black/90 p-4 sm:p-6 flex-shrink-0">
           {!capturedPhoto ? (
             // Capture Controls
             <div className="flex justify-center items-center gap-6">

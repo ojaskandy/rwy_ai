@@ -1103,3 +1103,39 @@ body {
   animation: dock-slide-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Mobile viewport optimization for Snap Feedback page */
+.snap-feedback-page {
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Prevent mobile scrolling and bouncing */
+.snap-feedback-page,
+.snap-feedback-page * {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+/* Ensure proper mobile viewport handling */
+@media screen and (max-width: 768px) {
+  .snap-feedback-page {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+/* Safari mobile viewport fix */
+@supports (-webkit-touch-callout: none) {
+  .snap-feedback-page {
+    height: -webkit-fill-available;
+  }
+}
+
