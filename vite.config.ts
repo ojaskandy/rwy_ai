@@ -27,5 +27,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      // 💥 Tell Vite/Rollup to ignore @capacitor/browser
+      external: ["@capacitor/browser"],
+    },
   },
 });

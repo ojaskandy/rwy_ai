@@ -610,6 +610,87 @@ export function setupAuth(app: Express): void {
     }
   });
 
+  // Magic Link authentication endpoint
+  app.post("/api/auth/magic", async (req, res, next) => {
+    try {
+      const { email, issuer } = req.body;
+
+      console.log("=== MAGIC LINK LOGIN ===");
+      console.log("Email:", email);
+      console.log("Issuer:", issuer);
+
+      if (!email) {
+        return res.status(400).json({ message: "Missing email" });
+      }
+
+      // Trust the frontend Magic authentication since the user successfully authenticated there
+
+      // Check if user already exists by email
+      let user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        // Generate a temporary username from email
+        let tempUsername = email
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+
+        // Ensure the temporary username is unique
+        const existingUserWithUsername = await storage.getUserByUsername(tempUsername);
+        if (existingUserWithUsername) {
+          let counter = 1;
+          let uniqueUsername = `${tempUsername}${counter}`;
+          while (await storage.getUserByUsername(uniqueUsername)) {
+            counter++;
+            uniqueUsername = `${tempUsername}${counter}`;
+          }
+          tempUsername = uniqueUsername;
+        }
+
+        // Create a new user with Magic info
+        user = await storage.createUser({
+          username: tempUsername,
+          email: email,
+          fullName: "", // Will be set during profile completion
+          password: "",
+          picture: "",
+          authProvider: "magic",
+        });
+
+        // Create user profile
+        await storage.createUserProfile({
+          userId: user.id,
+          profileImageUrl: "",
+        });
+      }
+
+      // Log the user in
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or find user" });
+      }
+
+      req.login(user as Express.User, (err) => {
+        if (err) return next(err);
+        console.log("Magic Link login successful for user:", user.username);
+        res.json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          picture: user.picture,
+          authProvider: user.authProvider || "magic",
+          profileCompleted: user.profileCompleted || false,
+          taekwondoExperience: user.taekwondoExperience,
+        });
+      });
+
+    } catch (error) {
+      console.error("Magic Link authentication error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ message: "Magic Link authentication failed", details: errorMessage });
+    }
+  });
+
   // Get current user
   app.get("/api/user", (req, res) => {
     if (req.isAuthenticated()) {

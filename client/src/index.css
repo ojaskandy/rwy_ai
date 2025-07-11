@@ -291,7 +291,7 @@ body {
   
   /* Main background overrides */
   .light .bg-black {
-    background-color: rgb(255 255 255) !important;
+    background-color: rgb(255, 255, 255) !important;
   }
   
   .light .bg-gray-950 {
