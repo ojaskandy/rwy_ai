@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Target as TargetIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas } from '@/lib/cameraUtils';
 
 const COUNTDOWN_SECONDS = 5;
 const DOT_RADIUS = 40; // px
@@ -49,15 +50,18 @@ const VipersReflexesChallenge: React.FC = () => {
   useEffect(() => {
     const getCameraFeed = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const mediaStream = await getCameraStream('user');
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          
+          // Apply mobile optimizations
+          initializeMobileVideo(videoRef.current);
+          
           videoRef.current.onloadedmetadata = () => {
             if (videoRef.current) {
               videoRef.current.play();
               if (canvasRef.current) {
-                canvasRef.current.width = videoRef.current.videoWidth;
-                canvasRef.current.height = videoRef.current.videoHeight;
+                setupMobileCanvas(canvasRef.current, videoRef.current);
               }
             }
           };

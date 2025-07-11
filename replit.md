@@ -106,6 +106,7 @@ Changelog:
 - June 17, 2025. Redesigned MarketingLanding (renovate) page with CoachT branding, removed developer portal, replaced early access with "Start now" linking to /early, simplified content for better readability
 - June 18, 2025. Created revolutionary welcome page with silhouette zoom interaction, floating martial arts terms, and complete website content integration. Implemented scroll-triggered animations and competitive edge messaging focused on advancing to next belt faster.
 - June 18, 2025. Updated routing structure: Root domain (/) now defaults to auth page for immediate signup/login. Marketing welcome page moved to /welcome route. Added belt progression section with 3D effects and comprehensive user journey mapping.
+- January 11, 2025. Implemented comprehensive mobile camera optimization across all challenge pages and SnapFeedback. Added mobile-specific camera utilities with device detection, optimal constraints (720p max, 30fps), and dynamic screen fitting. Updated all challenge pages to use new mobile-optimized camera setup for better mobile performance. Added mobile-specific CSS classes for fullscreen challenge layouts.
 
 ## User Preferences
 

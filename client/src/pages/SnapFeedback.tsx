@@ -56,21 +56,16 @@ const SnapFeedback: React.FC = () => {
         stream.getTracks().forEach(track => track.stop());
       }
 
-      const constraints = {
-        video: {
-          facingMode: cameraFacing,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-
-      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const newStream = await getCameraStream(cameraFacing);
       setStream(newStream);
       setHasPermission(true);
       setError('');
 
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
+        
+        // Apply mobile optimizations
+        initializeMobileVideo(videoRef.current);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -96,9 +91,8 @@ const SnapFeedback: React.FC = () => {
 
     if (!context) return;
 
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Set canvas size using mobile-optimized approach
+    setupMobileCanvas(canvas, video);
 
     // Draw the video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);

@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
 import { detectMartialArtsPoseAdvanced, analyzePoseFromKeypoints, updateReferencePose } from '@/lib/poseAnalysis';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas, isMobileDevice } from '@/lib/cameraUtils';
 import PoseAnalyzer from '@/components/PoseAnalyzer';
 
 // Game interfaces removed - will be rebuilt
@@ -460,13 +461,18 @@ const ShifuSaysChallenge: React.FC = () => {
       // Only start camera when countdown reaches 1 or game is playing
       if (detector && (countdown === 1 || gameState === 'playing')) {
         try {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          // Use mobile-optimized camera stream
+          const mediaStream = await getCameraStream('user');
           if (videoRef.current) {
             videoRef.current.srcObject = mediaStream;
+            
+            // Apply mobile optimizations
+            initializeMobileVideo(videoRef.current);
+            
             videoRef.current.onloadedmetadata = () => {
               if (canvasRef.current && videoRef.current) {
-                canvasRef.current.width = videoRef.current.videoWidth;
-                canvasRef.current.height = videoRef.current.videoHeight;
+                // Use mobile-optimized canvas setup
+                setupMobileCanvas(canvasRef.current, videoRef.current);
               }
             };
           }
