@@ -31,7 +31,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import MobileWarningDialog from "@/components/MobileWarningDialog";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { Capacitor } from "@capacitor/core";
 import { loginWithMagicLink } from "../loginWithMagicLink";
 
@@ -46,17 +45,8 @@ const profileSetupSchema = z.object({
 
 type ProfileSetupFormValues = z.infer<typeof profileSetupSchema>;
 
-// Initialize GoogleAuth for native platforms
-if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 
-                   import.meta.env.VITE_IOS_GOOGLE_CLIENT_ID ||
-                   "269594573382-27n2ur2h48vceeh3vd0k7dudnf2ak74c.apps.googleusercontent.com";
-
-  GoogleAuth.initialize({
-    scopes: ["profile", "email"],
-    clientId: clientId,
-  });
-}
+// Note: Native Google Auth temporarily disabled due to dependency conflicts
+// Will be re-enabled once compatible with Capacitor 7.x
 
 export default function AuthPage() {
   const {
@@ -158,22 +148,24 @@ export default function AuthPage() {
   };
 
   const handleNativeGoogleLogin = async () => {
+    // Temporarily disabled due to dependency conflicts
+    // Redirect to browser login for now
+    console.log("Native Google login temporarily disabled, redirecting to browser login");
+    
     try {
-      await GoogleAuth.signOut();
-      const user = await GoogleAuth.signIn();
+      const webLoginUrl = window.location.origin + "/auth";
       
-      const idToken = user.authentication.idToken;
-      if (!idToken) {
-        throw new Error("No ID token received from Google");
+      if ((window as any).Capacitor?.Plugins?.Browser) {
+        await (window as any).Capacitor.Plugins.Browser.open({ 
+          url: webLoginUrl,
+          windowName: "_system"
+        });
+      } else {
+        window.open(webLoginUrl, "_system", "location=yes");
       }
-
-      const cleanToken = idToken.trim().replace(/\s/g, '');
-      
-      await googleLoginMutation?.mutate({
-        idToken: cleanToken,
-      });
     } catch (error) {
-      console.error("Native Google login failed:", error);
+      console.error("Failed to open browser for login:", error);
+      alert("Please use the web login option above for now.");
     }
   };
 

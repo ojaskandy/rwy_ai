@@ -107,6 +107,7 @@ Changelog:
 - June 18, 2025. Created revolutionary welcome page with silhouette zoom interaction, floating martial arts terms, and complete website content integration. Implemented scroll-triggered animations and competitive edge messaging focused on advancing to next belt faster.
 - June 18, 2025. Updated routing structure: Root domain (/) now defaults to auth page for immediate signup/login. Marketing welcome page moved to /welcome route. Added belt progression section with 3D effects and comprehensive user journey mapping.
 - January 11, 2025. Implemented comprehensive mobile camera optimization across all challenge pages and SnapFeedback. Added mobile-specific camera utilities with device detection, optimal constraints (720p max, 30fps), and dynamic screen fitting. Updated all challenge pages to use new mobile-optimized camera setup for better mobile performance. Added mobile-specific CSS classes for fullscreen challenge layouts.
+- January 11, 2025. Resolved Capacitor dependency conflicts preventing deployment. Upgraded all Capacitor packages to version 7.x (@capacitor/core@7.4.2, @capacitor/cli@7.4.2, @capacitor/android@7.4.2, @capacitor/ios@7.4.2, @capacitor/browser@7.0.1, @capacitor/app@7.0.1). Temporarily removed @codetrix-studio/capacitor-google-auth package due to incompatibility with Capacitor 7.x. Updated native Google authentication to gracefully fallback to browser-based login. Application now deploys successfully with all peer dependencies aligned.
 
 ## User Preferences
 

@@ -13,13 +13,12 @@
     "tunnel-lt": "lt --port 5001"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.1",
+    "@capacitor/android": "^7.4.2",
     "@capacitor/app": "^7.0.1",
-    "@capacitor/browser": "^6.0.5",
-    "@capacitor/cli": "^6.2.1",
-    "@capacitor/core": "^6.2.1",
-    "@capacitor/ios": "^6.2.1",
-    "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
+    "@capacitor/browser": "^7.0.1",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/ios": "^7.4.2",
     "@hookform/resolvers": "^3.10.0",
     "@ionic/react": "^8.6.2",
     "@jridgewell/trace-mapping": "^0.3.25",
