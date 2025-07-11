@@ -7,7 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
 import { detectMartialArtsPoseAdvanced, analyzePoseFromKeypoints, updateReferencePose } from '@/lib/poseAnalysis';
-import { getCameraStream, initializeMobileVideo, setupMobileCanvas, isMobileDevice } from '@/lib/cameraUtils';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas, isMobileDevice, requestCameraPermission } from '@/lib/cameraUtils';
 import PoseAnalyzer from '@/components/PoseAnalyzer';
 
 // Game interfaces removed - will be rebuilt
@@ -55,6 +55,8 @@ const ShifuSaysChallenge: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [detector, setDetector] = useState<any>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const frameCountRef = useRef(0);
   const frameSkipRate = 3;
@@ -78,6 +80,28 @@ const ShifuSaysChallenge: React.FC = () => {
   const addDebugInfo = (info: string) => {
     console.log('DEBUG:', info);
     setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${info}`]);
+  };
+
+  // Camera permission handler
+  const handleCameraPermission = async () => {
+    try {
+      setCameraError(null);
+      console.log('Requesting camera permission...');
+      const granted = await requestCameraPermission();
+      
+      if (granted) {
+        setHasCameraPermission(true);
+        console.log('Camera permission granted');
+        addDebugInfo('Camera permission granted');
+      } else {
+        setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
+        console.error('Camera permission denied');
+      }
+    } catch (error: any) {
+      setCameraError(error.message || 'Failed to access camera');
+      console.error('Camera permission error:', error);
+      addDebugInfo(`Camera error: ${error.message}`);
+    }
   };
 
   // Calculate response time based on level and command type - AGGRESSIVE scaling after level 1
@@ -455,12 +479,13 @@ const ShifuSaysChallenge: React.FC = () => {
     setupPoseDetection();
   }, []);
 
-  // Initialize camera (only when game needs it)
+  // Initialize camera (only when game needs it and permissions are granted)
   useEffect(() => {
     const getCameraFeed = async () => {
-      // Only start camera when countdown reaches 1 or game is playing
-      if (detector && (countdown === 1 || gameState === 'playing')) {
+      // Only start camera when countdown reaches 1 or game is playing, and permissions are granted
+      if (detector && hasCameraPermission && (countdown === 1 || gameState === 'playing')) {
         try {
+          console.log('Initializing camera stream...');
           // Use mobile-optimized camera stream
           const mediaStream = await getCameraStream('user');
           if (videoRef.current) {
@@ -477,11 +502,15 @@ const ShifuSaysChallenge: React.FC = () => {
             };
           }
           setStream(mediaStream);
+          setCameraError(null);
           
           // Start pose detection loop
           detectAndDrawPose();
-        } catch (error) {
+          addDebugInfo('Camera initialized successfully');
+        } catch (error: any) {
           console.error('Error accessing camera:', error);
+          setCameraError(error.message || 'Failed to access camera');
+          addDebugInfo(`Camera error: ${error.message}`);
         }
       }
     };
@@ -495,7 +524,7 @@ const ShifuSaysChallenge: React.FC = () => {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [detector, countdown, gameState]); // Added countdown and gameState as dependencies
+  }, [detector, countdown, gameState, hasCameraPermission]); // Added hasCameraPermission as dependency
 
   const detectAndDrawPose = async () => {
     frameCountRef.current = (frameCountRef.current + 1) % frameSkipRate;
@@ -1556,6 +1585,34 @@ const ShifuSaysChallenge: React.FC = () => {
                         SHIFU SAYS
                       </h1>
                       
+                      {/* Camera Permission Section */}
+                      {!hasCameraPermission && (
+                        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Camera className="h-6 w-6 text-red-400" />
+                            <span className="text-red-300 font-bold">CAMERA ACCESS REQUIRED</span>
+                          </div>
+                          <p className="text-red-200 text-sm mb-3">
+                            {isMobileDevice() 
+                              ? 'Tap "Enable Camera" and allow access when prompted by your browser.'
+                              : 'Click "Enable Camera" and allow access when prompted by your browser.'
+                            }
+                          </p>
+                          {cameraError && (
+                            <p className="text-red-300 text-xs mb-3 bg-red-900/30 p-2 rounded">
+                              {cameraError}
+                            </p>
+                          )}
+                          <Button 
+                            onClick={handleCameraPermission}
+                            className="bg-red-600 hover:bg-red-700 text-white mb-4"
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Enable Camera
+                          </Button>
+                        </div>
+                      )}
+                      
                       {/* Audio Warning */}
                       <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6">
                         <div className="flex items-center gap-2 mb-2">
@@ -1628,10 +1685,15 @@ const ShifuSaysChallenge: React.FC = () => {
                       // Start the proper challenge with countdown
                       startChallenge();
                     }}
-                    className="bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-amber-600 hover:to-yellow-700 text-lg px-8 py-3 font-bold"
+                    disabled={!hasCameraPermission}
+                    className={`text-lg px-8 py-3 font-bold ${
+                      hasCameraPermission 
+                        ? 'bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-amber-600 hover:to-yellow-700'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    }`}
                   >
                     <Crown className="h-5 w-5 mr-2" />
-                    Start Challenge
+                    {hasCameraPermission ? 'Start Challenge' : 'Enable Camera First'}
                       </Button>
                     </div>
               )}

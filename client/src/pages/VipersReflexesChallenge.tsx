@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Target as TargetIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { initPoseDetection, detectPoses, getJointConnections } from '@/lib/poseDetection';
-import { getCameraStream, initializeMobileVideo, setupMobileCanvas } from '@/lib/cameraUtils';
+import { getCameraStream, initializeMobileVideo, setupMobileCanvas, requestCameraPermission, isMobileDevice } from '@/lib/cameraUtils';
 
 const COUNTDOWN_SECONDS = 5;
 const DOT_RADIUS = 40; // px
@@ -25,6 +25,8 @@ const VipersReflexesChallenge: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const prevWristRef = useRef<{ left: { x: number; y: number; time: number } | null; right: { x: number; y: number; time: number } | null }>({ left: null, right: null });
 
@@ -47,28 +49,48 @@ const VipersReflexesChallenge: React.FC = () => {
     setupPoseDetection();
   }, []);
 
+  // Camera permission handler
+  const handleCameraPermission = async () => {
+    try {
+      setCameraError(null);
+      const granted = await requestCameraPermission();
+      
+      if (granted) {
+        setHasCameraPermission(true);
+      } else {
+        setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
+      }
+    } catch (error: any) {
+      setCameraError(error.message || 'Failed to access camera');
+    }
+  };
+
   useEffect(() => {
     const getCameraFeed = async () => {
-      try {
-        const mediaStream = await getCameraStream('user');
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          
-          // Apply mobile optimizations
-          initializeMobileVideo(videoRef.current);
-          
-          videoRef.current.onloadedmetadata = () => {
-            if (videoRef.current) {
-              videoRef.current.play();
-              if (canvasRef.current) {
-                setupMobileCanvas(canvasRef.current, videoRef.current);
+      if (hasCameraPermission) {
+        try {
+          const mediaStream = await getCameraStream('user');
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+            
+            // Apply mobile optimizations
+            initializeMobileVideo(videoRef.current);
+            
+            videoRef.current.onloadedmetadata = () => {
+              if (videoRef.current) {
+                videoRef.current.play();
+                if (canvasRef.current) {
+                  setupMobileCanvas(canvasRef.current, videoRef.current);
+                }
               }
-            }
-          };
+            };
+          }
+          setStream(mediaStream);
+          setCameraError(null);
+        } catch (error: any) {
+          console.error('Error accessing camera:', error);
+          setCameraError(error.message || 'Failed to access camera');
         }
-        setStream(mediaStream);
-      } catch (error) {
-        console.error('Error accessing camera:', error);
       }
     };
     getCameraFeed();
@@ -80,7 +102,7 @@ const VipersReflexesChallenge: React.FC = () => {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, []);
+  }, [hasCameraPermission]);
 
   // Step 2: Handle countdown
   const startChallenge = () => {
@@ -404,6 +426,35 @@ const VipersReflexesChallenge: React.FC = () => {
                 <p className="text-purple-200 text-lg mb-6">
                   <strong>Goal:</strong> Face the camera and look at the screen. When the red dot appears, hit it as fast as you can with your fist!
                 </p>
+                
+                {/* Camera Permission Section */}
+                {!hasCameraPermission && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TargetIcon className="h-6 w-6 text-red-400" />
+                      <span className="text-red-300 font-bold">CAMERA ACCESS REQUIRED</span>
+                    </div>
+                    <p className="text-red-200 text-sm mb-3">
+                      {isMobileDevice() 
+                        ? 'Tap "Enable Camera" and allow access when prompted by your browser.'
+                        : 'Click "Enable Camera" and allow access when prompted by your browser.'
+                      }
+                    </p>
+                    {cameraError && (
+                      <p className="text-red-300 text-xs mb-3 bg-red-900/30 p-2 rounded">
+                        {cameraError}
+                      </p>
+                    )}
+                    <Button 
+                      onClick={handleCameraPermission}
+                      className="bg-red-600 hover:bg-red-700 text-white mb-4"
+                    >
+                      <TargetIcon className="h-4 w-4 mr-2" />
+                      Enable Camera
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="flex justify-center gap-4">
                   <Button
                     onClick={() => navigate('/challenges')}
@@ -414,9 +465,14 @@ const VipersReflexesChallenge: React.FC = () => {
                   </Button>
                   <Button
                     onClick={startChallenge}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
+                    disabled={!hasCameraPermission}
+                    className={`font-semibold ${
+                      hasCameraPermission 
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    }`}
                   >
-                    Let's Go!
+                    {hasCameraPermission ? 'Let\'s Go!' : 'Enable Camera First'}
                   </Button>
                 </div>
               </motion.div>

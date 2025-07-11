@@ -43,17 +43,76 @@ export function getOptimalCameraConstraints(facingMode: CameraFacing = 'user'): 
 }
 
 /**
- * Request camera permission from the user
+ * Request camera permission from the user with mobile-specific handling
  */
 export async function requestCameraPermission(): Promise<boolean> {
   try {
-    const constraints = getOptimalCameraConstraints();
+    // First check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('getUserMedia is not supported');
+      return false;
+    }
+
+    // For mobile devices, try simpler constraints first
+    const isMobile = isMobileDevice();
+    let constraints: MediaStreamConstraints;
+    
+    if (isMobile) {
+      // Start with very basic constraints for mobile
+      constraints = {
+        video: {
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        },
+        audio: false
+      };
+    } else {
+      constraints = getOptimalCameraConstraints();
+    }
+
+    console.log('Requesting camera permission with constraints:', constraints);
+    
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    console.log('Camera permission granted successfully');
+    
     // Stop the stream immediately after getting permission
     stream.getTracks().forEach(track => track.stop());
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error requesting camera permission:', error);
+    
+    // Provide specific error messages for mobile users
+    if (error.name === 'NotAllowedError') {
+      console.error('Camera permission denied by user');
+    } else if (error.name === 'NotFoundError') {
+      console.error('No camera found on device');
+    } else if (error.name === 'NotReadableError') {
+      console.error('Camera is already in use by another application');
+    } else if (error.name === 'OverconstrainedError') {
+      console.error('Camera constraints not supported');
+    } else if (error.name === 'SecurityError') {
+      console.error('Camera access blocked by security policy');
+    }
+    
+    return false;
+  }
+}
+
+/**
+ * Check if camera permissions are already granted
+ */
+export async function checkCameraPermissions(): Promise<boolean> {
+  try {
+    if (!navigator.permissions) {
+      // Fallback: try to access camera briefly to check permissions
+      return await requestCameraPermission();
+    }
+    
+    const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+    return result.state === 'granted';
+  } catch (error) {
+    console.error('Error checking camera permissions:', error);
     return false;
   }
 }
@@ -63,32 +122,88 @@ export async function requestCameraPermission(): Promise<boolean> {
  */
 export async function getCameraStream(facingMode: CameraFacing = 'user'): Promise<MediaStream> {
   try {
+    // First check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('getUserMedia is not supported on this device');
+    }
+
+    const isMobile = isMobileDevice();
+    
     // Try with optimal constraints first
     try {
       const constraints = getOptimalCameraConstraints(facingMode);
+      console.log(`Trying ${facingMode} camera with optimal constraints:`, constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Camera stream obtained with optimal constraints');
       return stream;
-    } catch {
+    } catch (error: any) {
+      console.warn(`Couldn't get ${facingMode} camera with optimal constraints:`, error.message);
+      
+      // Mobile-specific fallback strategy
+      if (isMobile) {
+        try {
+          // Try simpler mobile constraints
+          const mobileConstraints = {
+            video: {
+              facingMode: facingMode,
+              width: { ideal: 640, max: 1280 },
+              height: { ideal: 480, max: 720 }
+            },
+            audio: false
+          };
+          console.log(`Trying ${facingMode} camera with mobile constraints:`, mobileConstraints);
+          const stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
+          console.log('Camera stream obtained with mobile constraints');
+          return stream;
+        } catch (mobileError: any) {
+          console.warn(`Couldn't get ${facingMode} camera with mobile constraints:`, mobileError.message);
+        }
+      }
+      
       // Fall back to basic constraints if optimal fails
-      console.warn(`Couldn't get ${facingMode} camera with optimal constraints, trying basic constraints`);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const basicConstraints = {
           video: {
             facingMode: facingMode
           }
-        });
+        };
+        console.log(`Trying ${facingMode} camera with basic constraints:`, basicConstraints);
+        const stream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+        console.log('Camera stream obtained with basic constraints');
         return stream;
-      } catch {
+      } catch (basicError: any) {
+        console.warn(`Couldn't get ${facingMode} camera with basic constraints:`, basicError.message);
+        
         // Final fallback - any camera
-        console.warn(`Couldn't get ${facingMode} camera, trying default camera`);
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true
-        });
-        return stream;
+        try {
+          console.log('Trying default camera as final fallback');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
+          console.log('Camera stream obtained with default constraints');
+          return stream;
+        } catch (fallbackError: any) {
+          console.error('All camera access attempts failed:', fallbackError.message);
+          throw fallbackError;
+        }
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting camera stream:', error);
+    
+    // Provide helpful error messages for mobile users
+    if (error.name === 'NotAllowedError') {
+      throw new Error('Camera permission denied. Please allow camera access in your browser settings.');
+    } else if (error.name === 'NotFoundError') {
+      throw new Error('No camera found on this device.');
+    } else if (error.name === 'NotReadableError') {
+      throw new Error('Camera is already in use by another application.');
+    } else if (error.name === 'OverconstrainedError') {
+      throw new Error('Camera constraints not supported by this device.');
+    } else if (error.name === 'SecurityError') {
+      throw new Error('Camera access blocked by security policy. Please ensure you\'re using HTTPS.');
+    }
+    
     throw error;
   }
 }
