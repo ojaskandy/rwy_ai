@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, MessageCircle, Sparkles } from 'lucide-react';
+import { X, Send, MessageCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export type ShifuExpression = 'neutral' | 'happy' | 'sad' | 'pointing';
+
+interface ActionButton {
+  text: string;
+  action: string;
+  description: string;
+}
 
 interface Message {
   id: string;
@@ -12,6 +18,8 @@ interface Message {
   sender: 'user' | 'shifu';
   timestamp: Date;
   expression?: ShifuExpression;
+  category?: string;
+  actionButton?: ActionButton;
 }
 
 interface ShifuChatProps {
@@ -21,6 +29,7 @@ interface ShifuChatProps {
   onDismiss?: () => void;
   size?: 'small' | 'medium' | 'large';
   className?: string;
+  centered?: boolean;
 }
 
 export default function ShifuChat({
@@ -29,10 +38,11 @@ export default function ShifuChat({
   showDelay = 1000,
   onDismiss,
   size = 'medium',
-  className = ''
+  className = '',
+  centered = false
 }: ShifuChatProps) {
   const [isVisible, setIsVisible] = useState(!autoShow);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(centered); // Auto-open when centered
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -113,7 +123,9 @@ export default function ShifuChat({
           text: data.message,
           sender: 'shifu',
           timestamp: new Date(),
-          expression: data.expression || 'neutral'
+          expression: data.expression || 'neutral',
+          category: data.category,
+          actionButton: data.actionButton
         };
 
         setMessages(prev => [...prev, shifuMessage]);
@@ -135,6 +147,10 @@ export default function ShifuChat({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleActionButtonClick = (action: string) => {
+    window.location.href = action;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -182,8 +198,171 @@ export default function ShifuChat({
     return 'right-0 bottom-24';
   };
 
+  const handleClose = () => {
+    if (centered) {
+      onDismiss?.();
+    } else {
+      setIsChatOpen(false);
+    }
+  };
+
   if (!isVisible) return null;
 
+  // Centered chat modal
+  if (centered) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={handleClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="w-full max-w-md h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-yellow-50">
+            <div className="flex items-center space-x-2">
+              <img 
+                src={getShifuImage()} 
+                alt="Master Shifu"
+                className="w-8 h-8 rounded-full"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <div>
+                <h3 className="font-semibold text-gray-900">Master Shifu</h3>
+                <p className="text-xs text-gray-500">Your AI Martial Arts Coach</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClose}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Daily Wisdom */}
+            {dailyWisdom && messages.length === 0 && (
+              <div className="flex items-start space-x-2">
+                <img 
+                  src={getShifuImage()} 
+                  alt="Shifu"
+                  className="w-6 h-6 rounded-full mt-1"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg p-3 max-w-64 border border-amber-200">
+                  <p className="text-sm text-gray-800">{dailyWisdom}</p>
+                  <div className="flex items-center mt-1 space-x-1">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                    <span className="text-xs text-amber-600">Daily Wisdom</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Chat Messages */}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.sender === 'user' ? 'justify-end' : 'items-start space-x-2'}`}
+              >
+                {message.sender === 'shifu' && (
+                  <img 
+                    src={getShifuImage()} 
+                    alt="Shifu"
+                    className="w-6 h-6 rounded-full mt-1"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                )}
+                <div className="flex flex-col space-y-2">
+                  <div
+                    className={`rounded-lg p-3 max-w-64 ${
+                      message.sender === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gradient-to-r from-amber-100 to-yellow-100 text-gray-800 border border-amber-200'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                  </div>
+                  
+                  {/* Action Button */}
+                  {message.sender === 'shifu' && message.actionButton && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="ml-8"
+                    >
+                      <Button
+                        onClick={() => handleActionButtonClick(message.actionButton!.action)}
+                        className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white text-xs px-3 py-1 h-auto rounded-full flex items-center space-x-1 shadow-sm"
+                      >
+                        <span>{message.actionButton.text}</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-1 ml-1">{message.actionButton.description}</p>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex items-start space-x-2">
+                <img 
+                  src={getShifuImage()} 
+                  alt="Shifu"
+                  className="w-6 h-6 rounded-full mt-1"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg p-3 border border-amber-200">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex space-x-2">
+              <Input
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask Master Shifu for guidance..."
+                disabled={isLoading}
+                className="flex-1 text-gray-900 bg-white border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                size="sm"
+                className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Original positioned chat (with avatar)
   return (
     <div className={`fixed ${getPositionClasses()} z-50 ${className}`}>
       {/* Chat Window */}
@@ -254,14 +433,35 @@ export default function ShifuChat({
                       style={{ imageRendering: 'pixelated' }}
                     />
                   )}
-                  <div
-                    className={`rounded-lg p-3 max-w-64 ${
-                      message.sender === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gradient-to-r from-amber-100 to-yellow-100 text-gray-800 border border-amber-200'
-                    }`}
-                  >
-                    <p className="text-sm">{message.text}</p>
+                  <div className="flex flex-col space-y-2">
+                    <div
+                      className={`rounded-lg p-3 max-w-64 ${
+                        message.sender === 'user'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gradient-to-r from-amber-100 to-yellow-100 text-gray-800 border border-amber-200'
+                      }`}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                    </div>
+                    
+                    {/* Action Button */}
+                    {message.sender === 'shifu' && message.actionButton && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="ml-8"
+                      >
+                        <Button
+                          onClick={() => handleActionButtonClick(message.actionButton!.action)}
+                          className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white text-xs px-3 py-1 h-auto rounded-full flex items-center space-x-1 shadow-sm"
+                        >
+                          <span>{message.actionButton.text}</span>
+                          <ArrowRight className="h-3 w-3" />
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1 ml-1">{message.actionButton.description}</p>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
               ))}

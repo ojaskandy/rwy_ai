@@ -225,21 +225,44 @@ Use natural, conversational language. Start with phrases like "Good form..." or 
         return res.status(400).json({ error: 'Message is required' });
       }
 
-      // Build conversation with system prompt
-      const messages = [
-        { role: 'system', content: SHIFU_SYSTEM_PROMPT },
-        ...conversationHistory,
-        { role: 'user', content: message }
-      ];
+      // First, categorize the user's request
+      const categorizationPrompt = `Analyze this martial arts training question and categorize it:
+
+Categories:
+- challenges: reaction time, speed, showing off, shifu says, fun, excitement, games, competition
+- start_live_routine: serious, forms, techniques, poomsae, routine, kata, structured practice
+- practice_library: specific moves, precision feedback, technique practice, individual poses
+- snap_feedback: social, quick feedback, picture, immediate, take a picture of others, photo analysis
+- other: general questions, philosophy, motivation, anything else
+
+User question: "${message}"
+
+Return ONLY the category name (challenges, start_live_routine, practice_library, snap_feedback, or other).`;
+
+      const categorizationResponse = await visionClient.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: 'user', content: categorizationPrompt }
+        ],
+        max_tokens: 10,
+        temperature: 0.3,
+      });
+
+      const category = categorizationResponse.choices[0].message.content?.trim().toLowerCase() || 'other';
+
+      // Generate the main response
+      const responsePrompt = category === 'other' 
+        ? SHIFU_SYSTEM_PROMPT + ' Keep all responses under 25 words. Be extremely concise, wise, and direct. Use short sentences.'
+        : SHIFU_SYSTEM_PROMPT + ` The user is asking about ${category.replace('_', ' ')}. Give a brief, helpful response (under 25 words) and suggest they try the relevant feature. Be encouraging and direct.`;
 
       const completion = await visionClient.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: 'system', content: SHIFU_SYSTEM_PROMPT + ' Keep all responses under 25 words. Be extremely concise, wise, and direct. Use short sentences.' },
+          { role: 'system', content: responsePrompt },
           ...conversationHistory,
           { role: 'user', content: message }
         ],
-        max_tokens: 35,
+        max_tokens: 40,
         temperature: 0.7,
       });
 
@@ -251,15 +274,46 @@ Use natural, conversational language. Start with phrases like "Good form..." or 
       
       if (responseText.includes('excellent') || responseText.includes('good') || responseText.includes('proud') || responseText.includes('well done')) {
         expression = 'happy';
-      } else if (responseText.includes('practice') || responseText.includes('focus') || responseText.includes('remember') || responseText.includes('must')) {
+      } else if (responseText.includes('practice') || responseText.includes('focus') || responseText.includes('remember') || responseText.includes('must') || responseText.includes('try')) {
         expression = 'pointing';
       } else if (responseText.includes('difficult') || responseText.includes('challenge') || responseText.includes('struggle') || responseText.includes('patience')) {
         expression = 'sad';
       }
 
+      // Create action button based on category
+      let actionButton = null;
+      if (category !== 'other') {
+        const buttonConfigs = {
+          challenges: {
+            text: 'Try Shifu Says Challenge',
+            action: '/challenges/shifu-says',
+            description: 'Test your reaction time and skills!'
+          },
+          start_live_routine: {
+            text: 'Start Live Routine',
+            action: '/app', // This will show the live routine options
+            description: 'Practice forms with AI feedback'
+          },
+          practice_library: {
+            text: 'Browse Practice Library',
+            action: '/practice',
+            description: 'Practice specific techniques'
+          },
+          snap_feedback: {
+            text: 'Try Snap Feedback',
+            action: '/snap-feedback',
+            description: 'Get instant pose analysis'
+          }
+        };
+
+        actionButton = buttonConfigs[category as keyof typeof buttonConfigs] || null;
+      }
+
       res.json({
         message: response,
         expression,
+        category,
+        actionButton,
         timestamp: new Date().toISOString()
       });
 

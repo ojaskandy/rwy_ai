@@ -158,19 +158,36 @@ body {
   --ring: 220, 38, 38;
 }
 
+/* Dark theme styles */
+.dark {
+  --background: 10, 10, 10;
+  --foreground: 250, 250, 250;
+  --muted: 40, 40, 45;
+  --muted-foreground: 150, 150, 160;
+  --popover: 15, 15, 15;
+  --popover-foreground: 250, 250, 250;
+  --card: 20, 20, 25;
+  --card-foreground: 250, 250, 250;
+  --border: 40, 40, 50;
+  --input: 40, 40, 50;
+}
+
 @layer base {
   * {
     @apply border-border;
   }
 
   html {
+    color-scheme: light dark;
+    /* Apply dark mode by default */
     @apply dark;
-    color-scheme: dark;
   }
 
   body {
     font-family: 'Inter', sans-serif;
     @apply antialiased;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
   }
   
   /* Dark mode body styles */
@@ -179,10 +196,324 @@ body {
     background-color: rgb(10, 10, 10) !important;
   }
   
-  /* Light mode body styles */
+  /* Light mode body styles */  
   .light body {
     @apply bg-white text-gray-900;
     background-color: rgb(255, 255, 255) !important;
+  }
+  
+  /* Light mode banner/header styling */
+  .light header,
+  .light .header,
+  .light .top-bar,
+  .light .banner {
+    background: linear-gradient(135deg, rgb(220, 38, 38), rgb(239, 68, 68)) !important;
+    color: white !important;
+  }
+  
+  /* Light mode CoachT branding */
+  .light .logo,
+  .light .brand,
+  .light .app-title {
+    color: white !important;
+    font-weight: bold !important;
+  }
+  
+  /* Light mode button styling - make them red */
+  .light button,
+  .light .btn,
+  .light .button {
+    background-color: rgb(220, 38, 38) !important;
+    color: white !important;
+    border: 1px solid rgb(185, 28, 28) !important;
+  }
+  
+  .light button:hover,
+  .light .btn:hover,
+  .light .button:hover {
+    background-color: rgb(185, 28, 28) !important;
+    border-color: rgb(153, 27, 27) !important;
+  }
+  
+  /* Light mode specific navigation buttons */
+  .light .nav-button,
+  .light .dock-button {
+    background-color: rgb(220, 38, 38) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .light .nav-button:hover,
+  .light .dock-button:hover {
+    background-color: rgb(185, 28, 28) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+  }
+  
+  /* Light mode profile and menu buttons */
+  .light .profile-button,
+  .light .menu-button {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .light .profile-button:hover,
+  .light .menu-button:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  /* Light mode header text elements */
+  .light .time,
+  .light .username,
+  .light .belt-display {
+    color: white !important;
+  }
+  
+  /* Override any dark text in header area for light mode */
+  .light header *,
+  .light .header *,
+  .light .top-bar *,
+  .light .banner * {
+    color: white !important;
+  }
+  
+  /* Light mode card headers to match theme */
+  .light .card-header {
+    background: linear-gradient(135deg, rgb(252, 165, 165), rgb(254, 202, 202)) !important;
+    color: rgb(127, 29, 29) !important;
+  }
+
+  /* Comprehensive light mode overrides */
+  .light {
+    /* Override all dark backgrounds with light equivalents */
+    --tw-bg-opacity: 1;
+  }
+  
+  /* Main background overrides */
+  .light .bg-black {
+    background-color: rgb(255 255 255) !important;
+  }
+  
+  .light .bg-gray-950 {
+    background-color: rgb(249 250 251) !important;
+  }
+  
+  .light .bg-gray-900 {
+    background-color: rgb(249 250 251) !important;
+  }
+  
+  .light .bg-gray-800 {
+    background-color: rgb(243 244 246) !important;
+  }
+  
+  .light .bg-gray-700 {
+    background-color: rgb(229 231 235) !important;
+  }
+  
+  .light .bg-slate-900 {
+    background-color: rgb(248 250 252) !important;
+  }
+  
+  .light .bg-slate-800 {
+    background-color: rgb(241 245 249) !important;
+  }
+  
+  /* Card and modal backgrounds */
+  .light .bg-red-900 {
+    background-color: rgb(254 242 242) !important;
+  }
+  
+  .light .bg-red-800 {
+    background-color: rgb(254 226 226) !important;
+  }
+  
+  /* Override all light text colors with dark equivalents for readability */
+  .light .text-white {
+    color: rgb(17 24 39) !important;
+  }
+  
+  .light .text-gray-100 {
+    color: rgb(31 41 55) !important;
+  }
+  
+  .light .text-gray-200 {
+    color: rgb(55 65 81) !important;
+  }
+  
+  .light .text-gray-300 {
+    color: rgb(75 85 99) !important;
+  }
+  
+  .light .text-gray-400 {
+    color: rgb(107 114 128) !important;
+  }
+  
+  .light .text-gray-500 {
+    color: rgb(107 114 128) !important;
+  }
+  
+  .light .text-slate-300 {
+    color: rgb(71 85 105) !important;
+  }
+  
+  .light .text-slate-400 {
+    color: rgb(100 116 139) !important;
+  }
+  
+  .light .text-red-400 {
+    color: rgb(220 38 38) !important;
+  }
+  
+  .light .text-red-300 {
+    color: rgb(185 28 28) !important;
+  }
+  
+  /* Override border colors for better definition */
+  .light .border-gray-800 {
+    border-color: rgb(229 231 235) !important;
+  }
+  
+  .light .border-gray-700 {
+    border-color: rgb(209 213 219) !important;
+  }
+  
+  .light .border-slate-700 {
+    border-color: rgb(203 213 225) !important;
+  }
+  
+  .light .border-red-900 {
+    border-color: rgb(220 38 38) !important;
+  }
+  
+  /* Override gradients for light theme */
+  .light .bg-gradient-to-br {
+    background: linear-gradient(to bottom right, rgb(255 255 255), rgb(249 250 251)) !important;
+  }
+  
+  .light .bg-gradient-to-r {
+    background: linear-gradient(to right, rgb(255 255 255), rgb(249 250 251)) !important;
+  }
+  
+  /* Card shadow and depth for light mode */
+  .light .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .light .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  }
+  
+  /* Button and interactive elements */
+  .light button:not(.bg-red-600):not(.bg-red-700):not(.bg-blue-600) {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(17 24 39) !important;
+    border: 1px solid rgb(209 213 219) !important;
+  }
+  
+  .light button:hover:not(.bg-red-600):not(.bg-red-700):not(.bg-blue-600) {
+    background-color: rgb(249 250 251) !important;
+  }
+  
+  /* Dock styling for light mode */
+  .light .glass-dock {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(229, 231, 235, 0.8) !important;
+  }
+  
+  .light .glass-dock-button {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: rgb(107 114 128) !important;
+  }
+  
+  .light .glass-dock-button:hover {
+    background: rgba(249, 250, 251, 0.95) !important;
+    color: rgb(17 24 39) !important;
+  }
+  
+  /* Modal and popover backgrounds */
+  .light .modal-content,
+  .light [role="dialog"] {
+    background-color: rgb(255 255 255) !important;
+    border: 1px solid rgb(229 231 235) !important;
+  }
+  
+  /* Input and form elements */
+  .light input,
+  .light textarea,
+  .light select {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(17 24 39) !important;
+    border-color: rgb(209 213 219) !important;
+  }
+  
+  .light input:focus,
+  .light textarea:focus,
+  .light select:focus {
+    border-color: rgb(220 38 38) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+  }
+
+  /* Theme-aware component overrides */
+  .dark {
+    --theme-bg-black: rgb(10, 10, 10);
+    --theme-bg-gray-950: rgb(10, 10, 10);
+    --theme-bg-gray-900: rgb(17, 17, 17);
+    --theme-text-white: rgb(255, 255, 255);
+    --theme-text-gray-900: rgb(255, 255, 255);
+    --theme-text-gray-400: rgb(160, 160, 160);
+    --theme-text-gray-500: rgb(140, 140, 140);
+    --theme-bg-gradient: linear-gradient(to bottom right, rgb(17, 17, 17), rgb(10, 10, 10));
+    --theme-border-red-900: rgba(220, 38, 38, 0.3);
+  }
+  
+  .light {
+    --theme-bg-black: rgb(255, 255, 255);
+    --theme-bg-gray-950: rgb(240, 240, 245);
+    --theme-bg-gray-900: rgb(248, 249, 250);
+    --theme-text-white: rgb(10, 10, 10);
+    --theme-text-gray-900: rgb(10, 10, 10);
+    --theme-text-gray-400: rgb(100, 100, 100);
+    --theme-text-gray-500: rgb(120, 120, 120);
+    --theme-bg-gradient: linear-gradient(to bottom right, rgb(255, 255, 255), rgb(240, 240, 245));
+    --theme-border-red-900: rgba(220, 38, 38, 0.5);
+  }
+
+  /* Apply theme variables to specific elements */
+  .theme-bg-black {
+    background-color: var(--theme-bg-black) !important;
+  }
+  
+  .theme-bg-gray-950 {
+    background-color: var(--theme-bg-gray-950) !important;
+  }
+  
+  .theme-bg-gray-900 {
+    background-color: var(--theme-bg-gray-900) !important;
+  }
+  
+  .theme-text-white {
+    color: var(--theme-text-white) !important;
+  }
+  
+  .theme-text-gray-900 {
+    color: var(--theme-text-gray-900) !important;
+  }
+  
+  .theme-text-gray-400 {
+    color: var(--theme-text-gray-400) !important;
+  }
+  
+  .theme-text-gray-500 {
+    color: var(--theme-text-gray-500) !important;
+  }
+  
+  .theme-bg-gradient {
+    background: var(--theme-bg-gradient) !important;
+  }
+  
+  .theme-border-red-900 {
+    border-color: var(--theme-border-red-900) !important;
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -39,6 +39,16 @@ const ShifuSaysChallenge: React.FC = () => {
   // Consecutive non-Shifu command tracking
   const [consecutiveNonShifuCommands, setConsecutiveNonShifuCommands] = useState<number>(0);
 
+  // Previous move tracking to prevent repetition
+  const [previousMove, setPreviousMove] = useState<string>('');
+  
+  // Movement detection tracking with leniency
+  const [movementDetectionFrames, setMovementDetectionFrames] = useState<number>(0);
+  const [isInRestPosition, setIsInRestPosition] = useState<boolean>(true);
+  const movementThreshold = 3; // Number of consecutive frames to confirm movement
+  const movementDetectionFramesRef = useRef<number>(0);
+  const isInRestPositionRef = useRef<boolean>(true);
+
   // Camera and pose detection refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -301,10 +311,26 @@ const ShifuSaysChallenge: React.FC = () => {
     moveMatchedRef.current = false; // 🔥 IMMEDIATE backend sync
     console.log(`🚨 setMoveMatched(false) called + moveMatchedRef.current = false`);
     
-    // Pick random move
-    const randomIndex = Math.floor(Math.random() * availableMoves.length);
-    const selectedMove = availableMoves[randomIndex];
-    console.log(`🚨 Random move selected: "${selectedMove}" (index ${randomIndex})`);
+    // Pick random move, avoiding the previous move
+    let selectedMove: string;
+    let attempts = 0;
+    const maxAttempts = 10; // Prevent infinite loop
+    
+    do {
+      const randomIndex = Math.floor(Math.random() * availableMoves.length);
+      selectedMove = availableMoves[randomIndex];
+      attempts++;
+      
+      // If we've tried many times or only one move available, accept any move
+      if (attempts >= maxAttempts || availableMoves.length === 1) {
+        break;
+      }
+    } while (selectedMove === previousMove);
+    
+    console.log(`🚨 Random move selected: "${selectedMove}" (avoided previous: "${previousMove}") after ${attempts} attempts`);
+    
+    // Update previous move
+    setPreviousMove(selectedMove);
     
     // Anti-consecutive logic: Force Shifu Says if too many non-Shifu commands in a row
     let shifuSays;
@@ -314,9 +340,9 @@ const ShifuSaysChallenge: React.FC = () => {
       console.log(`🚨 FORCED Shifu Says: Too many non-Shifu commands (${consecutiveNonShifuCommands}) - resetting streak`);
       setConsecutiveNonShifuCommands(0); // Reset counter
     } else {
-      // Normal 80% chance for Shifu Says, 20% for normal
-      shifuSays = Math.random() < 0.8;
-      console.log(`🚨 Shifu Says flag: ${shifuSays} (80% chance)`);
+      // 60% chance for Shifu Says, 40% for normal
+      shifuSays = Math.random() < 0.6;
+      console.log(`🚨 Shifu Says flag: ${shifuSays} (60% chance)`);
       
       // Update consecutive counter
       if (!shifuSays) {
@@ -524,60 +550,89 @@ const ShifuSaysChallenge: React.FC = () => {
                 console.log(`⚠️  SYNC WARNING: Frontend pose "${frontendPose}" != React state "${currentPose}"`);
               }
               
-              // 🚨 MOVEMENT DETECTION - Catch ANY movement during gameplay
-              const hasMovedFromRest = lastDetectedPose === 'No Pose' && currentPose !== 'No Pose';
-              const hasMovedToSpecificPose = currentPose !== 'No Pose' && currentMoveRef.current && currentPose === currentMoveRef.current;
-              const hasMovedToAnyPose = currentPose !== 'No Pose';
+              // 🚨 MOVEMENT DETECTION - Enhanced with leniency but strict on non-Shifu commands
+              const currentlyInRestPosition = currentPose === 'No Pose';
+              const hasDetectedSpecificPose = currentPose !== 'No Pose' && availableMoves.includes(currentPose);
               
-              // Debug the detection conditions
-              console.log(`🔍 MOVEMENT CHECK: moveMatched=${moveMatchedRef.current} | audioPlaying=${audioPlaying} | hasMovedFromRest=${hasMovedFromRest} | hasMovedToSpecificPose=${hasMovedToSpecificPose}`);
+              // Track movement detection frames for leniency
+              if (!currentlyInRestPosition && hasDetectedSpecificPose) {
+                movementDetectionFramesRef.current += 1;
+              } else {
+                movementDetectionFramesRef.current = 0;
+              }
               
-              if (!moveMatchedRef.current) { // Removed audioPlaying check - detect movement immediately
-                if (hasMovedFromRest || hasMovedToSpecificPose || (hasMovedToAnyPose && !audioPlaying)) {
-                  console.log(`🎉 USER MOVED! From: "${lastDetectedPose}" | To: "${currentPose}" | Expected: "${currentMoveRef.current}" | isShifuSays: ${isShifuSaysRef.current}`);
+              // Update rest position tracking
+              if (currentlyInRestPosition) {
+                isInRestPositionRef.current = true;
+              }
+              
+              // Detect confirmed movement (requires multiple frames for leniency)
+              const hasConfirmedMovement = movementDetectionFramesRef.current >= movementThreshold;
+              const hasMovedFromRest = isInRestPositionRef.current && hasConfirmedMovement;
+              const hasMovedToCorrectPose = hasConfirmedMovement && currentPose === currentMoveRef.current;
+              
+              // Debug the enhanced detection conditions
+              console.log(`🔍 ENHANCED MOVEMENT CHECK: 
+                moveMatched=${moveMatchedRef.current} | 
+                audioPlaying=${audioPlaying} | 
+                currentPose="${currentPose}" | 
+                inRestPosition=${isInRestPositionRef.current} | 
+                detectionFrames=${movementDetectionFramesRef.current}/${movementThreshold} |
+                hasConfirmedMovement=${hasConfirmedMovement} |
+                hasMovedFromRest=${hasMovedFromRest} |
+                hasMovedToCorrectPose=${hasMovedToCorrectPose}`);
+              
+              if (!moveMatchedRef.current && hasConfirmedMovement) {
+                // Only trigger on confirmed movement (multiple consecutive frames)
+                console.log(`🎉 CONFIRMED MOVEMENT! From rest: ${isInRestPositionRef.current} | To: "${currentPose}" | Expected: "${currentMoveRef.current}" | isShifuSays: ${isShifuSaysRef.current}`);
+                
+                // FINAL GAME OVER CHECK before any action
+                if (gameStateRef.current === 'gameover') {
+                  console.log(`🛑 BLOCKED: Movement detected but game is over! Ignoring.`);
+                  return;
+                }
+                
+                // Update rest position - user is no longer in rest
+                isInRestPositionRef.current = false;
+                
+                if (!isShifuSaysRef.current) {
+                  // Non-Shifu command: ANY confirmed movement = Game Over
+                  console.log(`❌ GAME OVER! User moved during non-Shifu command! Detected: "${currentPose}"`);
                   
-                  // FINAL GAME OVER CHECK before any action
-                  if (gameStateRef.current === 'gameover') {
-                    console.log(`🛑 BLOCKED: Movement detected but game is over! Ignoring.`);
-                    return;
+                  // IMMEDIATELY prevent multiple triggers
+                  setMoveMatched(true);
+                  moveMatchedRef.current = true;
+                  
+                  // Clear the timer since user moved
+                  if (moveTimerRef.current) {
+                    clearTimeout(moveTimerRef.current);
+                    moveTimerRef.current = null;
                   }
                   
-                  if (!isShifuSaysRef.current) {
-                    // Normal move was said and user moved AT ALL - WRONG! (should have ignored)
-                    console.log(`❌ WRONG! User moved when Shifu didn't say to! Detected: "${currentPose}"`);
-                    
-                    // IMMEDIATELY prevent multiple triggers
-                    setMoveMatched(true);
-                    moveMatchedRef.current = true; // 🔥 IMMEDIATE backend sync
-                    
-                    // Clear the timer since user moved
-                    if (moveTimerRef.current) {
-                      clearTimeout(moveTimerRef.current);
-                      moveTimerRef.current = null;
-                    }
-                    
-                    handleGameOver(`You moved when Shifu didn't say to! You did "${currentPose}" but should have stayed still.`);
-                  } else if (currentPose === currentMoveRef.current) {
-                    // Shifu said move and user did the CORRECT move - RIGHT!
-                    console.log(`✅ CORRECT! User did "${currentPose}" when Shifu said to!`);
-                    
-                    // IMMEDIATELY prevent multiple triggers
-                    setMoveMatched(true);
-                    moveMatchedRef.current = true; // 🔥 IMMEDIATE backend sync
-                    
-                    // Clear the timer since user moved correctly
-                    if (moveTimerRef.current) {
-                      clearTimeout(moveTimerRef.current);
-                      moveTimerRef.current = null;
-                    }
-                    
-                    advanceToNextMove();
-                  } else {
-                    // Shifu said move but user did WRONG move - IGNORE and keep waiting for correct move or timeout
-                    console.log(`⚠️ IGNORE: User did "${currentPose}" but Shifu said "${currentMoveRef.current}" - waiting for correct move or timeout`);
-                    // DON'T set moveMatched to true - keep detecting movements
-                    // DON'T clear timer - let it continue until timeout or correct move
+                  handleGameOver(`You moved when Shifu didn't say to! You did "${currentPose}" but should have stayed still.`);
+                } else if (currentPose === currentMoveRef.current) {
+                  // Shifu Says command: Correct movement = Success
+                  console.log(`✅ CORRECT! User did "${currentPose}" when Shifu said to!`);
+                  
+                  // IMMEDIATELY prevent multiple triggers
+                  setMoveMatched(true);
+                  moveMatchedRef.current = true;
+                  
+                  // Clear the timer since user moved correctly
+                  if (moveTimerRef.current) {
+                    clearTimeout(moveTimerRef.current);
+                    moveTimerRef.current = null;
                   }
+                  
+                  advanceToNextMove();
+                } else {
+                  // Shifu Says command: Wrong movement = Continue waiting (but movement is confirmed)
+                  console.log(`⚠️ WRONG MOVE: User did "${currentPose}" but Shifu said "${currentMoveRef.current}" - continuing to wait`);
+                  // Don't set moveMatched - keep waiting for correct move or timeout
+                  // Don't clear timer - let it continue
+                  // Reset movement detection to give another chance
+                  movementDetectionFramesRef.current = 0;
+                  isInRestPositionRef.current = true;
                 }
               }
             }

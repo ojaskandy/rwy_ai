@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageSquare, Home, Sparkles, X, ChevronUp } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Home, Sparkles, X, ChevronUp, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useLocation } from 'wouter';
+import { useTheme } from '@/hooks/use-theme';
 import ShifuChat from './ShifuChat';
 
 export default function GlobalDock() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const [location] = useLocation();
   const [showShifuChat, setShowShifuChat] = useState(false);
   const [isDockVisible, setIsDockVisible] = useState(true);
+
+  // Hide dock on authentication and landing pages
+  const hiddenRoutes = ['/', '/auth', '/welcome', '/partnership'];
+  const shouldHideDock = hiddenRoutes.includes(location);
+
+  // Don't render dock at all on hidden routes
+  if (shouldHideDock) {
+    return null;
+  }
+
+  // Handle opening Shifu chat
+  const handleShifuChatToggle = () => {
+    setShowShifuChat(!showShifuChat);
+  };
 
   // Handle feedback submission by opening email client
   const handleFeedbackSubmit = () => {
@@ -16,122 +34,69 @@ export default function GlobalDock() {
     window.location.href = `mailto:ojaskandy@gmail.com?subject=${subject}&body=${body}`;
   };
 
-  // If dock is hidden, show small floating restore button
-  if (!isDockVisible) {
-    return (
-      <>
-        {/* Small floating restore button */}
-        <div className="fixed bottom-4 right-4 z-[9999]">
-          <button
-            onClick={() => setIsDockVisible(true)}
-            className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200"
-            title="Show Dock"
-          >
-            <ChevronUp className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Shifu Chat - Centered with backdrop */}
-        {showShifuChat && (
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
-            onClick={() => setShowShifuChat(false)}
-          >
-            <div onClick={(e) => e.stopPropagation()}>
-              <ShifuChat 
-                position="bottom-right"
-                autoShow={true}
-                showDelay={0}
-                size="medium"
-                onDismiss={() => setShowShifuChat(false)}
-              />
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
   return (
     <>
-      <div className="fixed bottom-2 left-4 right-4 z-[9999] pointer-events-none">
-        <div className="mx-auto max-w-sm dock-animate pointer-events-auto">
-          <div className="glass-dock rounded-2xl p-2">
-            <div className="flex items-center justify-between space-x-3">
-              {/* Back Button */}
+      {/* Dock */}
+      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ${isDockVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
+        <div className="bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-800 px-4 py-3 shadow-2xl">
+          <div className="flex items-center space-x-1">
+            {/* Navigation buttons */}
+            <div className="flex items-center space-x-1">
               <button
                 onClick={() => window.history.back()}
-                className="glass-dock-button flex items-center justify-center w-10 h-10 rounded-xl"
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
                 title="Go Back"
               >
-                <ArrowLeft className="h-4 w-4 text-white" />
+                <ArrowLeft className="h-5 w-5" />
               </button>
-
-              {/* Home Button */}
+              
               <button
                 onClick={() => window.location.href = '/app'}
-                className="glass-dock-button flex items-center justify-center w-10 h-10 rounded-xl"
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
                 title="Home"
               >
-                <Home className="h-4 w-4 text-white" />
-              </button>
-
-              {/* Chat with Shifu */}
-              <button
-                onClick={() => setShowShifuChat(true)}
-                className="glass-dock-button flex items-center justify-center w-10 h-10 rounded-xl"
-                title="Chat with Master Shifu"
-              >
-                <Sparkles className="h-4 w-4 text-white" />
-              </button>
-
-              {/* Feedback */}
-              <button
-                onClick={handleFeedbackSubmit}
-                className="glass-dock-button flex items-center justify-center w-10 h-10 rounded-xl"
-                title="Send Feedback"
-              >
-                <MessageSquare className="h-4 w-4 text-white" />
-              </button>
-
-              {/* Hide Dock Button */}
-              <button
-                onClick={() => setIsDockVisible(false)}
-                className="glass-dock-button flex items-center justify-center w-8 h-8 rounded-lg opacity-60 hover:opacity-100"
-                title="Hide Dock"
-              >
-                <X className="h-3 w-3 text-white" />
+                <Home className="h-5 w-5" />
               </button>
             </div>
-          </div>
-          
-          {/* Dock indicator dots - smaller */}
-          <div className="flex justify-center mt-1 space-x-1">
-            <div className="dock-indicator w-0.5 h-0.5 rounded-full"></div>
-            <div className="dock-indicator active w-0.5 h-0.5 rounded-full"></div>
-            <div className="dock-indicator w-0.5 h-0.5 rounded-full"></div>
-            <div className="dock-indicator w-0.5 h-0.5 rounded-full"></div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-gray-700 mx-2" />
+
+            {/* Actions */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={handleShifuChatToggle}
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                title="Chat with Shifu"
+              >
+                <Sparkles className="h-5 w-5" />
+              </button>
+
+              <button
+                onClick={handleFeedbackSubmit}
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                title="Send Feedback"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Visibility toggle */}
+            <div className="ml-2 pl-2 border-l border-gray-700">
+              <button
+                onClick={() => setIsDockVisible(!isDockVisible)}
+                className="p-1 rounded-full text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                title="Hide Dock"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Shifu Chat - Centered with backdrop */}
-      {showShifuChat && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
-          onClick={() => setShowShifuChat(false)}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <ShifuChat 
-              position="bottom-right"
-              autoShow={true}
-              showDelay={0}
-              size="medium"
-              onDismiss={() => setShowShifuChat(false)}
-            />
-          </div>
-        </div>
-      )}
+      {/* Shifu Chat */}
+      {showShifuChat && <ShifuChat onDismiss={() => setShowShifuChat(false)} centered={true} />}
     </>
   );
 } 

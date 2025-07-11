@@ -14,13 +14,11 @@ type ThemeContextType = {
 export const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Get system preference for dark mode
-  const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
-  // Initialize state with the stored theme or system preference
+  // Initialize state with dark mode as default, or stored theme preference
   const [theme, setThemeState] = useState<Theme>(() => {
     const storedTheme = localStorage.getItem('theme') as Theme | null;
-    return storedTheme || (prefersDarkMode ? 'dark' : 'light');
+    // Default to dark mode if no stored preference
+    return storedTheme || 'dark';
   });
   
   // Helper for setting theme in state and storage
@@ -48,13 +46,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
   }, [theme]);
   
-  // Listen for system preference changes
+  // Listen for system preference changes but don't automatically apply them
+  // Keep user's explicit choice or default to dark mode
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const handleChange = (e: MediaQueryListEvent) => {
+      // Only apply system preference if user hasn't made an explicit choice
       if (localStorage.getItem('theme') === null) {
-        setThemeState(e.matches ? 'dark' : 'light');
+        // Even then, default to dark mode
+        setThemeState('dark');
       }
     };
     

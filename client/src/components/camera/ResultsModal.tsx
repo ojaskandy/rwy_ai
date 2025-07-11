@@ -297,7 +297,7 @@ export default function ResultsModal({
                   Your martial arts technique breakdown
                 </CardDescription>
               </div>
-            </div>
+          </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
@@ -416,14 +416,14 @@ export default function ResultsModal({
                                 className={`h-2 rounded-full bg-gradient-to-r ${getScoreGradient(joint.score)}`}
                                 style={{ width: `${joint.score}%` }}
                               />
-                            </div>
+                  </div>
                             <span className={`font-bold ${getScoreColor(joint.score)}`}>
                               {joint.score}%
-                            </span>
+                    </span>
                           </div>
                         </div>
                       ))}
-                    </div>
+                </div>
                   </CardContent>
                 </Card>
               )}
@@ -530,8 +530,8 @@ export default function ResultsModal({
                               <Check className="h-4 w-4 mr-2" />
                               Copied!
                             </>
-                          ) : (
-                            <>
+                ) : (
+                  <>
                               <Copy className="h-4 w-4 mr-2" />
                               Copy Data
                             </>
@@ -544,7 +544,7 @@ export default function ResultsModal({
                         <div className="bg-gray-700 p-4 rounded-lg">
                           <div className="text-sm text-gray-400">Overall Score</div>
                           <div className="text-2xl font-bold text-white">{performanceScore}%</div>
-                        </div>
+            </div>
                         <div className="bg-gray-700 p-4 rounded-lg">
                           <div className="text-sm text-gray-400">Data Points</div>
                           <div className="text-2xl font-bold text-white">{userAngleTable.timestamps.length}</div>
