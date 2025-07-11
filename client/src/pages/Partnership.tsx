@@ -2,11 +2,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import coachtProductImage from "@assets/CoachT _ AI Taekwondo Coach · 1.00pm · 07-11_1752264065573.jpeg";
 
 export default function Partnership() {
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Navigation */}
+      {/* Navigation - Simplified */}
       <nav className="flex items-center justify-between px-6 py-4 relative z-50">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-orange-400 rounded-lg flex items-center justify-center">
@@ -15,30 +16,12 @@ export default function Partnership() {
           <span className="text-xl font-bold">COACHT</span>
         </div>
         
-        <div className="hidden md:flex items-center space-x-8 text-sm">
-          <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
-          <Link href="/features" className="text-gray-300 hover:text-white">Features</Link>
-          <Link href="/enterprise" className="text-gray-300 hover:text-white">Enterprise</Link>
-          <Link href="/blog" className="text-gray-300 hover:text-white">Blog</Link>
-          <Link href="/forum" className="text-gray-300 hover:text-white">Forum</Link>
-          <Link href="/careers" className="text-gray-300 hover:text-white">Careers</Link>
-        </div>
-        
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
-            <div className="w-4 h-4 mr-2">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-          </Button>
-          <Button className="bg-white text-black hover:bg-gray-100">
-            <div className="w-4 h-4 mr-2">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5Z"/>
-              </svg>
-            </div>
-            Download
+          <Button 
+            className="bg-white text-black hover:bg-gray-100"
+            onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+          >
+            Schedule a Demo
           </Button>
         </div>
       </nav>
@@ -65,6 +48,27 @@ export default function Partnership() {
           >
             Built to make you extraordinarily skilled, CoachT is the best way to train with AI.
           </motion.p>
+
+          {/* Statistics */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="grid md:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto"
+          >
+            <div className="text-center">
+              <div className="text-3xl font-bold text-red-400 mb-2">93%</div>
+              <div className="text-gray-300 text-sm">of parents prefer tech-forward schools</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-red-400 mb-2">30%</div>
+              <div className="text-gray-300 text-sm">increase in student skill progression</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-red-400 mb-2">50%</div>
+              <div className="text-gray-300 text-sm">time savings for instructors</div>
+            </div>
+          </motion.div>
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -72,21 +76,23 @@ export default function Partnership() {
             transition={{ delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button className="bg-white text-black hover:bg-gray-100 px-8 py-3">
-              <div className="w-4 h-4 mr-2">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5Z"/>
-                </svg>
-              </div>
-              Download for iOS
+            <Button 
+              className="bg-white text-black hover:bg-gray-100 px-8 py-3"
+              onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+            >
+              Schedule a Demo
             </Button>
-            <Button variant="outline" className="border-white text-white hover:bg-white hover:text-black px-8 py-3">
-              All Downloads
+            <Button 
+              variant="outline" 
+              className="border-white text-white hover:bg-white hover:text-black px-8 py-3"
+              onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+            >
+              Schedule a Demo
             </Button>
           </motion.div>
         </div>
 
-        {/* Training Session Mockup */}
+        {/* CoachT Product Image */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -99,55 +105,47 @@ export default function Partnership() {
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div className="ml-4 text-sm text-gray-400">CoachT Training Session</div>
+                <div className="ml-4 text-sm text-gray-400">CoachT AI Training Interface</div>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="text-green-400 font-mono text-sm">
-                      <div className="text-gray-500">// Real-time pose detection</div>
-                      <div>function analyzeTechnique() {'{'}
-                        <div className="ml-4 text-blue-400">
-                          const pose = detectPose(videoFrame);
-                          <br />
-                          const score = evaluateForm(pose);
-                          <br />
-                          return generateFeedback(score);
-                        </div>
-                      {'}'}</div>
-                    </div>
-                    
-                    <div className="bg-gray-800 rounded p-4 border border-gray-700">
-                      <div className="text-red-400 font-semibold mb-2">AI Feedback</div>
-                      <div className="text-gray-300 text-sm">
-                        Excellent form! Your kick height improved by 15%. 
-                        Try extending your hip more for maximum power.
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800 rounded p-4 border border-gray-700">
-                    <div className="text-orange-400 font-semibold mb-2">Training Stats</div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Form Accuracy:</span>
-                        <span className="text-green-400">92%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Kicks Performed:</span>
-                        <span className="text-blue-400">47</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Session Time:</span>
-                        <span className="text-purple-400">18:34</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <img 
+                  src={coachtProductImage} 
+                  alt="CoachT AI Taekwondo Coach Interface" 
+                  className="w-full h-auto rounded-lg"
+                />
               </div>
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Statistics Details Section */}
+      <div className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-12 text-center">
+            <div className="space-y-4">
+              <div className="text-5xl font-bold text-red-400">93%</div>
+              <h3 className="text-xl font-semibold text-white">Parent Preference</h3>
+              <p className="text-gray-300">
+                93% of parents prefer tech-forward schools that embrace innovative training methods and cutting-edge technology.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-5xl font-bold text-red-400">30%</div>
+              <h3 className="text-xl font-semibold text-white">Faster Progress</h3>
+              <p className="text-gray-300">
+                Schools using CoachT report a 30% increase in student skill progression in just one semester.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-5xl font-bold text-red-400">50%</div>
+              <h3 className="text-xl font-semibold text-white">Time Savings</h3>
+              <p className="text-gray-300">
+                Instructors save up to 50% of class time previously spent on repetitive corrections — allowing more focus on individual growth and advanced techniques.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Trusted By Section */}
@@ -310,14 +308,15 @@ export default function Partnership() {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 via-purple-600/20 to-orange-600/20 rounded-2xl blur-3xl"></div>
             <div className="relative bg-gradient-to-r from-red-600/10 via-purple-600/10 to-orange-600/10 rounded-2xl p-12 border border-gray-800">
-              <h2 className="text-5xl font-bold mb-6">Try CoachT Now</h2>
-              <Button className="bg-white text-black hover:bg-gray-100 px-8 py-3">
-                <div className="w-4 h-4 mr-2">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5Z"/>
-                  </svg>
-                </div>
-                Download for free
+              <h2 className="text-5xl font-bold mb-6">Partner with CoachT</h2>
+              <p className="text-xl text-gray-300 mb-8">
+                Transform your martial arts school with AI-powered training technology
+              </p>
+              <Button 
+                className="bg-white text-black hover:bg-gray-100 px-8 py-3"
+                onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+              >
+                Schedule a Demo
               </Button>
               
               <div className="absolute -bottom-8 right-8">
