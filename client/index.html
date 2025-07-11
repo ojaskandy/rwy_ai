@@ -2,15 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1"
+    />
     <title>CoachT | AI Taekwondo Coach</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
   </head>
   <body>
+    <!-- 🛠 Magic-Link in-app browser auto-close & deep-link handler -->
+    <script>
+      // Only run this when inside Capacitor
+      if (window.Capacitor?.Plugins?.Browser) {
+        console.log("🔧 HTML: override install");
+
+        // Hijack window.open → Capacitor Browser.open
+        window.open = (url) => {
+          console.log("🔧 HTML: window.open →", url);
+          window.Capacitor.Plugins.Browser.open({ url });
+        };
+
+        // When our AppDelegate posts the deep-link event, close & navigate
+        window.addEventListener("magicLinkHandled", async () => {
+          console.log("🔧 HTML: magicLinkHandled");
+          try {
+            await window.Capacitor.Plugins.Browser.close();
+            console.log("🔧 HTML: Browser.close()");
+          } catch (e) {
+            console.error("🔧 HTML: Browser.close() failed", e);
+          }
+          // finally send the user into your native “/app” route
+          window.location.href = "/app";
+        });
+      }
+    </script>
+
+    <!-- React root -->
     <div id="root"></div>
+
+    <!-- Vite entry (dev) / replaced with hashed assets in prod -->
     <script type="module" src="/src/main.tsx"></script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+
+    <!-- Replit dev banner (you can remove this in production) -->
+    <script
+      type="text/javascript"
+      src="https://replit.com/public/js/replit-dev-banner.js"
+    ></script>
   </body>
 </html>
