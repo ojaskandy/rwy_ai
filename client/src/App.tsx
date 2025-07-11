@@ -32,6 +32,7 @@ import LiveRoutineDemo from "@/pages/LiveRoutineDemo";
 import InternshipApplication from "@/pages/InternshipApplication";
 import AdminApplications from "@/pages/AdminApplications";
 import SnapFeedback from "@/pages/SnapFeedback";
+import Partnership from "@/pages/Partnership";
 import GlobalDock from "@/components/GlobalDock";
 
 function Router() {
@@ -103,6 +104,9 @@ function Router() {
 
         {/* Admin applications page */}
         <Route path="/admin/applications" component={AdminApplications} />
+
+        {/* Partnership page */}
+        <Route path="/partnership" component={Partnership} />
 
         {/* 404 page */}
         <Route component={NotFound} />
