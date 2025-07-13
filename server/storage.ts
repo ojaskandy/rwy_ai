@@ -29,10 +29,6 @@ export interface IStorage {
   incrementRecordingsCount(userId: number): Promise<number>;
   completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User>;
   
-  // Onboarding gating methods
-  updateOnboardingStatus(userId: number, updates: { hasCompletedOnboarding?: boolean; hasPaid?: boolean; hasCodeBypass?: boolean }): Promise<User>;
-  validateDiscountCode(code: string): Promise<boolean>;
-  
   // User profile methods
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
   createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
@@ -175,22 +171,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return updatedUser.recordingsCount || 0;
-  }
-
-  // Onboarding gating methods
-  async updateOnboardingStatus(userId: number, updates: { hasCompletedOnboarding?: boolean; hasPaid?: boolean; hasCodeBypass?: boolean }): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
-  }
-
-  async validateDiscountCode(code: string): Promise<boolean> {
-    // Hardcoded discount codes for now
-    const validCodes = ["SPECIAL123", "EARLYBIRD", "BETA2025", "COACHT", "FOUNDER"];
-    return validCodes.includes(code.toUpperCase());
   }
   
   // Profile methods
