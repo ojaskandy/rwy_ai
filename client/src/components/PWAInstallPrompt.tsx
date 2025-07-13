@@ -34,8 +34,11 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
     const checkFirstVisit = () => {
       const hasVisited = localStorage.getItem('coacht_has_visited');
       const isMobile = window.innerWidth <= 768;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInWebAppiOS = (window.navigator as any).standalone === true;
       
-      if (!hasVisited && isMobile) {
+      // Only show if mobile, first visit, and not already installed
+      if (!hasVisited && isMobile && !isStandalone && !isInWebAppiOS) {
         setIsFirstVisit(true);
         setShowModal(true);
         localStorage.setItem('coacht_has_visited', 'true');
@@ -43,7 +46,11 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
     };
 
     detectDevice();
-    checkFirstVisit();
+    
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      checkFirstVisit();
+    }, 500);
 
     // Listen for beforeinstallprompt event (Android)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -59,18 +66,31 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
   }, []);
 
   const handleInstallClick = async () => {
+    console.log('PWA Install button clicked', {
+      deferredPrompt: !!deferredPrompt,
+      deviceType
+    });
+    
     if (deferredPrompt) {
       // Android - use native prompt
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        handleClose();
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        console.log('PWA Install outcome:', outcome);
+        
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+          handleClose();
+        }
+      } catch (error) {
+        console.error('Error with PWA install prompt:', error);
+        // Modal will stay open to show manual instructions
       }
     } else {
       // iOS or other - show manual instructions
       // Modal will stay open to show instructions
+      console.log('No deferred prompt available, showing manual instructions');
     }
   };
 
@@ -231,10 +251,37 @@ export const PWAInstallButton: React.FC = () => {
     };
   }, []);
 
-  const handleInstallClick = () => {
+  const handleInstallClick = async () => {
+    console.log('PWA Install button clicked (small button)', {
+      deferredPrompt: !!deferredPrompt,
+      deviceType,
+      showPrompt,
+      userAgent: navigator.userAgent
+    });
+    
     if (deferredPrompt) {
-      deferredPrompt.prompt();
+      // For Android - use native prompt
+      try {
+        console.log('Triggering native install prompt...');
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        console.log('PWA Install outcome:', outcome);
+        
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          setDeferredPrompt(null);
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+      } catch (error) {
+        console.error('Error showing install prompt:', error);
+        // Fallback to showing manual instructions
+        setShowPrompt(true);
+      }
     } else {
+      // For iOS or when native prompt isn't available
+      console.log('No deferred prompt available, showing manual instructions modal');
       setShowPrompt(true);
     }
   };
@@ -243,10 +290,25 @@ export const PWAInstallButton: React.FC = () => {
   const shouldShowButton = () => {
     const isMobile = window.innerWidth <= 768;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    return isMobile && !isStandalone;
+    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    
+    console.log('PWA Button visibility check:', {
+      isMobile,
+      isStandalone,
+      isInWebAppiOS,
+      shouldShow: isMobile && !isStandalone && !isInWebAppiOS
+    });
+    
+    return isMobile && !isStandalone && !isInWebAppiOS;
   };
 
   if (!shouldShowButton()) return null;
+
+  // Debug function to test first-time visitor experience
+  const resetPWAStorage = () => {
+    localStorage.removeItem('coacht_has_visited');
+    window.location.reload();
+  };
 
   return (
     <>
@@ -257,12 +319,24 @@ export const PWAInstallButton: React.FC = () => {
         className="fixed bottom-20 right-4 bg-black/80 backdrop-blur-sm border-red-600/30 text-red-400 hover:bg-red-600/10 hover:text-red-300 shadow-lg z-40"
       >
         <Download className="w-4 h-4 mr-2" />
-        Install App
+        Make this an app
       </Button>
 
-      <PWAInstallPrompt 
-        onClose={() => setShowPrompt(false)}
-      />
+      {/* Debug button - remove in production */}
+      <Button
+        onClick={resetPWAStorage}
+        variant="outline"
+        size="sm"
+        className="fixed bottom-32 right-4 bg-blue-600/80 backdrop-blur-sm border-blue-600/30 text-blue-300 hover:bg-blue-600/10 hover:text-blue-200 shadow-lg z-40"
+      >
+        Reset PWA
+      </Button>
+
+      {showPrompt && (
+        <PWAInstallPrompt 
+          onClose={() => setShowPrompt(false)}
+        />
+      )}
     </>
   );
 };
