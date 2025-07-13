@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, CheckCircle, AlertTriangle, Loader2, Send, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PWAInstallPrompt, PWAInstallButton } from '@/components/PWAInstallPrompt';
 
 const MobileLandingPage = () => {
   const [name, setName] = useState('');
@@ -172,6 +173,10 @@ const MobileLandingPage = () => {
 
 
       </motion.div>
+      
+      {/* PWA Install Components */}
+      <PWAInstallPrompt />
+      <PWAInstallButton />
     </div>
   );
 };

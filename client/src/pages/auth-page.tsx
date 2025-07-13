@@ -30,6 +30,7 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import MobileWarningDialog from "@/components/MobileWarningDialog";
+import { PWAInstallPrompt, PWAInstallButton } from "@/components/PWAInstallPrompt";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { Capacitor } from "@capacitor/core";
 import { loginWithMagicLink } from "../loginWithMagicLink.js";
@@ -461,6 +462,10 @@ export default function AuthPage() {
           </CardContent>
         </Card>
       </motion.div>
+      
+      {/* PWA Install Components */}
+      <PWAInstallPrompt />
+      <PWAInstallButton />
     </div>
   );
 }

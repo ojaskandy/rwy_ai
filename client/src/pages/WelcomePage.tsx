@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowRight, Sparkles } from "lucide-react";
 import HighResSilhouette from "@/components/HighResSilhouette";
+import { PWAInstallPrompt, PWAInstallButton } from "@/components/PWAInstallPrompt";
 import challengeArenaImage from "@assets/image_1750188086936.png";
 import homeScreenImage from "@assets/image_1750188117761.png";
 import practiceLibraryImage from "@assets/image_1750188231521.png";
@@ -610,6 +611,10 @@ export default function WelcomePage() {
           </p>
         </div>
       </footer>
+      
+      {/* PWA Install Components */}
+      <PWAInstallPrompt />
+      <PWAInstallButton />
     </div>
   );
 }

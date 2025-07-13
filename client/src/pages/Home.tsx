@@ -48,6 +48,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { isMobileDevice } from '@/lib/deviceUtils';
+import { PWAInstallButton } from '@/components/PWAInstallPrompt';
 
 export type TrackingStatus = 'inactive' | 'loading' | 'ready' | 'active' | 'error';
 export type CameraFacing = 'user' | 'environment';
@@ -1769,6 +1770,9 @@ export default function Home() {
         showDelay={3000}
         size="medium"
       />
+      
+      {/* PWA Install Button */}
+      <PWAInstallButton />
     </div>
   );
 }
