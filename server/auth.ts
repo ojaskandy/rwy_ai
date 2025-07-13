@@ -92,6 +92,10 @@ export function setupAuth(app: Express): void {
         }
 
         console.log("User found, comparing passwords...");
+        if (!user.password) {
+          console.log("User has no password set:", username);
+          return done(null, false, { message: "Invalid username or password" });
+        }
         const passwordMatch = await comparePasswords(password, user.password);
         console.log("Password match result:", passwordMatch);
 
@@ -697,10 +701,21 @@ export function setupAuth(app: Express): void {
       // Create a guest user with a unique username based on timestamp
       const guestUsername = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Generate a secure random password for guest
+      const randomPassword = randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(randomPassword);
+      
+      console.log("Guest login - random password:", randomPassword);
+      console.log("Guest login - hashed password:", hashedPassword);
+      
+      if (!hashedPassword) {
+        throw new Error("Failed to generate password hash");
+      }
+      
       const guestUser = await storage.createUser({
         username: guestUsername,
         email: null,
-        password: null, // Guest users don't have passwords
+        password: hashedPassword,
         fullName: "Guest User",
         picture: null,
         authProvider: "guest",

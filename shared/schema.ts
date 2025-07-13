@@ -28,6 +28,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   picture: true,
   authProvider: true,
+  profileCompleted: true,
+  taekwondoExperience: true,
 });
 
 // Schema for profile completion
