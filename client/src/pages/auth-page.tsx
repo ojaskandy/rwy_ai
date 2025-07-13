@@ -32,7 +32,7 @@ import { motion } from "framer-motion";
 import MobileWarningDialog from "@/components/MobileWarningDialog";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { Capacitor } from "@capacitor/core";
-import { loginWithMagicLink } from "../loginWithMagicLink";
+import { loginWithMagicLink } from "../loginWithMagicLink.js";
 
 // Profile setup schema
 const profileSetupSchema = z.object({
@@ -191,11 +191,11 @@ export default function AuthPage() {
   const onProfileSetupSubmit = (data: ProfileSetupFormValues) => {
     console.log("Submitting profile setup data:", data);
     completeProfileMutation?.mutate(data, {
-      onSuccess: (updatedUser) => {
+      onSuccess: (updatedUser: any) => {
         console.log("Profile setup successful, user updated:", updatedUser);
         navigate("/app", { replace: true });
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.error("Profile setup failed:", error);
       }
     });
