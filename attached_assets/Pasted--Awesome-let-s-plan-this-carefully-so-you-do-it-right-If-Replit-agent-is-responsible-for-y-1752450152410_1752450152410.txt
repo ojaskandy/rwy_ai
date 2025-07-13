@@ -1,0 +1,130 @@
+💥 **Awesome — let’s plan this carefully so you do it right.**
+
+If Replit agent is responsible for your backend, we want it to:
+✅ Add new DB fields and logic for onboarding gating.
+✅ Handle payment status updates.
+✅ Handle discount code logic.
+✅ Serve flags to frontend cleanly.
+
+Below is a **full, copy-ready instruction** you can paste to Replit agent.
+
+---
+
+## 💬 **Instructions to Replit agent (backend work)**
+
+````
+I want to implement an onboarding gating system for CoachT, with payment and optional discount code bypass. Please update the backend accordingly.
+
+🎯 Requirements:
+
+1️⃣ **Update user schema in database**
+
+Add these fields to the user model (or table):
+
+- hasCompletedOnboarding (boolean, default: false)
+- hasPaid (boolean, default: false)
+- hasCodeBypass (boolean, default: false)
+
+---
+
+2️⃣ **After successful login (Google or Magic), check flags**
+
+When a user logs in, retrieve these fields.  
+
+Expose an API endpoint (e.g., /api/user-status or /api/check-onboarding) that returns:
+
+```json
+{
+  "hasCompletedOnboarding": true/false,
+  "hasPaid": true/false,
+  "hasCodeBypass": true/false
+}
+````
+
+Frontend will call this immediately after login to decide whether to show onboarding or redirect to /app.
+
+---
+
+3️⃣ **Implement API endpoint to update onboarding status**
+
+Create an endpoint (e.g., /api/update-onboarding) that updates user status after onboarding.
+
+Payload example:
+
+```json
+{
+  "userId": "xyz123",
+  "hasCompletedOnboarding": true,
+  "hasPaid": true,
+  "hasCodeBypass": false
+}
+```
+
+---
+
+4️⃣ **Implement discount code validation**
+
+Create an endpoint (e.g., /api/validate-code) to handle discount code submission.
+
+* Accept code as payload: `{ "code": "SPECIAL123" }`.
+* Compare with a pre-approved hardcoded list (for now).
+* If valid, respond with `{ "valid": true }`, and backend should update user record with:
+
+```json
+{
+  "hasCompletedOnboarding": true,
+  "hasCodeBypass": true
+}
+```
+
+---
+
+5️⃣ **Stripe payment webhook**
+
+Add or update your Stripe webhook endpoint (e.g., /api/stripe-webhook).
+
+* On successful payment event, update user:
+
+```json
+{
+  "hasCompletedOnboarding": true,
+  "hasPaid": true
+}
+```
+
+---
+
+⚠️ **Constraints**
+
+* Do NOT modify authentication logic itself (Google or Magic).
+* Do NOT regress existing user fields or DB behavior.
+* If stuck or unsure, STOP and ask me before proceeding.
+
+---
+
+✅ **Deliverables**
+
+* Updated user schema/migrations (if needed).
+* New or updated API endpoints: /api/user-status, /api/update-onboarding, /api/validate-code, Stripe webhook.
+* Clear example payloads and documentation.
+
+```
+
+---
+
+## 💬 **What this achieves**
+
+✅ Backend can fully handle onboarding logic (flags, payment, code).  
+✅ Cursor agent can focus purely on frontend logic (onboarding screens, flow, Stripe client, redirects).  
+✅ You won’t risk regressions on login or core user logic.  
+
+---
+
+## 💬 **Short final summary**
+
+> 💡 Tell Replit agent these instructions first — they set up your backend foundation. Then you can move to Cursor agent for frontend implementation safely.
+
+---
+
+✅ If you'd like, I can also prepare example code snippets (e.g., Express route handlers, Prisma model changes) to copy directly. Want me to include that?
+```
