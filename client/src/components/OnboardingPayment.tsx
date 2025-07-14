@@ -298,9 +298,9 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to questions
         </Button>
-        <h2 className="text-3xl font-bold text-white mb-4">Choose Your Training Plan</h2>
+        <h2 className="text-3xl font-bold text-white mb-4">Unlock Your Full Martial Arts Potential</h2>
         <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-          Unlock your full potential with AI-powered martial arts coaching. Choose the plan that fits your training journey.
+          Join thousands of martial artists who've accelerated their progress with AI-powered coaching. Choose the plan that fits your training journey.
         </p>
       </div>
 
@@ -309,7 +309,10 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
         <Card className="bg-gray-800/50 border-gray-700 relative overflow-hidden">
           <CardHeader className="text-center">
             <CardTitle className="text-xl font-bold text-white">Monthly Subscription</CardTitle>
-            <div className="space-y-2">
+            <CardDescription className="text-gray-400 mt-2">
+              Perfect for trying it out or casual training.
+            </CardDescription>
+            <div className="space-y-2 mt-4">
               <div className="text-3xl font-bold text-white">{PRICING_PLANS.monthly.displayPrice}</div>
               <div className="text-sm text-gray-400">{PRICING_PLANS.monthly.billing}</div>
             </div>
@@ -337,25 +340,28 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
               onClick={() => handlePlanSelect('monthly')}
               className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 rounded-xl transition-all"
             >
-              Choose Monthly
+              Start Monthly Plan
             </Button>
           </CardContent>
         </Card>
 
         {/* Yearly Plan */}
-        <Card className="bg-gray-800/50 border-red-500/50 relative overflow-hidden">
+        <Card className="bg-gray-800/50 border-red-500/50 relative overflow-hidden shadow-lg shadow-red-500/20 ring-1 ring-red-500/30">
           {/* Most Popular Badge */}
-          <div className="absolute top-4 right-4 bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <Crown className="w-3 h-3" />
+          <div className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-bl-xl rounded-tr-xl text-sm font-bold flex items-center gap-1 shadow-lg">
+            <Crown className="w-4 h-4" />
             Most Popular
           </div>
           
           <CardHeader className="text-center">
             <CardTitle className="text-xl font-bold text-white">Yearly Subscription</CardTitle>
-            <div className="space-y-2">
+            <CardDescription className="text-gray-400 mt-2">
+              Best for serious martial artists ready to commit and dominate.
+            </CardDescription>
+            <div className="space-y-2 mt-4">
               <div className="text-3xl font-bold text-white">{PRICING_PLANS.yearly.displayPrice}/year</div>
               <div className="text-sm text-green-400 font-semibold">{PRICING_PLANS.yearly.billing}</div>
-              <div className="text-sm text-orange-400 font-medium">{PRICING_PLANS.yearly.savings}</div>
+              <div className="text-sm text-orange-400 font-medium">Save 33% — Pay for 8 months, train all year</div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -378,14 +384,23 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
               </div>
               <div className="flex items-center gap-2 text-sm text-green-400">
                 <Sparkles className="w-4 h-4 text-green-500" />
-                <span className="font-medium">Save 33.3% vs monthly</span>
+                <span className="font-medium">Save 33% vs monthly</span>
               </div>
             </div>
+            
+            {/* Social Proof */}
+            <div className="text-center text-sm text-yellow-400 bg-yellow-400/10 p-3 rounded-lg border border-yellow-400/20">
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-yellow-400">⭐</span>
+                <span>Most CoachT athletes choose this plan to stay consistent and improve fastest.</span>
+              </div>
+            </div>
+            
             <Button
               onClick={() => handlePlanSelect('yearly')}
-              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02]"
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-red-500/25"
             >
-              Choose Yearly
+              Commit & Save
             </Button>
           </CardContent>
         </Card>
@@ -406,6 +421,13 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
             <CheckCircle className="w-4 h-4" />
             <span>30-Day Guarantee</span>
           </div>
+        </div>
+        
+        {/* Risk-free reassurance */}
+        <div className="text-center text-sm text-gray-400 mt-4">
+          <span className="bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
+            Cancel anytime. Keep your progress data safe.
+          </span>
         </div>
       </div>
     </motion.div>
