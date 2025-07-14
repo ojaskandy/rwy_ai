@@ -11,7 +11,11 @@ import {
   type InsertRecording,
   insertEarlyAccessSchema,
   type InsertEarlyAccess,
-  type InsertInternshipApplication
+  type InsertInternshipApplication,
+  onboardingStatusSchema,
+  discountCodeSchema,
+  type OnboardingStatus,
+  type DiscountCode
 } from "@shared/schema";
 import { z } from "zod";
 import * as fs from 'fs';
@@ -20,6 +24,7 @@ import { Resend } from 'resend';
 import multer from "multer";
 import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
+import Stripe from 'stripe';
 
 // Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
@@ -70,6 +75,17 @@ const upload = multer({
   }
 });
 
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-06-20",
+});
+
+// Predefined discount codes
+const VALID_DISCOUNT_CODES = ['EARLY2025', 'BETA50', 'FREEACCESS'];
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
@@ -110,6 +126,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Profile completion error:", error);
       res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // ==================== ONBOARDING GATING API ENDPOINTS ====================
+  
+  // Check user onboarding status
+  app.get("/api/user-status", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        hasCompletedOnboarding: user.hasCompletedOnboarding || false,
+        hasPaid: user.hasPaid || false,
+        hasCodeBypass: user.hasCodeBypass || false,
+        profileCompleted: user.profileCompleted || false,
+        authProvider: user.authProvider
+      });
+    } catch (error) {
+      console.error("User status check error:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Update onboarding status
+  app.post("/api/update-onboarding", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const result = onboardingStatusSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedUser = await storage.updateOnboardingStatus(req.user.id, result.data);
+      
+      res.json({
+        hasCompletedOnboarding: updatedUser.hasCompletedOnboarding,
+        hasPaid: updatedUser.hasPaid,
+        hasCodeBypass: updatedUser.hasCodeBypass
+      });
+    } catch (error) {
+      console.error("Onboarding status update error:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Validate discount code
+  app.post("/api/validate-code", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const result = discountCodeSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const { code } = result.data;
+      const isValid = VALID_DISCOUNT_CODES.includes(code.toUpperCase());
+
+      if (isValid) {
+        // Update user to have code bypass
+        const updatedUser = await storage.updateOnboardingStatus(req.user.id, {
+          hasCompletedOnboarding: true,
+          hasCodeBypass: true
+        });
+
+        res.json({
+          valid: true,
+          message: "Code validated successfully! You now have access to CoachT.",
+          user: {
+            hasCompletedOnboarding: updatedUser.hasCompletedOnboarding,
+            hasPaid: updatedUser.hasPaid,
+            hasCodeBypass: updatedUser.hasCodeBypass
+          }
+        });
+      } else {
+        res.json({
+          valid: false,
+          message: "Invalid discount code. Please try again."
+        });
+      }
+    } catch (error) {
+      console.error("Discount code validation error:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Create payment intent for onboarding
+  app.post("/api/create-payment-intent", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { amount = 2999 } = req.body; // Default to $29.99
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount), // Amount in cents
+        currency: "usd",
+        metadata: {
+          userId: req.user.id.toString(),
+          type: "onboarding_payment"
+        }
+      });
+
+      res.json({ 
+        clientSecret: paymentIntent.client_secret,
+        amount: amount
+      });
+    } catch (error) {
+      console.error("Payment intent creation error:", error);
+      res.status(500).json({ 
+        error: "Failed to create payment intent", 
+        message: (error as Error).message 
+      });
+    }
+  });
+
+  // Stripe webhook endpoint
+  app.post("/api/stripe-webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      // For development, we'll skip webhook signature verification
+      // In production, you should verify the webhook signature
+      event = JSON.parse(req.body.toString());
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return res.status(400).send(`Webhook Error: ${err}`);
+    }
+
+    try {
+      // Handle the event
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          const paymentIntent = event.data.object;
+          const userId = paymentIntent.metadata?.userId;
+          
+          if (userId) {
+            // Update user payment status
+            await storage.updateOnboardingStatus(parseInt(userId), {
+              hasCompletedOnboarding: true,
+              hasPaid: true
+            });
+            
+            console.log(`Payment successful for user ${userId}`);
+          }
+          break;
+        
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
   

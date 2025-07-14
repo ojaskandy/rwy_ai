@@ -17,6 +17,12 @@ export const users = pgTable("users", {
   recordingsCount: integer("recordings_count").default(0),
   goal: text("goal").default(""),
   goalDueDate: timestamp("goal_due_date"),
+  // Onboarding gating fields
+  hasCompletedOnboarding: boolean("has_completed_onboarding").default(false),
+  hasPaid: boolean("has_paid").default(false),
+  hasCodeBypass: boolean("has_code_bypass").default(false),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -30,6 +36,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   authProvider: true,
   profileCompleted: true,
   taekwondoExperience: true,
+  hasCompletedOnboarding: true,
+  hasPaid: true,
+  hasCodeBypass: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
 });
 
 // Schema for profile completion
@@ -44,6 +55,22 @@ export const profileSetupSchema = z.object({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type ProfileSetup = z.infer<typeof profileSetupSchema>;
+
+// Schema for onboarding status updates
+export const onboardingStatusSchema = z.object({
+  hasCompletedOnboarding: z.boolean().optional(),
+  hasPaid: z.boolean().optional(),
+  hasCodeBypass: z.boolean().optional(),
+});
+
+export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
+
+// Schema for discount code validation
+export const discountCodeSchema = z.object({
+  code: z.string().min(1, "Code is required"),
+});
+
+export type DiscountCode = z.infer<typeof discountCodeSchema>;
 
 // User profile schema for storing additional information
 export const userProfiles = pgTable("user_profiles", {

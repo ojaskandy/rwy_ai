@@ -29,6 +29,11 @@ export interface IStorage {
   incrementRecordingsCount(userId: number): Promise<number>;
   completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User>;
   
+  // Onboarding gating methods
+  updateOnboardingStatus(userId: number, status: Partial<{ hasCompletedOnboarding: boolean; hasPaid: boolean; hasCodeBypass: boolean; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<User>;
+  updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
+  updateUserStripeInfo(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  
   // User profile methods
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
   createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
@@ -139,6 +144,39 @@ export class DatabaseStorage implements IStorage {
         username: profileData.username,
         taekwondoExperience: profileData.taekwondoExperience,
         profileCompleted: true,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  // Onboarding gating methods
+  async updateOnboardingStatus(userId: number, status: Partial<{ hasCompletedOnboarding: boolean; hasPaid: boolean; hasCodeBypass: boolean; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(status)
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ stripeCustomerId })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  async updateUserStripeInfo(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        stripeCustomerId, 
+        stripeSubscriptionId,
+        hasPaid: true,
+        hasCompletedOnboarding: true
       })
       .where(eq(users.id, userId))
       .returning();
