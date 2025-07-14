@@ -207,6 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           valid: true,
+          codeType: "bypass", // Indicate this is a bypass code
           message: "Code validated successfully! You now have access to CoachT.",
           user: {
             hasCompletedOnboarding: updatedUser.hasCompletedOnboarding,
@@ -226,33 +227,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create subscription for onboarding
+  // Get user status for onboarding checks
+  app.get("/api/user-status", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      res.json({
+        hasCompletedOnboarding: req.user.hasCompletedOnboarding || false,
+        hasPaid: req.user.hasPaid || false,
+        hasCodeBypass: req.user.hasCodeBypass || false,
+        profileCompleted: req.user.profileCompleted || false,
+        authProvider: req.user.authProvider
+      });
+    } catch (error) {
+      console.error("User status fetch error:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch user status", 
+        message: (error as Error).message 
+      });
+    }
+  });
+
+  // Apply bypass code (for codes that give immediate access)
+  app.post("/api/apply-bypass-code", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { code } = req.body;
+      
+      if (!code || !VALID_DISCOUNT_CODES.includes(code.toUpperCase())) {
+        return res.status(400).json({ error: "Invalid or missing code" });
+      }
+
+      // Update user to have code bypass
+      const updatedUser = await storage.updateOnboardingStatus(req.user.id, {
+        hasCompletedOnboarding: true,
+        hasCodeBypass: true
+      });
+
+      res.json({
+        success: true,
+        message: "Bypass code applied successfully! You now have full access to CoachT.",
+        user: {
+          hasCompletedOnboarding: updatedUser.hasCompletedOnboarding,
+          hasPaid: updatedUser.hasPaid,
+          hasCodeBypass: updatedUser.hasCodeBypass
+        }
+      });
+    } catch (error) {
+      console.error("Bypass code application error:", error);
+      res.status(500).json({ 
+        error: "Failed to apply bypass code", 
+        message: (error as Error).message 
+      });
+    }
+  });
+
+  // Create Stripe Checkout session for subscription
   app.post("/api/create-subscription", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
-      const { planType = 'yearly' } = req.body; // Default to yearly
-      
-      // Price IDs for each plan
-      const priceIds = {
-        monthly: 'price_1RkdiWHq7hIb1YPg2YZDnjlc',
-        yearly: 'price_1RkdiWHq7hIb1YPgdHcYotQZ'
-      };
-
-      const priceId = priceIds[planType as keyof typeof priceIds];
+      const { priceId } = req.body;
       
       if (!priceId) {
-        return res.status(400).json({ error: "Invalid plan type" });
+        return res.status(400).json({ error: "Price ID is required" });
       }
 
       // Create or retrieve customer
-      let customer;
-      if (req.user.stripeCustomerId) {
-        customer = await stripe.customers.retrieve(req.user.stripeCustomerId);
-      } else {
-        customer = await stripe.customers.create({
+      let customerId = req.user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
           email: req.user.email,
           name: req.user.fullName,
           metadata: {
@@ -260,41 +311,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
+        customerId = customer.id;
+        
         // Update user with customer ID
         await storage.updateUserStripeInfo(req.user.id, {
-          stripeCustomerId: customer.id,
+          stripeCustomerId: customerId,
           stripeSubscriptionId: null
         });
       }
 
-      // Create subscription
-      const subscription = await stripe.subscriptions.create({
-        customer: customer.id,
-        items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+      // Create Stripe Checkout session
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer: customerId!,
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NODE_ENV === 'production' ? 'https://coacht.xyz' : 'http://localhost:5001'}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NODE_ENV === 'production' ? 'https://coacht.xyz' : 'http://localhost:5001'}/onboarding`,
         metadata: {
           userId: req.user.id.toString(),
-          planType: planType
-        }
-      });
-
-      // Update user with subscription ID
-      await storage.updateUserStripeInfo(req.user.id, {
-        stripeCustomerId: customer.id,
-        stripeSubscriptionId: subscription.id
+        },
       });
 
       res.json({ 
-        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
-        subscriptionId: subscription.id,
-        planType: planType
+        checkoutUrl: session.url
       });
     } catch (error) {
-      console.error("Subscription creation error:", error);
+      console.error("Checkout session creation error:", error);
       res.status(500).json({ 
-        error: "Failed to create subscription", 
+        error: "Failed to create checkout session", 
+        message: (error as Error).message 
+      });
+    }
+  });
+
+  // Mark user as paid after successful Stripe Checkout
+  app.post("/api/mark-paid", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+
+      // Retrieve the checkout session to verify it was successful
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.payment_status === 'paid' && session.metadata?.userId === req.user.id.toString()) {
+        // Update user status
+        await storage.updateOnboardingStatus(req.user.id, {
+          hasCompletedOnboarding: true,
+          hasPaid: true
+        });
+
+        // Update subscription ID if available
+        if (session.subscription) {
+          await storage.updateUserStripeInfo(req.user.id, {
+            stripeCustomerId: req.user.stripeCustomerId || session.customer as string,
+            stripeSubscriptionId: session.subscription as string
+          });
+        }
+
+        res.json({ 
+          success: true,
+          message: "Payment confirmed and user status updated"
+        });
+      } else {
+        res.status(400).json({ 
+          error: "Payment not confirmed or session does not belong to user" 
+        });
+      }
+    } catch (error) {
+      console.error("Payment confirmation error:", error);
+      res.status(500).json({ 
+        error: "Failed to confirm payment", 
         message: (error as Error).message 
       });
     }
@@ -317,18 +415,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Handle the event
       switch (event.type) {
-        case 'payment_intent.succeeded':
-          const paymentIntent = event.data.object;
-          const userId = paymentIntent.metadata?.userId;
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          const userId = session.metadata?.userId;
           
-          if (userId) {
+          if (userId && session.payment_status === 'paid') {
             // Update user payment status
             await storage.updateOnboardingStatus(parseInt(userId), {
               hasCompletedOnboarding: true,
               hasPaid: true
             });
+
+            // Update subscription ID if this was a subscription
+            if (session.subscription) {
+              await storage.updateUserStripeInfo(parseInt(userId), {
+                stripeCustomerId: session.customer,
+                stripeSubscriptionId: session.subscription
+              });
+            }
             
-            console.log(`Payment successful for user ${userId}`);
+            console.log(`Checkout session completed for user ${userId}`);
+          }
+          break;
+
+        case 'payment_intent.succeeded':
+          const paymentIntent = event.data.object;
+          const paymentUserId = paymentIntent.metadata?.userId;
+          
+          if (paymentUserId) {
+            // Update user payment status
+            await storage.updateOnboardingStatus(parseInt(paymentUserId), {
+              hasCompletedOnboarding: true,
+              hasPaid: true
+            });
+            
+            console.log(`Payment successful for user ${paymentUserId}`);
           }
           break;
           

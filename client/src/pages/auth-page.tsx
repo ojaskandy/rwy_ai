@@ -189,12 +189,21 @@ export default function AuthPage() {
     });
   };
 
-  const onProfileSetupSubmit = (data: ProfileSetupFormValues) => {
+  const onProfileSetupSubmit = async (data: ProfileSetupFormValues) => {
     console.log("Submitting profile setup data:", data);
     completeProfileMutation?.mutate(data, {
-      onSuccess: (updatedUser: any) => {
+      onSuccess: async (updatedUser: any) => {
         console.log("Profile setup successful, user updated:", updatedUser);
-        navigate("/app", { replace: true });
+        
+        // Check if user should see onboarding
+        const shouldShowOnboarding = await import("@/lib/onboardingUtils").then(m => m.shouldShowOnboarding);
+        if (await shouldShowOnboarding(updatedUser)) {
+          console.log("User needs onboarding, navigating to /onboarding");
+          navigate("/onboarding", { replace: true });
+        } else {
+          console.log("User completed onboarding, navigating to /app");
+          navigate("/app", { replace: true });
+        }
       },
       onError: (error: any) => {
         console.error("Profile setup failed:", error);

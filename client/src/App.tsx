@@ -12,6 +12,7 @@ import Practice from "@/pages/Practice";
 import EarlyAccess from "@/pages/EarlyAccess";
 import Profile from "@/pages/Profile";
 import OnboardingPage from "@/pages/OnboardingPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
@@ -55,6 +56,9 @@ function Router() {
 
         {/* Onboarding flow for new users */}
         <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+
+        {/* Payment success page */}
+        <Route path="/payment-success" component={PaymentSuccessPage} />
 
         {/* Main application with camera tracking */}
         <ProtectedRoute path="/app" component={Home} />
