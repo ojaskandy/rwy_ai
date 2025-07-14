@@ -77,6 +77,8 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
         // Wait a moment then proceed to success
         setTimeout(() => {
           onSuccess();
+          // Force immediate redirect to /app
+          window.location.href = '/app';
         }, 1500);
       } else {
         toast({
@@ -125,6 +127,8 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
           description: "Welcome to CoachT! Your martial arts journey begins now.",
         });
         onSuccess();
+        // Force immediate redirect to /app after successful payment
+        window.location.href = '/app';
       }
     } catch (error) {
       toast({
@@ -267,6 +271,8 @@ const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
         // Wait a moment then proceed to success
         setTimeout(() => {
           onSuccess();
+          // Force immediate redirect to /app
+          window.location.href = '/app';
         }, 1500);
       } else {
         toast({

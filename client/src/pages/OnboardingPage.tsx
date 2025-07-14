@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * OnboardingPage - Displays the questionnaire flow for new users
@@ -21,6 +22,23 @@ import { useToast } from '@/hooks/use-toast';
 const OnboardingPage: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  // Check if user has already completed onboarding
+  const { data: userStatus } = useQuery({
+    queryKey: ['/api/user-status'],
+    queryFn: async () => {
+      const response = await fetch('/api/user-status');
+      return response.json();
+    },
+  });
+
+  // Redirect immediately if user has already completed onboarding
+  useEffect(() => {
+    if (userStatus && (userStatus.hasCompletedOnboarding || userStatus.hasPaid || userStatus.hasCodeBypass)) {
+      console.log('User has already completed onboarding, redirecting to /app');
+      navigate('/app', { replace: true });
+    }
+  }, [userStatus, navigate]);
 
   // Handle onboarding completion (after payment or discount code)
   const handleOnboardingComplete = async () => {
@@ -47,6 +65,30 @@ const OnboardingPage: React.FC = () => {
       navigate('/app', { replace: true });
     }
   };
+
+  // Show loading while checking status
+  if (!userStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show onboarding if user has already completed it
+  if (userStatus.hasCompletedOnboarding || userStatus.hasPaid || userStatus.hasCodeBypass) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <OnboardingProvider>
