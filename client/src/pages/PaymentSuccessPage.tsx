@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Sparkles, Crown } from 'lucide-react';
 
 const PaymentSuccessPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [location] = useLocation();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
-      const sessionId = searchParams.get('session_id');
+      // Parse URL search params manually
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
       
       if (!sessionId) {
         setError('No payment session found');
@@ -53,7 +54,7 @@ const PaymentSuccessPage: React.FC = () => {
     };
 
     handlePaymentSuccess();
-  }, [searchParams, toast]);
+  }, [toast]);
 
   if (error) {
     return (
