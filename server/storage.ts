@@ -24,6 +24,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserLastPractice(userId: number, date?: Date): Promise<User>;
   incrementRecordingsCount(userId: number): Promise<number>;
@@ -32,7 +33,7 @@ export interface IStorage {
   // Onboarding gating methods
   updateOnboardingStatus(userId: number, status: Partial<{ hasCompletedOnboarding: boolean; hasPaid: boolean; hasCodeBypass: boolean; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<User>;
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
-  updateUserStripeInfo(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  updateUserStripeInfo(userId: number, stripeData: { stripeCustomerId: string; stripeSubscriptionId: string | null }): Promise<User>;
   
   // User profile methods
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
@@ -136,6 +137,11 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
+    return user || undefined;
+  }
+
   async completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User> {
     const [updatedUser] = await db
       .update(users)
@@ -169,14 +175,14 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
-  async updateUserStripeInfo(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+  async updateUserStripeInfo(userId: number, stripeData: { stripeCustomerId: string; stripeSubscriptionId: string | null }): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set({ 
-        stripeCustomerId, 
-        stripeSubscriptionId,
-        hasPaid: true,
-        hasCompletedOnboarding: true
+        stripeCustomerId: stripeData.stripeCustomerId, 
+        stripeSubscriptionId: stripeData.stripeSubscriptionId,
+        hasPaid: !!stripeData.stripeSubscriptionId,
+        hasCompletedOnboarding: !!stripeData.stripeSubscriptionId
       })
       .where(eq(users.id, userId))
       .returning();

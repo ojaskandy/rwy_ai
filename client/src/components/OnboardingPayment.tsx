@@ -364,14 +364,13 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
     setSelectedPlan(plan);
     
     try {
-      const amount = PRICING_PLANS[plan].price * 100; // Convert to cents
-      const response = await apiRequest("POST", "/api/create-payment-intent", { amount });
+      const response = await apiRequest("POST", "/api/create-subscription", { planType: plan });
       const data = await response.json();
       
       setClientSecret(data.clientSecret);
       setShowPaymentForm(true);
     } catch (error) {
-      console.error('Failed to create payment intent:', error);
+      console.error('Failed to create subscription:', error);
     }
   };
 

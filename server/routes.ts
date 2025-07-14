@@ -226,32 +226,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create payment intent for onboarding
-  app.post("/api/create-payment-intent", async (req, res) => {
+  // Create subscription for onboarding
+  app.post("/api/create-subscription", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
-      const { amount = 2999 } = req.body; // Default to $29.99
+      const { planType = 'yearly' } = req.body; // Default to yearly
       
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount), // Amount in cents
-        currency: "usd",
+      // Price IDs for each plan
+      const priceIds = {
+        monthly: 'price_1RkdiWHq7hIb1YPg2YZDnjlc',
+        yearly: 'price_1RkdiWHq7hIb1YPgdHcYotQZ'
+      };
+
+      const priceId = priceIds[planType as keyof typeof priceIds];
+      
+      if (!priceId) {
+        return res.status(400).json({ error: "Invalid plan type" });
+      }
+
+      // Create or retrieve customer
+      let customer;
+      if (req.user.stripeCustomerId) {
+        customer = await stripe.customers.retrieve(req.user.stripeCustomerId);
+      } else {
+        customer = await stripe.customers.create({
+          email: req.user.email,
+          name: req.user.fullName,
+          metadata: {
+            userId: req.user.id.toString()
+          }
+        });
+        
+        // Update user with customer ID
+        await storage.updateUserStripeInfo(req.user.id, {
+          stripeCustomerId: customer.id,
+          stripeSubscriptionId: null
+        });
+      }
+
+      // Create subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
         metadata: {
           userId: req.user.id.toString(),
-          type: "onboarding_payment"
+          planType: planType
         }
       });
 
+      // Update user with subscription ID
+      await storage.updateUserStripeInfo(req.user.id, {
+        stripeCustomerId: customer.id,
+        stripeSubscriptionId: subscription.id
+      });
+
       res.json({ 
-        clientSecret: paymentIntent.client_secret,
-        amount: amount
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+        subscriptionId: subscription.id,
+        planType: planType
       });
     } catch (error) {
-      console.error("Payment intent creation error:", error);
+      console.error("Subscription creation error:", error);
       res.status(500).json({ 
-        error: "Failed to create payment intent", 
+        error: "Failed to create subscription", 
         message: (error as Error).message 
       });
     }
@@ -286,6 +329,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             console.log(`Payment successful for user ${userId}`);
+          }
+          break;
+          
+        case 'invoice.payment_succeeded':
+          const invoice = event.data.object;
+          const subscriptionId = invoice.subscription;
+          
+          if (subscriptionId) {
+            // Find user by subscription ID and update their status
+            const user = await storage.getUserByStripeSubscriptionId(subscriptionId);
+            if (user) {
+              await storage.updateOnboardingStatus(user.id, {
+                hasCompletedOnboarding: true,
+                hasPaid: true
+              });
+              
+              console.log(`Subscription payment successful for user ${user.id}`);
+            }
           }
           break;
         
