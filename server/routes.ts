@@ -84,7 +84,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 // Predefined discount codes
-const VALID_DISCOUNT_CODES = ['EARLY2025', 'BETA50', 'FREEACCESS'];
+const VALID_DISCOUNT_CODES = ['EARLY2025', 'BETA50', 'FREEACCESS', 'COACHTFREE', 'SECRETACCESS', 'BLACKBELT'];
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes

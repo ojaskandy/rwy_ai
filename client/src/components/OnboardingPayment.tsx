@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Shield, Sparkles, CheckCircle } from "lucide-react";
+import { CreditCard, Shield, Sparkles, CheckCircle, Crown, ArrowLeft, Check } from "lucide-react";
 
 // Initialize Stripe
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
@@ -22,7 +22,27 @@ interface OnboardingPaymentProps {
   onBack: () => void;
 }
 
-const PaymentForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+// Pricing plans
+const PRICING_PLANS = {
+  monthly: {
+    price: 12,
+    priceId: 'price_monthly', // This would be set from Stripe dashboard
+    displayPrice: '$12',
+    billing: 'Billed monthly',
+    description: 'Monthly Subscription'
+  },
+  yearly: {
+    price: 96,
+    priceId: 'price_yearly', // This would be set from Stripe dashboard
+    displayPrice: '$96',
+    billing: 'Only $8/month',
+    description: 'Yearly Subscription',
+    savings: 'Save 33.3% (Get 4 months free!)',
+    mostPopular: true
+  }
+};
+
+const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | 'yearly' }> = ({ onSuccess, selectedPlan }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -30,6 +50,7 @@ const PaymentForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
   const [discountCode, setDiscountCode] = useState('');
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [codeValidated, setCodeValidated] = useState(false);
+  const [showDiscountCode, setShowDiscountCode] = useState(false);
 
   const handleCodeValidation = async () => {
     if (!discountCode.trim()) {
@@ -75,8 +96,8 @@ const PaymentForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
     }
   };
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (!stripe || !elements) {
       return;
@@ -101,7 +122,7 @@ const PaymentForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
       } else {
         toast({
           title: "Payment Successful",
-          description: "Welcome to CoachT! Let's start your martial arts journey.",
+          description: "Welcome to CoachT! Your martial arts journey begins now.",
         });
         onSuccess();
       }
@@ -118,189 +139,276 @@ const PaymentForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
 
   if (codeValidated) {
     return (
-      <div className="text-center space-y-6">
+      <div className="text-center">
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
+          className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
         >
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <CheckCircle className="w-8 h-8 text-white" />
         </motion.div>
-        <h3 className="text-2xl font-bold text-green-400">Access Granted!</h3>
-        <p className="text-gray-300">Your discount code has been validated. Redirecting to your dashboard...</p>
+        <h3 className="text-xl font-bold text-white mb-2">Access Granted!</h3>
+        <p className="text-gray-300">Redirecting to your dashboard...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Payment Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PaymentElement />
+        <Button
+          type="submit"
+          disabled={!stripe || isProcessing}
+          className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl transition-all"
+        >
+          {isProcessing ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Processing...
+            </div>
+          ) : (
+            `Complete Payment - ${PRICING_PLANS[selectedPlan].displayPrice}`
+          )}
+        </Button>
+      </form>
+
       {/* Discount Code Section */}
-      <Card className="border-gray-700 bg-gray-800/50">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-yellow-400" />
-            Have a Discount Code?
-          </CardTitle>
-          <CardDescription>
-            Enter your code to get instant access
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label htmlFor="discount-code">Discount Code</Label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Separator className="flex-1" />
+          <span className="text-sm text-gray-400">Or</span>
+          <Separator className="flex-1" />
+        </div>
+        
+        {!showDiscountCode ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowDiscountCode(true)}
+            className="w-full text-gray-300 hover:text-white border border-gray-600 hover:border-gray-500"
+          >
+            I have a discount code
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="discount-code" className="text-sm font-medium text-gray-300">
+                Discount Code
+              </Label>
               <Input
                 id="discount-code"
                 type="text"
-                placeholder="Enter your code"
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value)}
-                className="bg-gray-700 border-gray-600"
-                disabled={isValidatingCode}
+                placeholder="Enter your discount code"
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
               />
             </div>
             <Button
+              type="button"
               onClick={handleCodeValidation}
               disabled={isValidatingCode || !discountCode.trim()}
-              className="mt-6"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 rounded-xl transition-all"
             >
-              {isValidatingCode ? "Validating..." : "Apply"}
+              {isValidatingCode ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Validating...
+                </div>
+              ) : (
+                "Validate Code"
+              )}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex items-center gap-4">
-        <Separator className="flex-1" />
-        <span className="text-sm text-gray-400">OR</span>
-        <Separator className="flex-1" />
+        )}
       </div>
 
-      {/* Payment Section */}
-      <Card className="border-gray-700 bg-gray-800/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-blue-400" />
-            Secure Payment
-          </CardTitle>
-          <CardDescription>
-            One-time payment for lifetime access to CoachT
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePayment} className="space-y-4">
-            <PaymentElement />
-            
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Shield className="w-4 h-4" />
-              <span>Secured by Stripe - Your payment information is protected</span>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={!stripe || isProcessing}
-              className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
-            >
-              {isProcessing ? "Processing..." : "Complete Payment ($29.99)"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Security Badge */}
+      <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+        <Shield className="w-4 h-4" />
+        <span>Secure payment powered by Stripe</span>
+      </div>
     </div>
   );
 };
 
 const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack }) => {
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [clientSecret, setClientSecret] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
-  useEffect(() => {
-    // Create PaymentIntent when component mounts
-    const createPaymentIntent = async () => {
-      try {
-        const response = await apiRequest("POST", "/api/create-payment-intent", { amount: 2999 });
-        const data = await response.json();
-        
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          throw new Error("No client secret received");
-        }
-      } catch (error) {
-        toast({
-          title: "Payment Setup Error",
-          description: "Failed to initialize payment. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const handlePlanSelect = async (plan: 'monthly' | 'yearly') => {
+    setSelectedPlan(plan);
+    
+    try {
+      const amount = PRICING_PLANS[plan].price * 100; // Convert to cents
+      const response = await apiRequest("POST", "/api/create-payment-intent", { amount });
+      const data = await response.json();
+      
+      setClientSecret(data.clientSecret);
+      setShowPaymentForm(true);
+    } catch (error) {
+      console.error('Failed to create payment intent:', error);
+    }
+  };
 
-    createPaymentIntent();
-  }, [toast]);
-
-  if (isLoading) {
+  if (showPaymentForm && clientSecret) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full" />
-        <p className="text-gray-400">Setting up secure payment...</p>
-      </div>
-    );
-  }
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md mx-auto px-6"
+      >
+        <div className="text-center mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => setShowPaymentForm(false)}
+            className="mb-4 text-gray-300 hover:text-white"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to plans
+          </Button>
+          <h2 className="text-2xl font-bold text-white mb-2">Complete Your Payment</h2>
+          <p className="text-gray-300">
+            {PRICING_PLANS[selectedPlan].description} - {PRICING_PLANS[selectedPlan].displayPrice}
+          </p>
+        </div>
 
-  if (!clientSecret) {
-    return (
-      <div className="text-center space-y-4">
-        <p className="text-red-400">Failed to initialize payment system</p>
-        <Button onClick={onBack} variant="outline">
-          Go Back
-        </Button>
-      </div>
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <PaymentForm onSuccess={onSuccess} selectedPlan={selectedPlan} />
+        </Elements>
+      </motion.div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-          Complete Your Journey
-        </h2>
-        <p className="text-gray-300">
-          Join thousands of martial artists training with AI-powered coaching
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-4xl mx-auto px-6"
+    >
+      <div className="text-center mb-8">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="mb-4 text-gray-300 hover:text-white"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to questions
+        </Button>
+        <h2 className="text-3xl font-bold text-white mb-4">Choose Your Training Plan</h2>
+        <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+          Unlock your full potential with AI-powered martial arts coaching. Choose the plan that fits your training journey.
         </p>
       </div>
 
-      {/* Benefits Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="text-center p-4 bg-gray-800/30 rounded-lg">
-          <div className="text-2xl mb-2">🥋</div>
-          <h3 className="font-semibold text-white">Expert Coaching</h3>
-          <p className="text-sm text-gray-400">AI-powered form analysis</p>
-        </div>
-        <div className="text-center p-4 bg-gray-800/30 rounded-lg">
-          <div className="text-2xl mb-2">📊</div>
-          <h3 className="font-semibold text-white">Progress Tracking</h3>
-          <p className="text-sm text-gray-400">Monitor your improvement</p>
-        </div>
-        <div className="text-center p-4 bg-gray-800/30 rounded-lg">
-          <div className="text-2xl mb-2">🎯</div>
-          <h3 className="font-semibold text-white">Personalized Goals</h3>
-          <p className="text-sm text-gray-400">Tailored to your level</p>
-        </div>
+      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        {/* Monthly Plan */}
+        <Card className="bg-gray-800/50 border-gray-700 relative overflow-hidden">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl font-bold text-white">Monthly Subscription</CardTitle>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-white">{PRICING_PLANS.monthly.displayPrice}</div>
+              <div className="text-sm text-gray-400">{PRICING_PLANS.monthly.billing}</div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Full access to AI coaching</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Real-time pose analysis</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Progress tracking</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Unlimited practice sessions</span>
+              </div>
+            </div>
+            <Button
+              onClick={() => handlePlanSelect('monthly')}
+              className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 rounded-xl transition-all"
+            >
+              Choose Monthly
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Yearly Plan */}
+        <Card className="bg-gray-800/50 border-red-500/50 relative overflow-hidden">
+          {/* Most Popular Badge */}
+          <div className="absolute top-4 right-4 bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+            <Crown className="w-3 h-3" />
+            Most Popular
+          </div>
+          
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl font-bold text-white">Yearly Subscription</CardTitle>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-white">{PRICING_PLANS.yearly.displayPrice}/year</div>
+              <div className="text-sm text-green-400 font-semibold">{PRICING_PLANS.yearly.billing}</div>
+              <div className="text-sm text-orange-400 font-medium">{PRICING_PLANS.yearly.savings}</div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Full access to AI coaching</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Real-time pose analysis</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Progress tracking</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Unlimited practice sessions</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <Sparkles className="w-4 h-4 text-green-500" />
+                <span className="font-medium">Save 33.3% vs monthly</span>
+              </div>
+            </div>
+            <Button
+              onClick={() => handlePlanSelect('yearly')}
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02]"
+            >
+              Choose Yearly
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      <Elements stripe={stripePromise} options={{ clientSecret }}>
-        <PaymentForm onSuccess={onSuccess} />
-      </Elements>
-
-      <div className="text-center">
-        <Button onClick={onBack} variant="ghost" className="text-gray-400">
-          ← Back to Questions
-        </Button>
+      {/* Trust Indicators */}
+      <div className="mt-8 text-center space-y-4">
+        <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            <span>Secure Payment</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span>Cancel Anytime</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>30-Day Guarantee</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
