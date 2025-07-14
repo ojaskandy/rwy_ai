@@ -1548,6 +1548,149 @@ Format as natural paragraph, no bullet points.`;
     }
 });
 
+  // Onboarding payment routes
+  app.post('/api/create-subscription', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const { priceId } = req.body;
+      const user = req.user;
+
+      if (!priceId) {
+        return res.status(400).json({ error: 'Price ID is required' });
+      }
+
+      // Create or get Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.fullName || user.username,
+        });
+        customerId = customer.id;
+        await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
+      }
+
+      // Create subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      // Update user with subscription info
+      await storage.updateUserStripeInfo(user.id, { 
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscription.id 
+      });
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+      });
+    } catch (error: any) {
+      console.error('Create subscription error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create subscription',
+        message: error.message 
+      });
+    }
+  });
+
+  // Validate discount code route
+  app.post('/api/validate-code', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const { code } = req.body;
+      const user = req.user;
+
+      if (!code) {
+        return res.status(400).json({ error: 'Code is required' });
+      }
+
+      // Check if code is valid
+      const isValid = VALID_DISCOUNT_CODES.includes(code.toUpperCase());
+      
+      if (!isValid) {
+        return res.status(400).json({ error: 'Invalid discount code' });
+      }
+
+      // Mark user as having code bypass
+      await storage.updateUserOnboardingStatus(user.id, {
+        hasCodeBypass: true,
+        hasCompletedOnboarding: true
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Code validated successfully',
+        redirect: '/app'
+      });
+    } catch (error: any) {
+      console.error('Validate code error:', error);
+      res.status(500).json({ 
+        error: 'Failed to validate code',
+        message: error.message 
+      });
+    }
+  });
+
+  // User status route for onboarding
+  app.get('/api/user-status', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const user = req.user;
+      res.json({
+        hasCompletedOnboarding: user.hasCompletedOnboarding || false,
+        hasPaid: user.hasPaid || false,
+        hasCodeBypass: user.hasCodeBypass || false,
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId
+      });
+    } catch (error: any) {
+      console.error('User status error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get user status',
+        message: error.message 
+      });
+    }
+  });
+
+  // Update onboarding status route
+  app.post('/api/update-onboarding-status', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const user = req.user;
+      const result = onboardingStatusSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      await storage.updateUserOnboardingStatus(user.id, result.data);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Update onboarding status error:', error);
+      res.status(500).json({ 
+        error: 'Failed to update onboarding status',
+        message: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
