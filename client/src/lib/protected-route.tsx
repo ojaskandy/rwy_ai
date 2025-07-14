@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route, RouteProps } from "wouter";
+import { useEffect, useState } from "react";
+import { checkOnboardingStatus } from "@/lib/onboardingUtils";
 
 export function ProtectedRoute({
   path,
@@ -10,8 +12,25 @@ export function ProtectedRoute({
   component: React.ComponentType<any>;
 }) {
   const { user, isLoading } = useAuth();
+  const [onboardingStatus, setOnboardingStatus] = useState<any>(null);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (user && user.authProvider !== 'guest') {
+      checkOnboardingStatus()
+        .then((status) => {
+          setOnboardingStatus(status);
+          setIsCheckingOnboarding(false);
+        })
+        .catch(() => {
+          setIsCheckingOnboarding(false);
+        });
+    } else {
+      setIsCheckingOnboarding(false);
+    }
+  }, [user]);
+
+  if (isLoading || isCheckingOnboarding) {
     return (
       <Route path={path}>
         <div className="flex flex-col items-center justify-center min-h-screen bg-black">
@@ -32,7 +51,23 @@ export function ProtectedRoute({
   if (!user) {
     return (
       <Route path={path}>
-        <Redirect to="/auth" />
+        <Redirect to="/" />
+      </Route>
+    );
+  }
+
+  // Check if user needs onboarding (but not if they're already on the onboarding page)
+  if (
+    user.authProvider !== 'guest' &&
+    onboardingStatus &&
+    !onboardingStatus.hasCompletedOnboarding &&
+    !onboardingStatus.hasPaid &&
+    !onboardingStatus.hasCodeBypass &&
+    path !== '/onboarding'
+  ) {
+    return (
+      <Route path={path}>
+        <Redirect to="/onboarding" />
       </Route>
     );
   }

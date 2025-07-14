@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth-page";
 import Practice from "@/pages/Practice";
 import EarlyAccess from "@/pages/EarlyAccess";
 import Profile from "@/pages/Profile";
+import OnboardingPage from "@/pages/OnboardingPage";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
@@ -51,6 +52,9 @@ function Router() {
         {/* User dashboard after login - This might be redundant if /app is the main target */}
         {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
         <Route path="/dashboard" component={Landing} />
+
+        {/* Onboarding flow for new users */}
+        <ProtectedRoute path="/onboarding" component={OnboardingPage} />
 
         {/* Main application with camera tracking */}
         <ProtectedRoute path="/app" component={Home} />
