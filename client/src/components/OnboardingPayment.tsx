@@ -1,19 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useStripe, useElements, PaymentElement, Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import {
+  useStripe,
+  useElements,
+  PaymentElement,
+  Elements,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Shield, Sparkles, CheckCircle, Crown, ArrowLeft, Check } from "lucide-react";
+import {
+  CreditCard,
+  Shield,
+  Sparkles,
+  CheckCircle,
+  Crown,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
 
 // Initialize Stripe
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+  throw new Error("Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY");
 }
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -26,28 +45,31 @@ interface OnboardingPaymentProps {
 const PRICING_PLANS = {
   monthly: {
     price: 12,
-    priceId: 'price_monthly', // This would be set from Stripe dashboard
-    displayPrice: '$12',
-    billing: 'Billed monthly',
-    description: 'Monthly Subscription'
+    priceId: "price_1RkdiWHq7hIb1YPg2YZDnjlc", // This would be set from Stripe dashboard
+    displayPrice: "$12",
+    billing: "Billed monthly",
+    description: "Monthly Subscription",
   },
   yearly: {
     price: 96,
-    priceId: 'price_yearly', // This would be set from Stripe dashboard
-    displayPrice: '$96',
-    billing: 'Only $8/month',
-    description: 'Yearly Subscription',
-    savings: 'Save 33.3% (Get 4 months free!)',
-    mostPopular: true
-  }
+    priceId: "price_1RkdiWHq7hIb1YPgdHcYotQZ", // This would be set from Stripe dashboard
+    displayPrice: "$96",
+    billing: "Only $8/month",
+    description: "Yearly Subscription",
+    savings: "Save 33.3% (Get 4 months free!)",
+    mostPopular: true,
+  },
 };
 
-const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | 'yearly' }> = ({ onSuccess, selectedPlan }) => {
+const PaymentForm: React.FC<{
+  onSuccess: () => void;
+  selectedPlan: "monthly" | "yearly";
+}> = ({ onSuccess, selectedPlan }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [discountCode, setDiscountCode] = useState('');
+  const [discountCode, setDiscountCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [codeValidated, setCodeValidated] = useState(false);
   const [showDiscountCode, setShowDiscountCode] = useState(false);
@@ -64,16 +86,18 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
 
     setIsValidatingCode(true);
     try {
-      const response = await apiRequest("POST", "/api/validate-code", { code: discountCode });
+      const response = await apiRequest("POST", "/api/validate-code", {
+        code: discountCode,
+      });
       const data = await response.json();
-      
+
       if (data.valid) {
         setCodeValidated(true);
         toast({
           title: "Code Validated!",
           description: data.message,
         });
-        
+
         // Wait a moment then proceed to success
         setTimeout(() => {
           onSuccess();
@@ -122,7 +146,8 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
       } else {
         toast({
           title: "Payment Successful",
-          description: "Welcome to CoachT! Your martial arts journey begins now.",
+          description:
+            "Welcome to CoachT! Your martial arts journey begins now.",
         });
         onSuccess();
       }
@@ -181,7 +206,7 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
           <span className="text-sm text-gray-400">Or</span>
           <Separator className="flex-1" />
         </div>
-        
+
         {!showDiscountCode ? (
           <Button
             type="button"
@@ -194,7 +219,10 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="discount-code" className="text-sm font-medium text-gray-300">
+              <Label
+                htmlFor="discount-code"
+                className="text-sm font-medium text-gray-300"
+              >
                 Discount Code
               </Label>
               <Input
@@ -235,8 +263,10 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
 };
 
 // Discount Code Section Component
-const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-  const [discountCode, setDiscountCode] = useState('');
+const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({
+  onSuccess,
+}) => {
+  const [discountCode, setDiscountCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [showDiscountCode, setShowDiscountCode] = useState(false);
   const [codeValidated, setCodeValidated] = useState(false);
@@ -254,16 +284,18 @@ const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
 
     setIsValidatingCode(true);
     try {
-      const response = await apiRequest("POST", "/api/validate-code", { code: discountCode });
+      const response = await apiRequest("POST", "/api/validate-code", {
+        code: discountCode,
+      });
       const data = await response.json();
-      
+
       if (data.valid) {
         setCodeValidated(true);
         toast({
           title: "Code Validated!",
           description: data.message,
         });
-        
+
         // Wait a moment then proceed to success
         setTimeout(() => {
           onSuccess();
@@ -309,7 +341,7 @@ const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
         <span className="text-sm text-gray-500">Have a discount code?</span>
         <Separator className="flex-1" />
       </div>
-      
+
       {!showDiscountCode ? (
         <Button
           type="button"
@@ -322,7 +354,10 @@ const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
       ) : (
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="discount-code-bottom" className="text-sm font-medium text-gray-300">
+            <Label
+              htmlFor="discount-code-bottom"
+              className="text-sm font-medium text-gray-300"
+            >
               Discount Code
             </Label>
             <Input
@@ -355,22 +390,29 @@ const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess })
   );
 };
 
-const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack }) => {
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({
+  onSuccess,
+  onBack,
+}) => {
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">(
+    "yearly",
+  );
   const [clientSecret, setClientSecret] = useState("");
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
-  const handlePlanSelect = async (plan: 'monthly' | 'yearly') => {
+  const handlePlanSelect = async (plan: "monthly" | "yearly") => {
     setSelectedPlan(plan);
-    
+
     try {
-      const response = await apiRequest("POST", "/api/create-subscription", { planType: plan });
+      const response = await apiRequest("POST", "/api/create-subscription", {
+        priceId: PRICING_PLANS[plan].priceId,
+      });
       const data = await response.json();
-      
+
       setClientSecret(data.clientSecret);
       setShowPaymentForm(true);
     } catch (error) {
-      console.error('Failed to create subscription:', error);
+      console.error("Failed to create subscription:", error);
     }
   };
 
@@ -390,9 +432,12 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to plans
           </Button>
-          <h2 className="text-2xl font-bold text-white mb-2">Complete Your Payment</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Complete Your Payment
+          </h2>
           <p className="text-gray-300">
-            {PRICING_PLANS[selectedPlan].description} - {PRICING_PLANS[selectedPlan].displayPrice}
+            {PRICING_PLANS[selectedPlan].description} -{" "}
+            {PRICING_PLANS[selectedPlan].displayPrice}
           </p>
         </div>
 
@@ -418,12 +463,16 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to questions
         </Button>
-        <h2 className="text-3xl font-bold text-white mb-4">Unlock Your Full Martial Arts Potential</h2>
+        <h2 className="text-3xl font-bold text-white mb-4">
+          Unlock Your Full Martial Arts Potential
+        </h2>
         <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-2">
           Kick. Learn. Advance.
         </p>
         <p className="text-gray-400 text-base max-w-2xl mx-auto">
-          Join thousands of martial artists who've accelerated their progress with AI-powered coaching. Choose the plan that fits your training journey.
+          Join thousands of martial artists who've accelerated their progress
+          with AI-powered coaching. Choose the plan that fits your training
+          journey.
         </p>
       </div>
 
@@ -431,13 +480,19 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
         {/* Monthly Plan */}
         <Card className="bg-gray-800/50 border-gray-700 relative overflow-hidden">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl font-bold text-white">Monthly Subscription</CardTitle>
+            <CardTitle className="text-xl font-bold text-white">
+              Monthly Subscription
+            </CardTitle>
             <CardDescription className="text-gray-400 mt-2">
               Perfect for trying it out or casual training.
             </CardDescription>
             <div className="space-y-2 mt-4">
-              <div className="text-3xl font-bold text-white">{PRICING_PLANS.monthly.displayPrice}</div>
-              <div className="text-sm text-gray-400">{PRICING_PLANS.monthly.billing}</div>
+              <div className="text-3xl font-bold text-white">
+                {PRICING_PLANS.monthly.displayPrice}
+              </div>
+              <div className="text-sm text-gray-400">
+                {PRICING_PLANS.monthly.billing}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -460,7 +515,7 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
               </div>
             </div>
             <Button
-              onClick={() => handlePlanSelect('monthly')}
+              onClick={() => handlePlanSelect("monthly")}
               className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 rounded-xl transition-all"
             >
               Start Monthly Plan
@@ -475,16 +530,24 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
             <Crown className="w-4 h-4" />
             Most Popular
           </div>
-          
+
           <CardHeader className="text-center">
-            <CardTitle className="text-xl font-bold text-white">Yearly Subscription</CardTitle>
+            <CardTitle className="text-xl font-bold text-white">
+              Yearly Subscription
+            </CardTitle>
             <CardDescription className="text-gray-400 mt-2">
               Best for serious martial artists ready to commit and dominate.
             </CardDescription>
             <div className="space-y-2 mt-4">
-              <div className="text-3xl font-bold text-white">{PRICING_PLANS.yearly.displayPrice}/year</div>
-              <div className="text-sm text-green-400 font-semibold">{PRICING_PLANS.yearly.billing}</div>
-              <div className="text-sm text-orange-400 font-medium">Save 33% — Pay for 8 months, train all year</div>
+              <div className="text-3xl font-bold text-white">
+                {PRICING_PLANS.yearly.displayPrice}/year
+              </div>
+              <div className="text-sm text-green-400 font-semibold">
+                {PRICING_PLANS.yearly.billing}
+              </div>
+              <div className="text-sm text-orange-400 font-medium">
+                Save 33% — Pay for 8 months, train all year
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -510,17 +573,20 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
                 <span className="font-medium">Save 33% vs monthly</span>
               </div>
             </div>
-            
+
             {/* Social Proof */}
             <div className="text-center text-sm text-yellow-400 bg-yellow-400/10 p-3 rounded-lg border border-yellow-400/20">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-yellow-400">⭐</span>
-                <span>Most CoachT athletes choose this plan to stay consistent and improve fastest.</span>
+                <span>
+                  Most CoachT athletes choose this plan to stay consistent and
+                  improve fastest.
+                </span>
               </div>
             </div>
-            
+
             <Button
-              onClick={() => handlePlanSelect('yearly')}
+              onClick={() => handlePlanSelect("yearly")}
               className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-red-500/25"
             >
               Commit & Save
@@ -545,14 +611,14 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
             <span>30-Day Guarantee</span>
           </div>
         </div>
-        
+
         {/* Risk-free reassurance */}
         <div className="text-center text-sm text-gray-400 mt-4">
           <span className="bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
             Cancel anytime. Keep your progress data safe.
           </span>
         </div>
-        
+
         {/* Discount Code Section */}
         <DiscountCodeSection onSuccess={onSuccess} />
       </div>
