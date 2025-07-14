@@ -234,6 +234,127 @@ const PaymentForm: React.FC<{ onSuccess: () => void; selectedPlan: 'monthly' | '
   );
 };
 
+// Discount Code Section Component
+const DiscountCodeSection: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+  const [discountCode, setDiscountCode] = useState('');
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [showDiscountCode, setShowDiscountCode] = useState(false);
+  const [codeValidated, setCodeValidated] = useState(false);
+  const { toast } = useToast();
+
+  const handleCodeValidation = async () => {
+    if (!discountCode.trim()) {
+      toast({
+        title: "Code Required",
+        description: "Please enter a discount code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsValidatingCode(true);
+    try {
+      const response = await apiRequest("POST", "/api/validate-code", { code: discountCode });
+      const data = await response.json();
+      
+      if (data.valid) {
+        setCodeValidated(true);
+        toast({
+          title: "Code Validated!",
+          description: data.message,
+        });
+        
+        // Wait a moment then proceed to success
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      } else {
+        toast({
+          title: "Invalid Code",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Validation Error",
+        description: "Failed to validate code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  if (codeValidated) {
+    return (
+      <div className="text-center mt-6">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <CheckCircle className="w-8 h-8 text-white" />
+        </motion.div>
+        <h3 className="text-xl font-bold text-white mb-2">Access Granted!</h3>
+        <p className="text-gray-300">Redirecting to your dashboard...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 max-w-md mx-auto">
+      <div className="flex items-center gap-2 mb-4">
+        <Separator className="flex-1" />
+        <span className="text-sm text-gray-500">Have a discount code?</span>
+        <Separator className="flex-1" />
+      </div>
+      
+      {!showDiscountCode ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowDiscountCode(true)}
+          className="w-full text-gray-400 hover:text-white border-gray-600 hover:border-gray-500 bg-transparent"
+        >
+          Enter Discount Code
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="discount-code-bottom" className="text-sm font-medium text-gray-300">
+              Discount Code
+            </Label>
+            <Input
+              id="discount-code-bottom"
+              type="text"
+              value={discountCode}
+              onChange={(e) => setDiscountCode(e.target.value)}
+              placeholder="Enter your code"
+              className="bg-gray-800 border-gray-600 text-white placeholder-gray-500"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={handleCodeValidation}
+            disabled={isValidatingCode || !discountCode.trim()}
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 rounded-xl transition-all"
+          >
+            {isValidatingCode ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Validating...
+              </div>
+            ) : (
+              "Apply Code"
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack }) => {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [clientSecret, setClientSecret] = useState("");
@@ -299,7 +420,10 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
           Back to questions
         </Button>
         <h2 className="text-3xl font-bold text-white mb-4">Unlock Your Full Martial Arts Potential</h2>
-        <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+        <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-2">
+          Kick. Learn. Advance.
+        </p>
+        <p className="text-gray-400 text-base max-w-2xl mx-auto">
           Join thousands of martial artists who've accelerated their progress with AI-powered coaching. Choose the plan that fits your training journey.
         </p>
       </div>
@@ -429,6 +553,9 @@ const OnboardingPayment: React.FC<OnboardingPaymentProps> = ({ onSuccess, onBack
             Cancel anytime. Keep your progress data safe.
           </span>
         </div>
+        
+        {/* Discount Code Section */}
+        <DiscountCodeSection onSuccess={onSuccess} />
       </div>
     </motion.div>
   );
