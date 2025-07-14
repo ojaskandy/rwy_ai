@@ -148,6 +148,8 @@ export function setupAuth(app: Express): void {
       // Log the user in automatically
       req.login(user, (err) => {
         if (err) return next(err);
+        console.log("Session ID after registration:", req.sessionID);
+        console.log("Session cookie config:", req.sessionStore.options?.cookie);
         res.status(201).json(user);
       });
     } catch (error) {
@@ -282,19 +284,19 @@ export function setupAuth(app: Express): void {
   app.post("/api/debug-token", async (req, res) => {
     try {
       const { idToken } = req.body;
-      
+
       console.log("=== TOKEN DEBUG ENDPOINT ===");
       console.log("Raw token received:", idToken);
       console.log("Token length:", idToken?.length);
       console.log("Token type:", typeof idToken);
-      
+
       if (!idToken) {
         return res.json({ error: "No token provided" });
       }
-      
+
       // Clean the token
       const cleanToken = idToken.trim().replace(/\s/g, '');
-      
+
       // Basic format checks
       const formatChecks = {
         original: idToken,
@@ -311,7 +313,7 @@ export function setupAuth(app: Express): void {
           lastChars: part.substring(-10),
         })),
       };
-      
+
       // Try to decode JWT parts
       let decodedInfo = null;
       try {
@@ -324,10 +326,10 @@ export function setupAuth(app: Express): void {
             }
             return str;
           };
-          
+
           const header = JSON.parse(Buffer.from(addPadding(parts[0]), 'base64').toString());
           const payload = JSON.parse(Buffer.from(addPadding(parts[1]), 'base64').toString());
-          
+
           decodedInfo = {
             header,
             payload: {
@@ -344,7 +346,7 @@ export function setupAuth(app: Express): void {
         const errorMessage = decodeError instanceof Error ? decodeError.message : "Unknown decode error";
         decodedInfo = { error: "Failed to decode JWT", details: errorMessage };
       }
-      
+
       // Try Google verification
       let verificationResult = null;
       try {
@@ -352,12 +354,12 @@ export function setupAuth(app: Express): void {
           process.env.VITE_GOOGLE_CLIENT_ID,
           process.env.IOS_GOOGLE_CLIENT_ID,
         ].filter((id): id is string => Boolean(id));
-        
+
         const ticket = await googleClient.verifyIdToken({
           idToken: cleanToken,
           audience: audiences,
         });
-        
+
         verificationResult = { success: true, payload: ticket.getPayload() };
       } catch (verifyError) {
         const errorMessage = verifyError instanceof Error ? verifyError.message : "Unknown verification error";
@@ -368,13 +370,13 @@ export function setupAuth(app: Express): void {
           errorType: errorType,
         };
       }
-      
+
       console.log("Debug results:", {
         formatChecks,
         decodedInfo,
         verificationResult,
       });
-      
+
       res.json({
         formatChecks,
         decodedInfo,
@@ -385,7 +387,7 @@ export function setupAuth(app: Express): void {
           hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
         },
       });
-      
+
     } catch (error) {
       console.error("Debug endpoint error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -451,17 +453,17 @@ export function setupAuth(app: Express): void {
           exp: payload.exp,
           iat: payload.iat,
         });
-        
+
         // Check if audience matches our expected client IDs
         const expectedAudiences = [
           process.env.VITE_GOOGLE_CLIENT_ID,
           process.env.IOS_GOOGLE_CLIENT_ID,
         ].filter(Boolean);
-        
+
         console.log("Expected audiences:", expectedAudiences);
         console.log("Token audience:", payload.aud);
         console.log("Audience match:", expectedAudiences.includes(payload.aud));
-        
+
       } catch (decodeError) {
         console.error("Failed to decode JWT for debugging:", decodeError);
       }
@@ -471,7 +473,7 @@ export function setupAuth(app: Express): void {
         process.env.VITE_GOOGLE_CLIENT_ID,
         process.env.IOS_GOOGLE_CLIENT_ID,
       ].filter((id): id is string => Boolean(id));
-      
+
       console.log("Attempting to verify token with audiences:", audiences);
 
       try {
@@ -566,7 +568,7 @@ export function setupAuth(app: Express): void {
 
       } catch (verificationError) {
         console.error("❌ Token verification failed:", verificationError);
-        
+
         // Check for specific error messages
         if (verificationError instanceof Error) {
           console.error("Verification error details:", {
@@ -574,20 +576,20 @@ export function setupAuth(app: Express): void {
             name: verificationError.name,
             stack: verificationError.stack,
           });
-          
+
           // Check for the specific "string did not match expected pattern" error
           if (verificationError.message.includes("string did not match the expected pattern")) {
             console.error("🔍 PATTERN MISMATCH ERROR DETECTED!");
             console.error("This usually means the JWT format is malformed");
             console.error("Token being verified:", cleanToken.substring(0, 100) + "...");
-            
+
             return res.status(400).json({ 
               message: "JWT format error", 
               details: "Token format does not match expected JWT pattern",
               hint: "Check if token is properly base64 encoded"
             });
           }
-          
+
           if (verificationError.message.includes("audience")) {
             return res.status(400).json({ 
               message: "Audience mismatch", 
@@ -595,7 +597,7 @@ export function setupAuth(app: Express): void {
             });
           }
         }
-        
+
         throw verificationError; // Re-throw if not handled above
       }
 
@@ -700,18 +702,18 @@ export function setupAuth(app: Express): void {
     try {
       // Create a guest user with a unique username based on timestamp
       const guestUsername = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Generate a secure random password for guest
       const randomPassword = randomBytes(16).toString('hex');
       const hashedPassword = await hashPassword(randomPassword);
-      
+
       console.log("Guest login - random password:", randomPassword);
       console.log("Guest login - hashed password:", hashedPassword);
-      
+
       if (!hashedPassword) {
         throw new Error("Failed to generate password hash");
       }
-      
+
       const guestUser = await storage.createUser({
         username: guestUsername,
         email: null,
