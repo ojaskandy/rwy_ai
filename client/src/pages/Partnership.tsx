@@ -310,14 +310,28 @@ export default function Partnership() {
 
 
       {/* Demo Button Section */}
-      <div className="py-16 px-6 text-center">
+      <div className="py-20 px-6 text-center">
         <div className="max-w-4xl mx-auto">
-          <Button 
-            className="bg-white text-black hover:bg-gray-100 px-8 py-4 text-xl font-semibold rounded-lg"
-            onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative"
           >
-            Schedule Demo
-          </Button>
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-purple-500 to-orange-500 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative"
+            >
+              <Button 
+                className="bg-gradient-to-r from-red-500 via-purple-500 to-orange-500 text-white hover:from-red-600 hover:via-purple-600 hover:to-orange-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-white/20 transform transition-all duration-300 hover:shadow-3xl"
+                onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+              >
+                🚀 Schedule Demo
+              </Button>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
 
