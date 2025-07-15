@@ -100,7 +100,7 @@ export default function Partnership() {
             transition={{ delay: 0.1 }}
             className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto"
           >
-            Empower your students to reach their full potential with personalized, AI-driven instruction.
+            <strong>Empower your students</strong> to reach their full potential with personalized, AI-driven instruction.
           </motion.p>
           
           <motion.div 
@@ -110,8 +110,8 @@ export default function Partnership() {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Button 
-              variant="ghost"
-              className="text-white hover:bg-white/10 px-6 py-3 text-lg font-semibold rounded-lg border border-transparent hover:border-white/20"
+              variant="outline"
+              className="text-white hover:bg-white/10 px-6 py-3 text-lg font-semibold rounded-lg border border-white/30 hover:border-white/50 bg-white/5"
               onClick={() => {
                 const benefitsSection = document.getElementById('statistics');
                 if (benefitsSection) {
@@ -119,7 +119,7 @@ export default function Partnership() {
                 }
               }}
             >
-              Benefits
+              See Benefits
             </Button>
             <Button 
               className="bg-white text-black hover:bg-gray-100 px-10 py-5 text-2xl font-semibold rounded-lg border border-white/50"
@@ -128,8 +128,8 @@ export default function Partnership() {
               Schedule Demo
             </Button>
             <Button 
-              variant="ghost"
-              className="text-white hover:bg-white/10 px-6 py-3 text-lg font-semibold rounded-lg border border-transparent hover:border-white/20"
+              variant="outline"
+              className="text-white hover:bg-white/10 px-6 py-3 text-lg font-semibold rounded-lg border border-white/30 hover:border-white/50 bg-white/5"
               onClick={() => {
                 const testimonialsSection = document.getElementById('testimonials');
                 if (testimonialsSection) {
@@ -308,6 +308,18 @@ export default function Partnership() {
         </div>
       </div>
 
+
+      {/* Demo Button Section */}
+      <div className="py-16 px-6 text-center">
+        <div className="max-w-4xl mx-auto">
+          <Button 
+            className="bg-white text-black hover:bg-gray-100 px-8 py-4 text-xl font-semibold rounded-lg"
+            onClick={() => window.open('https://cal.com/ojas-kandhare/coacht?overlayCalendar=true', '_blank')}
+          >
+            Schedule Demo
+          </Button>
+        </div>
+      </div>
 
       {/* Footer */}
       <footer className="py-16 px-6 border-t border-gray-800">
