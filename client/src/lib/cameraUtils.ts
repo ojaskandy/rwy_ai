@@ -425,25 +425,26 @@ export function getOptimalCanvasSize(videoElement: HTMLVideoElement): { width: n
 }
 
 /**
- * Setup mobile-optimized canvas
+ * Setup mobile-optimized canvas that matches the video preview exactly
  */
 export function setupMobileCanvas(canvas: HTMLCanvasElement, video: HTMLVideoElement): void {
-  const { width, height } = getOptimalCanvasSize(video);
+  // Get the actual displayed dimensions of the video element
+  const displayWidth = video.clientWidth;
+  const displayHeight = video.clientHeight;
   
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
+  // Set canvas dimensions to match exactly what the user sees
+  canvas.width = displayWidth;
+  canvas.height = displayHeight;
+  canvas.style.width = displayWidth + 'px';
+  canvas.style.height = displayHeight + 'px';
   canvas.style.objectFit = 'cover';
   
-  // Handle device pixel ratio for sharp rendering
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = width * devicePixelRatio;
-    canvas.height = height * devicePixelRatio;
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-  }
+  console.log('Canvas setup:', {
+    canvasWidth: canvas.width,
+    canvasHeight: canvas.height,
+    videoDisplayWidth: displayWidth,
+    videoDisplayHeight: displayHeight,
+    videoNativeWidth: video.videoWidth,
+    videoNativeHeight: video.videoHeight
+  });
 }

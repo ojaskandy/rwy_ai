@@ -92,10 +92,26 @@ const SnapFeedback: React.FC = () => {
 
     if (!context) return;
 
-    // Set canvas size using mobile-optimized approach
-    setupMobileCanvas(canvas, video);
+    // Set canvas size to match exactly what the user sees in the video element
+    const displayWidth = video.clientWidth;
+    const displayHeight = video.clientHeight;
+    
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
 
-    // Draw the video frame to canvas
+    console.log('Capturing photo with dimensions:', {
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      videoDisplayWidth: displayWidth,
+      videoDisplayHeight: displayHeight,
+      videoNativeWidth: video.videoWidth,
+      videoNativeHeight: video.videoHeight
+    });
+
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw the video frame to canvas at the exact display size
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // Get image data as base64
