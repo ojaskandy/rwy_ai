@@ -84,8 +84,36 @@ export default function AuthPage() {
     if (!isCheckingSession && user) {
       console.log("Auth check complete. User:", user);
       if (user.profileCompleted) {
-        console.log("Profile completed, navigating to /app");
-        navigate("/app", { replace: true });
+        // For users with completed profiles, check user-status to determine routing
+        const checkUserStatusAndRoute = async () => {
+          try {
+            const statusResponse = await fetch("/api/user-status", {
+              credentials: "include",
+            });
+            
+            if (statusResponse.ok) {
+              const status = await statusResponse.json();
+              console.log("User status check from auth page:", status);
+              
+              // Route based on payment and onboarding status
+              if (status.hasPaid && status.hasCompletedOnboarding) {
+                console.log("User has paid and completed onboarding, navigating to /app");
+                navigate("/app", { replace: true });
+              } else {
+                console.log("User needs onboarding, navigating to /onboarding");
+                navigate("/onboarding", { replace: true });
+              }
+            } else {
+              console.log("Failed to fetch user status, defaulting to /onboarding");
+              navigate("/onboarding", { replace: true });
+            }
+          } catch (error) {
+            console.error("Error fetching user status:", error);
+            navigate("/onboarding", { replace: true });
+          }
+        };
+        
+        checkUserStatusAndRoute();
       } else {
         console.log("Profile not completed, showing setup form");
         setShowProfileSetup(true);

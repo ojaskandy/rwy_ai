@@ -31,8 +31,36 @@ export async function loginWithMagicLink(email) {
       throw new Error('Backend authentication failed');
     }
     
-    alert('Logged in with Magic Link!');
-    window.location.href = "/app";
+    // Immediately fetch user-status after Magic Link login
+    try {
+      const statusResponse = await fetch("/api/user-status", {
+        credentials: "include",
+      });
+      
+      if (statusResponse.ok) {
+        const status = await statusResponse.json();
+        console.log("User status after Magic Link login:", status);
+        
+        // Route based on payment and onboarding status
+        if (status.hasPaid && status.hasCompletedOnboarding) {
+          console.log("User has paid and completed onboarding, navigating to /app");
+          alert('Logged in with Magic Link!');
+          window.location.href = '/app';
+        } else {
+          console.log("User needs onboarding, navigating to /onboarding");
+          alert('Logged in with Magic Link!');
+          window.location.href = '/onboarding';
+        }
+      } else {
+        console.log("Failed to fetch user status, defaulting to /onboarding");
+        alert('Logged in with Magic Link!');
+        window.location.href = '/onboarding';
+      }
+    } catch (error) {
+      console.error("Error fetching user status:", error);
+      alert('Logged in with Magic Link!');
+      window.location.href = '/onboarding';
+    }
   } catch (error) {
     console.error(error);
     
@@ -51,8 +79,36 @@ export async function loginWithMagicLink(email) {
       });
       
       if (response.ok) {
-        alert('Logged in with Magic Link!');
-        window.location.href = "/app";
+        // Immediately fetch user-status after Magic Link fallback login
+        try {
+          const statusResponse = await fetch("/api/user-status", {
+            credentials: "include",
+          });
+          
+          if (statusResponse.ok) {
+            const status = await statusResponse.json();
+            console.log("User status after Magic Link fallback login:", status);
+            
+            // Route based on payment and onboarding status
+            if (status.hasPaid && status.hasCompletedOnboarding) {
+              console.log("User has paid and completed onboarding, navigating to /app");
+              alert('Logged in with Magic Link!');
+              window.location.href = '/app';
+            } else {
+              console.log("User needs onboarding, navigating to /onboarding");
+              alert('Logged in with Magic Link!');
+              window.location.href = '/onboarding';
+            }
+          } else {
+            console.log("Failed to fetch user status, defaulting to /onboarding");
+            alert('Logged in with Magic Link!');
+            window.location.href = '/onboarding';
+          }
+        } catch (error) {
+          console.error("Error fetching user status:", error);
+          alert('Logged in with Magic Link!');
+          window.location.href = '/onboarding';
+        }
       } else {
         throw new Error('Authentication failed');
       }

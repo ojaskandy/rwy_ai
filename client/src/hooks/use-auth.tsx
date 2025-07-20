@@ -76,6 +76,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const userData = await response.json();
           setUser(userData);
           console.log("Existing session found:", userData);
+          
+          // If user is on auth page and has completed profile, check user status and route appropriately
+          if (userData.profileCompleted && window.location.pathname === '/auth') {
+            try {
+              const statusResponse = await fetch("/api/user-status", {
+                credentials: "include",
+              });
+              
+              if (statusResponse.ok) {
+                const status = await statusResponse.json();
+                console.log("User status for existing session:", status);
+                
+                // Route based on payment and onboarding status
+                if (status.hasPaid && status.hasCompletedOnboarding) {
+                  console.log("Existing user has paid and completed onboarding, navigating to /app");
+                  window.location.href = '/app';
+                } else {
+                  console.log("Existing user needs onboarding, navigating to /onboarding");
+                  window.location.href = '/onboarding';
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching user status for existing session:", error);
+            }
+          }
         }
       } catch (error) {
         console.log("No existing session found");
@@ -122,9 +147,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return await response.json();
     },
-    onSuccess: (data: User) => {
+    onSuccess: async (data: User) => {
       setUser(data);
       console.log("Login successful:", data);
+
+      // Immediately fetch user-status after login
+      try {
+        const statusResponse = await fetch("/api/user-status", {
+          credentials: "include",
+        });
+        
+        if (statusResponse.ok) {
+          const status = await statusResponse.json();
+          console.log("User status after login:", status);
+          
+          // Route based on payment and onboarding status
+          if (status.hasPaid && status.hasCompletedOnboarding) {
+            console.log("User has paid and completed onboarding, navigating to /app");
+            window.location.href = '/app';
+          } else {
+            console.log("User needs onboarding, navigating to /onboarding");
+            window.location.href = '/onboarding';
+          }
+        } else {
+          console.log("Failed to fetch user status, defaulting to /app");
+          window.location.href = '/app';
+        }
+      } catch (error) {
+        console.error("Error fetching user status:", error);
+        window.location.href = '/app';
+      }
 
       const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
       if (isMobileDevice && !mobileWarningShown) {
@@ -154,9 +206,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return await response.json();
     },
-    onSuccess: (data: User) => {
+    onSuccess: async (data: User) => {
       setUser(data);
       console.log("Registration successful:", data);
+
+      // Immediately fetch user-status after registration
+      try {
+        const statusResponse = await fetch("/api/user-status", {
+          credentials: "include",
+        });
+        
+        if (statusResponse.ok) {
+          const status = await statusResponse.json();
+          console.log("User status after registration:", status);
+          
+          // Route based on payment and onboarding status
+          if (status.hasPaid && status.hasCompletedOnboarding) {
+            console.log("User has paid and completed onboarding, navigating to /app");
+            window.location.href = '/app';
+          } else {
+            console.log("User needs onboarding, navigating to /onboarding");
+            window.location.href = '/onboarding';
+          }
+        } else {
+          console.log("Failed to fetch user status, defaulting to /onboarding");
+          window.location.href = '/onboarding';
+        }
+      } catch (error) {
+        console.error("Error fetching user status:", error);
+        window.location.href = '/onboarding';
+      }
 
       const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
       if (isMobileDevice && !mobileWarningShown) {
@@ -197,9 +276,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return await response.json();
     },
-    onSuccess: (data: User) => {
+    onSuccess: async (data: User) => {
       setUser(data);
       console.log("Google login successful:", data);
+
+      // Immediately fetch user-status after Google login
+      try {
+        const statusResponse = await fetch("/api/user-status", {
+          credentials: "include",
+        });
+        
+        if (statusResponse.ok) {
+          const status = await statusResponse.json();
+          console.log("User status after Google login:", status);
+          
+          // Route based on payment and onboarding status
+          if (status.hasPaid && status.hasCompletedOnboarding) {
+            console.log("User has paid and completed onboarding, navigating to /app");
+            window.location.href = '/app';
+          } else {
+            console.log("User needs onboarding, navigating to /onboarding");
+            window.location.href = '/onboarding';
+          }
+        } else {
+          console.log("Failed to fetch user status, defaulting to /onboarding");
+          window.location.href = '/onboarding';
+        }
+      } catch (error) {
+        console.error("Error fetching user status:", error);
+        window.location.href = '/onboarding';
+      }
 
       const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
       if (isMobileDevice && !mobileWarningShown) {
