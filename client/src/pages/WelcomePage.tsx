@@ -263,7 +263,7 @@ export default function WelcomePage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl md:text-8xl font-bold mb-6 leading-tight"
           >
-            Master Martial Arts
+            The AI Martial<br />Arts Coach
           </motion.h1>
 
           <motion.p 
