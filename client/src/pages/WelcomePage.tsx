@@ -246,7 +246,7 @@ export default function WelcomePage() {
       {/* Navigation - Simplified */}
       <div className="bg-black py-4 px-6 flex justify-between items-center">
         <span className="text-2xl font-bold text-red-500">CoachT</span>
-        <Link href="/early">
+        <Link href="/auth">
           <Button 
             className="bg-white text-black hover:bg-gray-100 px-6 py-3 text-lg font-semibold"
           >
@@ -263,7 +263,7 @@ export default function WelcomePage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl md:text-8xl font-bold mb-6 leading-tight"
           >
-            Your Child's Martial Arts Mastery
+            Master Martial Arts
           </motion.h1>
 
           <motion.p 
@@ -293,7 +293,7 @@ export default function WelcomePage() {
             >
               See Results
             </Button>
-            <Link href="/early">
+            <Link href="/auth">
               <Button 
                 className="bg-white text-black hover:bg-gray-100 px-12 py-6 text-3xl font-semibold rounded-lg border border-white/50"
               >
