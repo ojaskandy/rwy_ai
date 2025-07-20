@@ -585,6 +585,105 @@ Use natural, conversational language. Start with phrases like "Good form..." or 
     }
   });
 
+  // AI Chat Analysis for Welcome Page
+  app.post("/api/analyze-kid-help", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      // Use XAI (X.AI) API for analysis
+      const xaiApiKey = process.env.XAI_API_KEY;
+      if (!xaiApiKey) {
+        throw new Error('XAI_API_KEY not found in environment variables');
+      }
+
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${xaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: "grok-2-latest",
+          messages: [
+            {
+                          role: "system",
+            content: `You are a martial arts expert. Based on the child's challenge, recommend exactly ONE feature by starting your response with the feature name:
+
+LIVE_ROUTINE - for routines, forms, sequences of moves
+PRACTICE_LIBRARY - for perfecting specific moves, instant feedback, stumbling, can't master 1 move, huge library of moves
+CHALLENGES - for fun, confidence, enjoyment, reflexes, reaction time, interest
+SNAP_FEEDBACK - for instant feedback in any place of anyone, take an image of yourself/your friend and get instant feedback
+SHIFU_CHAT - to answer any question the student has about martial arts, help with planning, etc
+WORKOUTS - for strength, fitness, conditioning needs
+
+Start your response with one of these exact feature names (like "CHALLENGES - ..." or "LIVE_ROUTINE - ..."), then explain how it helps their specific challenge.`
+            },
+            {
+              role: "user",
+              content: `Child's challenge: ${prompt}`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 120
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`XAI API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content || "";
+      
+      // Extract feature from the start of the response
+      let feature = "Live Routine";
+      let explanation = "CoachT's AI coaching provides personalized feedback to help your child improve their martial arts skills.";
+      
+      // Map AI feature names to our feature names  
+      if (aiResponse.startsWith("CHALLENGES")) {
+        feature = "Challenges";
+      } else if (aiResponse.startsWith("PRACTICE_LIBRARY")) {
+        feature = "Practice Library";
+      } else if (aiResponse.startsWith("SHIFU_CHAT")) {
+        feature = "Shifu Chat";
+      } else if (aiResponse.startsWith("SNAP_FEEDBACK")) {
+        feature = "Snap Feedback";
+      } else if (aiResponse.startsWith("WORKOUTS")) {
+        feature = "Workouts";
+      } else if (aiResponse.startsWith("LIVE_ROUTINE")) {
+        feature = "Live Routine";
+      }
+      
+      // Extract explanation after the feature name and dash
+      const explanationMatch = aiResponse.match(/^[A-Z_]+ - (.+)/);
+      if (explanationMatch) {
+        explanation = explanationMatch[1].trim();
+      }
+
+      console.log(`[XAI Analysis] User input: "${prompt}"`);
+      console.log(`[XAI Analysis] AI response: "${aiResponse}"`);
+      console.log(`[XAI Analysis] Selected feature: "${feature}"`);
+      console.log(`[XAI Analysis] Explanation: "${explanation}"`);
+
+       res.json({
+         feature,
+         explanation
+       });
+
+    } catch (error) {
+      console.error('Error analyzing kid help with XAI:', error);
+      res.status(500).json({ 
+        error: "Failed to analyze request",
+        feature: "Live Routine",
+        explanation: "CoachT's AI coaching provides real-time feedback to help your child perfect their technique and build confidence in their martial arts journey."
+      });
+    }
+  });
+
   // Shifu chat endpoint
   app.post('/api/shifu/chat', async (req, res) => {
     try {
