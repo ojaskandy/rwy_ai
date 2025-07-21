@@ -13,11 +13,7 @@ import {
   type ShifuLog, type InsertShifuLog,
   type PoseReference, type InsertPoseReference
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, sql, desc } from "drizzle-orm";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import { supabase } from "./db";
 
 export interface IStorage {
   // User related methods
@@ -80,500 +76,355 @@ export interface IStorage {
   updateShifuLog(userId: number, date: Date, updates: Partial<InsertShifuLog>): Promise<ShifuLog>;
   getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined>;
   
-  // Session store
-  sessionStore: session.Store;
+  // Session store - simplified for no authentication
+  sessionStore: any;
 }
 
-const PostgresSessionStore = connectPg(session);
+// Simplified in-memory session store for guest usage
+class SimpleMemoryStore {
+  private sessions: { [key: string]: any } = {};
 
-export class DatabaseStorage implements IStorage {
-  sessionStore: session.Store;
+  get(sid: string, callback: (err?: any, session?: any) => void) {
+    callback(null, this.sessions[sid] || null);
+  }
+
+  set(sid: string, session: any, callback?: (err?: any) => void) {
+    this.sessions[sid] = session;
+    if (callback) callback();
+  }
+
+  destroy(sid: string, callback?: (err?: any) => void) {
+    delete this.sessions[sid];
+    if (callback) callback();
+  }
+
+  length(callback: (err?: any, length?: number) => void) {
+    callback(null, Object.keys(this.sessions).length);
+  }
+
+  clear(callback?: (err?: any) => void) {
+    this.sessions = {};
+    if (callback) callback();
+  }
+
+  touch(sid: string, session: any, callback?: (err?: any) => void) {
+    if (callback) callback();
+  }
+}
+
+export class SupabaseStorage implements IStorage {
+  sessionStore: any;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
-    });
+    this.sessionStore = new SimpleMemoryStore();
   }
   
   // Early access methods
   async getEarlyAccessByEmail(email: string): Promise<EarlyAccessSignup | undefined> {
-    const [signup] = await db
-      .select()
-      .from(earlyAccessSignups)
-      .where(eq(earlyAccessSignups.email, email));
-    return signup || undefined;
+    const { data, error } = await supabase
+      .from('early_access_signups')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error) return undefined;
+    return data || undefined;
   }
   
   async saveEarlyAccess(data: InsertEarlyAccess): Promise<EarlyAccessSignup> {
-    const [signup] = await db
-      .insert(earlyAccessSignups)
-      .values(data)
-      .returning();
-    return signup;
+    const { data: result, error } = await supabase
+      .from('early_access_signups')
+      .insert(data)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return result;
   }
   
   async listEarlyAccessSignups(): Promise<EarlyAccessSignup[]> {
-    const signups = await db
-      .select()
-      .from(earlyAccessSignups)
-      .orderBy(earlyAccessSignups.createdAt);
-    return signups;
+    const { data, error } = await supabase
+      .from('early_access_signups')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
   }
 
-  // User methods
+  // User methods - simplified for guest usage
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    // Return default guest user
+    return {
+      id: 1,
+      username: "guest_user",
+      email: "guest@runwayai.com",
+      fullName: "Guest User",
+      picture: null,
+      authProvider: "guest",
+      profileCompleted: true,
+      taekwondoExperience: "beginner",
+      hasCompletedOnboarding: true,
+      hasPaid: true,
+      hasCodeBypass: true,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      createdAt: new Date(),
+      lastPracticeDate: null,
+      recordingsCount: 0,
+      goal: "",
+      goalDueDate: null,
+      password: ""
+    };
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    return this.getUser(1); // Always return guest user
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
+    return this.getUser(1); // Always return guest user
   }
 
   async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
-    return user || undefined;
+    return undefined; // No stripe for guest users
   }
 
   async completeUserProfile(userId: number, profileData: { fullName: string; username: string; taekwondoExperience: string }): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        fullName: profileData.fullName,
-        username: profileData.username,
-        taekwondoExperience: profileData.taekwondoExperience,
-        profileCompleted: true,
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+    return this.getUser(userId) as Promise<User>; // Return guest user
   }
 
-  // Onboarding gating methods
-  async updateOnboardingStatus(userId: number, status: Partial<{ hasCompletedOnboarding: boolean; hasPaid: boolean; hasCodeBypass: boolean; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(status)
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+  async updateOnboardingStatus(userId: number, status: any): Promise<User> {
+    return this.getUser(userId) as Promise<User>; // Return guest user
   }
 
   async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ stripeCustomerId })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+    return this.getUser(userId) as Promise<User>; // Return guest user
   }
 
-  async updateUserStripeInfo(userId: number, stripeData: { stripeCustomerId: string; stripeSubscriptionId: string | null }): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ 
-        stripeCustomerId: stripeData.stripeCustomerId, 
-        stripeSubscriptionId: stripeData.stripeSubscriptionId,
-        hasPaid: !!stripeData.stripeSubscriptionId,
-        hasCompletedOnboarding: !!stripeData.stripeSubscriptionId
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+  async updateUserStripeInfo(userId: number, stripeData: any): Promise<User> {
+    return this.getUser(userId) as Promise<User>; // Return guest user
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+    return this.getUser(1) as Promise<User>; // Return guest user
   }
   
   async updateUserLastPractice(userId: number, date: Date = new Date()): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ lastPracticeDate: date })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+    return this.getUser(userId) as Promise<User>; // Return guest user
   }
   
   async incrementRecordingsCount(userId: number): Promise<number> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ 
-        recordingsCount: sql`${users.recordingsCount} + 1` 
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser.recordingsCount || 0;
+    return 0; // Guest users don't persist recording counts
   }
   
-  // Profile methods
+  // Profile methods - simplified for guest usage
   async getUserProfile(userId: number): Promise<UserProfile | undefined> {
-    const [profile] = await db
-      .select()
-      .from(userProfiles)
-      .where(eq(userProfiles.userId, userId));
-    return profile || undefined;
+    return {
+      id: 1,
+      userId: 1,
+      goal: "Improve pageantry skills",
+      goalDueDate: null,
+      profileImageUrl: null,
+      galleryImages: []
+    };
   }
   
   async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
-    // Check if profile already exists
-    const existingProfile = await this.getUserProfile(profile.userId);
-    
-    if (existingProfile) {
-      return this.updateUserProfile(profile.userId, profile);
-    }
-    
-    // Ensure galleryImages is an array if provided
-    // Make sure galleryImages is a proper string array
-    const galleryImages = Array.isArray(profile.galleryImages) ? 
-      profile.galleryImages : 
-      (profile.galleryImages ? [profile.galleryImages.toString()] : []);
-    
-    const [newProfile] = await db
-      .insert(userProfiles)
-      .values({
-        ...profile,
-        galleryImages
-      })
-      .returning();
-    return newProfile;
+    return this.getUserProfile(1) as Promise<UserProfile>;
   }
   
   async updateUserProfile(userId: number, profile: Partial<InsertUserProfile>): Promise<UserProfile> {
-    const existingProfile = await this.getUserProfile(userId);
-    
-    if (!existingProfile) {
-      // Create a new profile if it doesn't exist
-      return this.createUserProfile({ 
-        userId, 
-        ...profile,
-        // Ensure galleryImages is an array
-        galleryImages: Array.isArray(profile.galleryImages) ? profile.galleryImages : []
-      } as InsertUserProfile);
-    }
-    
-    // Make a safe copy of the profile 
-    const safeProfile: Partial<InsertUserProfile> = { ...profile };
-    
-    // Ensure galleryImages is a proper string array if provided
-    if (profile.galleryImages !== undefined) {
-      const galleryImages = Array.isArray(profile.galleryImages) 
-        ? profile.galleryImages 
-        : (profile.galleryImages ? [profile.galleryImages.toString()] : []);
-      
-      // Only update galleryImages if it's a valid array
-      safeProfile.galleryImages = galleryImages;
-    }
-    
-    // Remove galleryImages from the set operation if it's not properly formatted
-    const updateData = {...safeProfile};
-    
-    const [updatedProfile] = await db
-      .update(userProfiles)
-      .set(updateData)
-      .where(eq(userProfiles.userId, userId))
-      .returning();
-    return updatedProfile;
+    return this.getUserProfile(userId) as Promise<UserProfile>;
   }
   
   async updateUserGoal(userId: number, goal: string, dueDate?: Date): Promise<UserProfile> {
-    const existingProfile = await this.getUserProfile(userId);
-    
-    if (!existingProfile) {
-      // Create a new profile with the goal
-      return this.createUserProfile({ 
-        userId, 
-        goal, 
-        goalDueDate: dueDate 
-      } as InsertUserProfile);
-    }
-    
-    const [updatedProfile] = await db
-      .update(userProfiles)
-      .set({ 
-        goal,
-        goalDueDate: dueDate
-      })
-      .where(eq(userProfiles.userId, userId))
-      .returning();
-    return updatedProfile;
+    return this.getUserProfile(userId) as Promise<UserProfile>;
   }
   
   async addGalleryImage(userId: number, imageUrl: string): Promise<string[]> {
-    const profile = await this.getUserProfile(userId);
-    
-    const currentImages = profile?.galleryImages || [];
-    const updatedImages = [...currentImages, imageUrl];
-    
-    if (!profile) {
-      // Create new profile with the image
-      const newProfile = await this.createUserProfile({
-        userId,
-        galleryImages: updatedImages
-      } as InsertUserProfile);
-      return newProfile.galleryImages || [];
-    }
-    
-    // Update existing profile
-    const [updatedProfile] = await db
-      .update(userProfiles)
-      .set({ galleryImages: updatedImages })
-      .where(eq(userProfiles.userId, userId))
-      .returning();
-    
-    return updatedProfile.galleryImages || [];
+    return []; // Guest users don't persist gallery images
   }
   
   async removeGalleryImage(userId: number, imageUrl: string): Promise<string[]> {
-    const profile = await this.getUserProfile(userId);
-    
-    if (!profile || !profile.galleryImages) {
-      return [];
-    }
-    
-    // Filter out the image to remove
-    const updatedImages = profile.galleryImages.filter(img => img !== imageUrl);
-    
-    const [updatedProfile] = await db
-      .update(userProfiles)
-      .set({ galleryImages: updatedImages })
-      .where(eq(userProfiles.userId, userId))
-      .returning();
-    
-    return updatedProfile.galleryImages || [];
+    return []; // Guest users don't persist gallery images
   }
   
-  // Recording methods
+  // Recording methods - simplified for guest usage
   async getRecordings(userId: number): Promise<Recording[]> {
-    const userRecordings = await db
-      .select()
-      .from(recordings)
-      .where(eq(recordings.userId, userId));
-    
-    return userRecordings;
+    return []; // Guest users don't persist recordings
   }
   
   async saveRecording(recording: InsertRecording): Promise<Recording> {
-    const [newRecording] = await db
-      .insert(recordings)
-      .values(recording)
-      .returning();
-    
-    // Increment the user's recordings count
-    await this.incrementRecordingsCount(recording.userId);
-    
-    return newRecording;
+    // Return a mock recording for guest users
+    return {
+      id: Date.now(),
+      userId: recording.userId,
+      title: recording.title || "Untitled Recording",
+      fileUrl: recording.fileUrl,
+      createdAt: new Date(),
+      notes: recording.notes || ""
+    };
   }
   
   async deleteRecording(id: number, userId: number): Promise<boolean> {
-    const result = await db
-      .delete(recordings)
-      .where(eq(recordings.id, id) && eq(recordings.userId, userId));
-    
-    return result.rowCount !== null && result.rowCount > 0;
+    return true; // Always return success for guest users
   }
 
-  // Tracking settings methods
+  // Tracking settings methods - simplified for guest usage
   async getTrackingSettings(userId: number): Promise<TrackingSettings | undefined> {
-    const [settings] = await db
-      .select()
-      .from(trackingSettings)
-      .where(eq(trackingSettings.userId, userId));
-    return settings || undefined;
+    return {
+      id: 1,
+      userId: 1,
+      confidenceThreshold: "0.5",
+      modelSelection: "lightning",
+      maxPoses: 1,
+      skeletonColor: "#BB86FC",
+      showSkeleton: true,
+      showPoints: true
+    };
   }
 
   async saveTrackingSettings(settings: InsertTrackingSettings): Promise<TrackingSettings> {
-    // Try to find existing settings
-    const existingSettings = settings.userId 
-      ? await this.getTrackingSettings(settings.userId)
-      : undefined;
-
-    if (existingSettings) {
-      // Update existing settings
-      const [updated] = await db
-        .update(trackingSettings)
-        .set(settings)
-        .where(eq(trackingSettings.id, existingSettings.id))
-        .returning();
-      return updated;
-    } else {
-      // Create new settings
-      const [created] = await db
-        .insert(trackingSettings)
-        .values(settings)
-        .returning();
-      return created;
-    }
+    return this.getTrackingSettings(1) as Promise<TrackingSettings>;
   }
   
-  // Reference move methods
+  // Reference move methods - use Supabase for reference data
   async getReferenceMove(moveId: number): Promise<ReferenceMove | undefined> {
-    const [move] = await db
-      .select()
-      .from(referenceMoves)
-      .where(eq(referenceMoves.moveId, moveId));
-    return move || undefined;
+    const { data, error } = await supabase
+      .from('reference_moves')
+      .select('*')
+      .eq('move_id', moveId)
+      .single();
+    
+    if (error) return undefined;
+    return data || undefined;
   }
   
   async saveReferenceMove(move: InsertReferenceMove): Promise<ReferenceMove> {
-    // Check if move already exists
-    const existingMove = await this.getReferenceMove(move.moveId);
+    // First check if move already exists
+    const existing = await this.getReferenceMove(move.moveId);
     
-    if (existingMove) {
+    if (existing) {
       // Update existing move
-      const [updated] = await db
-        .update(referenceMoves)
-        .set({
-          ...move,
-          updatedAt: new Date()
+      const { data, error } = await supabase
+        .from('reference_moves')
+        .update({ 
+          ...move, 
+          updated_at: new Date().toISOString() 
         })
-        .where(eq(referenceMoves.id, existingMove.id))
-        .returning();
-      return updated;
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     } else {
       // Create new move
-      const [created] = await db
-        .insert(referenceMoves)
-        .values(move)
-        .returning();
-      return created;
+      const { data, error } = await supabase
+        .from('reference_moves')
+        .insert(move)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     }
   }
   
   async getAllReferenceMoves(): Promise<ReferenceMove[]> {
-    const moves = await db
-      .select()
-      .from(referenceMoves)
-      .orderBy(referenceMoves.moveId);
-    return moves;
+    const { data, error } = await supabase
+      .from('reference_moves')
+      .select('*')
+      .order('move_id', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
   }
   
-  // Email record methods
+  // Email record methods - use Supabase
   async saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord> {
-    const [created] = await db
-      .insert(emailRecords)
-      .values(record)
-      .returning();
-    return created;
+    const { data, error } = await supabase
+      .from('email_records')
+      .insert(record)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   }
   
   async getEmailRecords(): Promise<EmailRecord[]> {
-    const records = await db
-      .select()
-      .from(emailRecords)
-      .orderBy(desc(emailRecords.sentAt));
-    return records;
+    const { data, error } = await supabase
+      .from('email_records')
+      .select('*')
+      .order('sent_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
   }
 
-  // Internship application methods
+  // Internship application methods - use Supabase
   async saveInternshipApplication(application: InsertInternshipApplication): Promise<InternshipApplication> {
-    const [created] = await db
-      .insert(internshipApplications)
-      .values(application)
-      .returning();
-    return created;
+    const { data, error } = await supabase
+      .from('internship_applications')
+      .insert(application)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   }
 
   async getInternshipApplications(): Promise<InternshipApplication[]> {
-    const applications = await db
-      .select()
-      .from(internshipApplications)
-      .orderBy(desc(internshipApplications.createdAt));
-    return applications;
+    const { data, error } = await supabase
+      .from('internship_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
   }
 
   async getInternshipApplicationById(id: number): Promise<InternshipApplication | undefined> {
-    const [application] = await db
-      .select()
-      .from(internshipApplications)
-      .where(eq(internshipApplications.id, id));
-    return application || undefined;
-  }
-
-  // Shifu AI Coach methods
-  async getShifuData(userId: number): Promise<ShifuData | undefined> {
-    const [data] = await db
-      .select()
-      .from(shifuData)
-      .where(eq(shifuData.userId, userId));
+    const { data, error } = await supabase
+      .from('internship_applications')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) return undefined;
     return data || undefined;
   }
 
+  // Shifu AI Coach methods - simplified for guest usage
+  async getShifuData(userId: number): Promise<ShifuData | undefined> {
+    return undefined; // No Shifu data for guest users
+  }
+
   async createShifuData(data: InsertShifuData): Promise<ShifuData> {
-    const [created] = await db
-      .insert(shifuData)
-      .values({
-        ...data,
-        challengeHistory: data.challengeHistory || []
-      })
-      .returning();
-    return created;
+    throw new Error("Shifu data not supported for guest users");
   }
 
   async updateShifuData(userId: number, updateData: Partial<InsertShifuData>): Promise<ShifuData> {
-    const [updated] = await db
-      .update(shifuData)
-      .set({
-        ...updateData,
-        updatedAt: new Date()
-      })
-      .where(eq(shifuData.userId, userId))
-      .returning();
-    return updated;
+    throw new Error("Shifu data not supported for guest users");
   }
 
   async getShifuLogs(userId: number, limit?: number): Promise<ShifuLog[]> {
-    const logs = await db
-      .select()
-      .from(shifuLogs)
-      .where(eq(shifuLogs.userId, userId))
-      .orderBy(desc(shifuLogs.date))
-      .limit(limit);
-    return logs;
+    return []; // No Shifu logs for guest users
   }
 
   async createShifuLog(log: InsertShifuLog): Promise<ShifuLog> {
-    const [created] = await db
-      .insert(shifuLogs)
-      .values(log)
-      .returning();
-    return created;
+    throw new Error("Shifu logs not supported for guest users");
   }
 
   async updateShifuLog(userId: number, date: Date, updates: Partial<InsertShifuLog>): Promise<ShifuLog> {
-    const [updated] = await db
-      .update(shifuLogs)
-      .set(updates)
-      .where(eq(shifuLogs.userId, userId))
-      .returning();
-    return updated;
+    throw new Error("Shifu logs not supported for guest users");
   }
 
   async getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const [goal] = await db
-      .select()
-      .from(shifuLogs)
-      .where(eq(shifuLogs.userId, userId))
-      .orderBy(desc(shifuLogs.date))
-      .limit(1);
-    return goal || undefined;
+    return undefined; // No Shifu goals for guest users
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new SupabaseStorage();

@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageSquare, Home, Sparkles, X, ChevronUp, Sun, Moon } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { Home, Shirt, Video, MessageSquare, Calendar } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { useTheme } from '@/hooks/use-theme';
-import ShifuChat from './ShifuChat';
+import { cn } from '@/lib/utils';
 
 export default function GlobalDock() {
-  const { user } = useAuth();
-  const { theme } = useTheme();
-  const [location] = useLocation();
-  const [showShifuChat, setShowShifuChat] = useState(false);
-  const [isDockVisible, setIsDockVisible] = useState(true);
+  const [location, setLocation] = useLocation();
 
-  // Hide dock on authentication and landing pages
-  const hiddenRoutes = ['/', '/auth', '/welcome', '/partnership'];
+  // Only hide dock on auth pages
+  const hiddenRoutes = ['/auth', '/onboarding'];
   const shouldHideDock = hiddenRoutes.includes(location);
 
   // Don't render dock at all on hidden routes
@@ -21,82 +15,76 @@ export default function GlobalDock() {
     return null;
   }
 
-  // Handle opening Shifu chat
-  const handleShifuChatToggle = () => {
-    setShowShifuChat(!showShifuChat);
-  };
+  const navigationItems = [
+    {
+      icon: Home,
+      label: 'Home',
+      path: '/app',
+      isActive: location === '/app' || location === '/'
+    },
+    {
+      icon: Shirt,
+      label: 'Dress',
+      path: '/dress-tryon',
+      isActive: location === '/dress-tryon'
+    },
+    {
+      icon: Video,
+      label: 'Live',
+      path: '/routine',
+      isActive: location === '/routine'
+    },
+    {
+      icon: MessageSquare,
+      label: 'Coach',
+      path: '/interview-coach',
+      isActive: location === '/interview-coach'
+    },
+    {
+      icon: Calendar,
+      label: 'Calendar',
+      path: '/calendar',
+      isActive: location === '/calendar'
+    }
+  ];
 
-  // Handle feedback submission by opening email client
-  const handleFeedbackSubmit = () => {
-    const username = user?.username || 'User';
-    const subject = encodeURIComponent(`Feedback on CoachT by ${username}`);
-    const body = encodeURIComponent("Please type your feedback here:\n\n"); // Default body
-    window.location.href = `mailto:ojaskandy@gmail.com?subject=${subject}&body=${body}`;
+  const handleNavigation = (path: string) => {
+    setLocation(path);
   };
 
   return (
     <>
-      {/* Dock */}
-      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ${isDockVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
-        <div className="bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-800 px-4 py-3 shadow-2xl">
-          <div className="flex items-center space-x-1">
-            {/* Navigation buttons */}
-            <div className="flex items-center space-x-1">
+      {/* Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200/50 shadow-lg">
+        <div className="flex items-center justify-between px-4 py-2 max-w-md mx-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            return (
               <button
-                onClick={() => window.history.back()}
-                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                title="Go Back"
+                key={item.path}
+                onClick={() => handleNavigation(item.path)}
+                className={cn(
+                  "flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 min-w-[64px]",
+                  item.isActive
+                    ? "bg-purple-50 text-purple-600"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                )}
               >
-                <ArrowLeft className="h-5 w-5" />
+                <Icon className={cn("h-6 w-6 mb-1")} />
+                <span className={cn(
+                  "text-xs font-medium leading-none",
+                  item.isActive ? "text-purple-600" : "text-gray-500"
+                )}>
+                  {item.label}
+                </span>
               </button>
-              
-              <button
-                onClick={() => window.location.href = '/app'}
-                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                title="Home"
-              >
-                <Home className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="h-6 w-px bg-gray-700 mx-2" />
-
-            {/* Actions */}
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={handleShifuChatToggle}
-                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                title="Chat with Shifu"
-              >
-                <Sparkles className="h-5 w-5" />
-              </button>
-
-              <button
-                onClick={handleFeedbackSubmit}
-                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                title="Send Feedback"
-              >
-                <MessageSquare className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Visibility toggle */}
-            <div className="ml-2 pl-2 border-l border-gray-700">
-              <button
-                onClick={() => setIsDockVisible(!isDockVisible)}
-                className="p-1 rounded-full text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
-                title="Hide Dock"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Shifu Chat */}
-      {showShifuChat && <ShifuChat onDismiss={() => setShowShifuChat(false)} centered={true} />}
+      {/* Add bottom padding to prevent content from being hidden behind the nav */}
+      <div className="h-20" />
     </>
   );
 } 

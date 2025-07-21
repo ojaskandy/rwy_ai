@@ -5,49 +5,44 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { CredentialResponse } from "@react-oauth/google";
 
-// Define types for auth - updated for new schema
+// Define types for the guest user context
 type User = {
   id: number;
   username: string;
   email?: string;
   fullName?: string;
   picture?: string;
-  authProvider?: "local" | "google" | "guest";
+  authProvider?: "guest";
   profileCompleted?: boolean;
   taekwondoExperience?: string;
-};
-
-type LoginCredentials = {
-  username: string;
-  password: string;
-};
-
-type RegisterCredentials = {
-  username: string;
-  password: string;
-};
-
-type ProfileSetupData = {
-  fullName: string;
-  username: string;
-  taekwondoExperience: string;
 };
 
 type AuthContextType = {
   user: User | null;
   isCheckingSession: boolean;
-  loginMutation: any;
-  registerMutation: any;
-  googleLoginMutation: any;
-  completeProfileMutation: any;
-  logoutMutation: any;
-  guestLoginMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
   isMobileDevice: boolean;
+  // Simplified mutations that do nothing but maintain API compatibility
+  loginMutation: { mutate: () => void; isLoading: boolean };
+  registerMutation: { mutate: () => void; isLoading: boolean };
+  googleLoginMutation: { mutate: () => void; isLoading: boolean };
+  completeProfileMutation: { mutate: () => void; isLoading: boolean };
+  logoutMutation: { mutate: () => void; isLoading: boolean };
+  guestLoginMutation: { mutate: () => void; isLoading: boolean };
+};
+
+// Default guest user for Runway AI
+const DEFAULT_GUEST_USER: User = {
+  id: 1,
+  username: "guest_user",
+  email: "guest@runwayai.com",
+  fullName: "Guest User",
+  picture: undefined,
+  authProvider: "guest",
+  profileCompleted: true,
+  taekwondoExperience: "beginner",
 };
 
 // Create auth context
@@ -59,57 +54,15 @@ type AuthProviderProps = {
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(DEFAULT_GUEST_USER);
+  const [isCheckingSession, setIsCheckingSession] = useState<boolean>(false); // No session checking needed
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(false);
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
 
-  // Check for existing session on app load
+  // Set user to default guest immediately
   useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        const response = await fetch("/api/user", {
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          console.log("Existing session found:", userData);
-          
-          // If user is on auth page and has completed profile, check user status and route appropriately
-          if (userData.profileCompleted && window.location.pathname === '/auth') {
-            try {
-              const statusResponse = await fetch("/api/user-status", {
-                credentials: "include",
-              });
-              
-              if (statusResponse.ok) {
-                const status = await statusResponse.json();
-                console.log("User status for existing session:", status);
-                
-                // Route based on payment and onboarding status
-                if (status.hasPaid && status.hasCompletedOnboarding) {
-                  console.log("Existing user has paid and completed onboarding, navigating to /app");
-                  window.location.href = '/app';
-                } else {
-                  console.log("Existing user needs onboarding, navigating to /onboarding");
-                  window.location.href = '/onboarding';
-                }
-              }
-            } catch (error) {
-              console.error("Error fetching user status for existing session:", error);
-            }
-          }
-        }
-      } catch (error) {
-        console.log("No existing session found");
-      } finally {
-        setIsCheckingSession(false);
-      }
-    };
-
-    checkExistingSession();
+    setUser(DEFAULT_GUEST_USER);
+    setIsCheckingSession(false);
   }, []);
 
   // Check if device is mobile
@@ -130,280 +83,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener("resize", checkMobileDevice);
   }, []);
 
-  // Login mutation (legacy - for existing users)
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
-      }
-
-      return await response.json();
+  // Stub mutations that do nothing but maintain compatibility
+  const createStubMutation = () => ({
+    mutate: () => {
+      console.log("Authentication disabled - guest user mode");
     },
-    onSuccess: async (data: User) => {
-      setUser(data);
-      console.log("Login successful:", data);
-
-      // Immediately fetch user-status after login
-      try {
-        const statusResponse = await fetch("/api/user-status", {
-          credentials: "include",
-        });
-        
-        if (statusResponse.ok) {
-          const status = await statusResponse.json();
-          console.log("User status after login:", status);
-          
-          // Route based on payment and onboarding status
-          if (status.hasPaid && status.hasCompletedOnboarding) {
-            console.log("User has paid and completed onboarding, navigating to /app");
-            window.location.href = '/app';
-          } else {
-            console.log("User needs onboarding, navigating to /onboarding");
-            window.location.href = '/onboarding';
-          }
-        } else {
-          console.log("Failed to fetch user status, defaulting to /app");
-          window.location.href = '/app';
-        }
-      } catch (error) {
-        console.error("Error fetching user status:", error);
-        window.location.href = '/app';
-      }
-
-      const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
-      if (isMobileDevice && !mobileWarningShown) {
-        setShowMobileWarning(true);
-        sessionStorage.setItem("mobileWarningShown", "true");
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Login failed:", error.message);
-    },
-  });
-
-  // Register mutation (legacy - for existing users)
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: RegisterCredentials) => {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
-      }
-
-      return await response.json();
-    },
-    onSuccess: async (data: User) => {
-      setUser(data);
-      console.log("Registration successful:", data);
-
-      // Immediately fetch user-status after registration
-      try {
-        const statusResponse = await fetch("/api/user-status", {
-          credentials: "include",
-        });
-        
-        if (statusResponse.ok) {
-          const status = await statusResponse.json();
-          console.log("User status after registration:", status);
-          
-          // Route based on payment and onboarding status
-          if (status.hasPaid && status.hasCompletedOnboarding) {
-            console.log("User has paid and completed onboarding, navigating to /app");
-            window.location.href = '/app';
-          } else {
-            console.log("User needs onboarding, navigating to /onboarding");
-            window.location.href = '/onboarding';
-          }
-        } else {
-          console.log("Failed to fetch user status, defaulting to /onboarding");
-          window.location.href = '/onboarding';
-        }
-      } catch (error) {
-        console.error("Error fetching user status:", error);
-        window.location.href = '/onboarding';
-      }
-
-      const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
-      if (isMobileDevice && !mobileWarningShown) {
-        setShowMobileWarning(true);
-        sessionStorage.setItem("mobileWarningShown", "true");
-      }
-    },
-  });
-
-  // Google OAuth login mutation — supports web & native
-  const googleLoginMutation = useMutation({
-    mutationFn: async (data: { credential?: string; idToken?: string }) => {
-      let url = "/api/auth/google";
-      let payload: any = {};
-
-      if (data.idToken) {
-        // Mobile native flow
-        url = "/api/mobile-login";
-        payload = { idToken: data.idToken };
-      } else if (data.credential) {
-        // Web flow
-        payload = { credential: data.credential };
-      } else {
-        throw new Error("No Google token provided");
-      }
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Google login failed");
-      }
-
-      return await response.json();
-    },
-    onSuccess: async (data: User) => {
-      setUser(data);
-      console.log("Google login successful:", data);
-
-      // Immediately fetch user-status after Google login
-      try {
-        const statusResponse = await fetch("/api/user-status", {
-          credentials: "include",
-        });
-        
-        if (statusResponse.ok) {
-          const status = await statusResponse.json();
-          console.log("User status after Google login:", status);
-          
-          // Route based on payment and onboarding status
-          if (status.hasPaid && status.hasCompletedOnboarding) {
-            console.log("User has paid and completed onboarding, navigating to /app");
-            window.location.href = '/app';
-          } else {
-            console.log("User needs onboarding, navigating to /onboarding");
-            window.location.href = '/onboarding';
-          }
-        } else {
-          console.log("Failed to fetch user status, defaulting to /onboarding");
-          window.location.href = '/onboarding';
-        }
-      } catch (error) {
-        console.error("Error fetching user status:", error);
-        window.location.href = '/onboarding';
-      }
-
-      const mobileWarningShown = sessionStorage.getItem("mobileWarningShown");
-      if (isMobileDevice && !mobileWarningShown) {
-        setShowMobileWarning(true);
-        sessionStorage.setItem("mobileWarningShown", "true");
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Google login failed:", error.message);
-    },
-  });
-
-  // Complete profile mutation for first-time users
-  const completeProfileMutation = useMutation({
-    mutationFn: async (profileData: ProfileSetupData) => {
-      const response = await fetch("/api/complete-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Profile completion failed");
-      }
-
-      return await response.json();
-    },
-    onSuccess: (data: User) => {
-      setUser(data);
-      console.log("Profile completion successful:", data);
-      // Force navigation to app after profile completion
-      window.location.href = '/app';
-    },
-    onError: (error: Error) => {
-      console.error("Profile completion failed:", error.message);
-    },
-  });
-
-  // Guest login mutation
-  const guestLoginMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/guest-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Guest login failed");
-      }
-
-      return await response.json();
-    },
-    onSuccess: (data: User) => {
-      setUser(data);
-      console.log("Guest login successful:", data);
-    },
-    onError: (error: Error) => {
-      console.error("Guest login failed:", error.message);
-    },
-  });
-
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-    },
-    onSuccess: () => {
-      setUser(null);
-      console.log("Logout successful");
-    },
-    onError: (error: Error) => {
-      console.error("Logout failed:", error.message);
-    },
+    isLoading: false,
   });
 
   const value = {
     user,
     isCheckingSession,
-    loginMutation,
-    registerMutation,
-    googleLoginMutation,
-    completeProfileMutation,
-    logoutMutation,
-    guestLoginMutation,
     showMobileWarning,
     setShowMobileWarning,
     isMobileDevice,
+    loginMutation: createStubMutation(),
+    registerMutation: createStubMutation(),
+    googleLoginMutation: createStubMutation(),
+    completeProfileMutation: createStubMutation(),
+    logoutMutation: createStubMutation(),
+    guestLoginMutation: createStubMutation(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

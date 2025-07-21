@@ -7,14 +7,14 @@ import path from "path";
 
 const app = express();
 
-// Configure CORS for Google OAuth
+// Configure CORS for Runway AI (no authentication needed)
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://www.coacht.xyz', 'https://coacht.xyz'] 
+    ? ['https://www.runwayai.com', 'https://runwayai.com'] 
     : ['http://localhost:5001', 'http://localhost:3000'],
-  credentials: true,
+  credentials: false, // No authentication, no credentials needed
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Increased payload size limits to handle larger image uploads (10MB)
