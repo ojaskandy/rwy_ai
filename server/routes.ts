@@ -25,6 +25,7 @@ import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
 import * as fashnAI from './routes/fashnAI';
 
+
 // Default guest user context for Runway AI (no authentication needed)
 const DEFAULT_GUEST_USER = {
   id: 1,
@@ -392,14 +393,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fashn AI routes
-  app.get("/api/fashn/status", fashnAI.getStatus);
+  // FashnAI routes
+  app.get("/api/fashn/service-status", fashnAI.getServiceStatus);
   app.get("/api/fashn/test", fashnAI.testFashnAI);
   app.get("/api/fashn/credits", fashnAI.checkCredits);
   app.get("/api/fashn/status/:id", fashnAI.checkStatus);
   app.post("/api/fashn/tryon", fashnAI.generateTryOn);
-  app.post("/api/fashn/upload", fashnAI.uploadImage);
-  app.post("/api/fashn/run", fashnAI.runModel);
+  app.post("/api/fashn/tryon-complete", fashnAI.runTryOnComplete);
 
      const server = createServer(app);
    return server;

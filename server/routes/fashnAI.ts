@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { createFashnAIService } from '../services/fashnAI';
+import type { TryOnInputs } from '../services/fashnAI';
 
-// Initialize Fashn AI service
+// Initialize service
 const fashnAI = createFashnAIService();
 
 /**
- * Test Fashn AI API connection
+ * Test FashnAI API connection
  * GET /api/fashn/test
  */
 export async function testFashnAI(req: Request, res: Response) {
@@ -13,7 +14,7 @@ export async function testFashnAI(req: Request, res: Response) {
     if (!fashnAI) {
       return res.status(500).json({
         success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
+        error: 'FashnAI service not initialized. Check API key configuration.'
       });
     }
 
@@ -21,7 +22,7 @@ export async function testFashnAI(req: Request, res: Response) {
     
     res.status(result.status || 200).json({
       success: result.success,
-      message: result.success ? 'Fashn AI connection successful' : 'Fashn AI connection failed',
+      message: result.success ? 'FashnAI connection successful' : 'FashnAI connection failed',
       data: result.data,
       error: result.error
     });
@@ -37,28 +38,61 @@ export async function testFashnAI(req: Request, res: Response) {
 /**
  * Generate virtual try-on (start prediction)
  * POST /api/fashn/tryon
- * Body: { personImage: string, garmentImage: string, options?: any }
- * Returns: { predictionId: string } - use this ID to check status
+ * Body: { model_image: string (base64 or URL), garment_image: string (base64 or URL), options?: TryOnInputs }
  */
 export async function generateTryOn(req: Request, res: Response) {
   try {
     if (!fashnAI) {
       return res.status(500).json({
         success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
+        error: 'FashnAI service not initialized. Check API key configuration.'
       });
     }
 
-    const { personImage, garmentImage, options } = req.body;
+    console.log('[FashnAI Route] Received try-on request');
 
-    if (!personImage || !garmentImage) {
+    const { model_image, garment_image, options = {} } = req.body;
+
+    // Validate required fields
+    if (!model_image) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: personImage and garmentImage'
+        error: 'Missing required field: model_image'
       });
     }
 
-    const result = await fashnAI.generateTryOn(personImage, garmentImage, options);
+    if (!garment_image) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: garment_image'
+      });
+    }
+
+    // Validate image formats (base64 or URL)
+    const isValidBase64 = (str: string) => str.startsWith('data:image/');
+    const isValidURL = (str: string) => str.startsWith('http://') || str.startsWith('https://');
+
+    if (!isValidBase64(model_image) && !isValidURL(model_image)) {
+      return res.status(400).json({
+        success: false,
+        error: 'model_image must be a valid base64 data URL or HTTP(S) URL'
+      });
+    }
+
+    if (!isValidBase64(garment_image) && !isValidURL(garment_image)) {
+      return res.status(400).json({
+        success: false,
+        error: 'garment_image must be a valid base64 data URL or HTTP(S) URL'
+      });
+    }
+
+    console.log('[FashnAI Route] Validated request:', {
+      modelImageType: isValidBase64(model_image) ? 'base64' : 'URL',
+      garmentImageType: isValidBase64(garment_image) ? 'base64' : 'URL',
+      options
+    });
+
+    const result = await fashnAI.runTryOn(model_image, garment_image, options);
     
     res.status(result.status || 200).json({
       success: result.success,
@@ -84,7 +118,7 @@ export async function checkStatus(req: Request, res: Response) {
     if (!fashnAI) {
       return res.status(500).json({
         success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
+        error: 'FashnAI service not initialized. Check API key configuration.'
       });
     }
 
@@ -123,7 +157,7 @@ export async function checkCredits(req: Request, res: Response) {
     if (!fashnAI) {
       return res.status(500).json({
         success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
+        error: 'FashnAI service not initialized. Check API key configuration.'
       });
     }
 
@@ -145,47 +179,82 @@ export async function checkCredits(req: Request, res: Response) {
 }
 
 /**
- * Upload image to Fashn AI
- * POST /api/fashn/upload
- * Body: FormData with image file
+ * Run try-on with polling (convenience endpoint)
+ * POST /api/fashn/tryon-complete
+ * Body: { model_image: string, garment_image: string, options?: TryOnInputs }
+ * This endpoint starts a prediction and polls until completion
  */
-export async function uploadImage(req: Request, res: Response) {
+export async function runTryOnComplete(req: Request, res: Response) {
   try {
     if (!fashnAI) {
       return res.status(500).json({
         success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
+        error: 'FashnAI service not initialized. Check API key configuration.'
       });
     }
 
-    // Handle file upload from request
-    if (!req.file && !req.body.image) {
+    console.log('[FashnAI Route] Received complete try-on request');
+
+    const { model_image, garment_image, options = {} } = req.body;
+
+    // Validate required fields (same as generateTryOn)
+    if (!model_image) {
       return res.status(400).json({
         success: false,
-        error: 'No image provided'
+        error: 'Missing required field: model_image'
       });
     }
 
-    let imageData: Buffer | string;
-    let filename: string | undefined;
-
-    if (req.file) {
-      imageData = req.file.buffer;
-      filename = req.file.originalname;
-    } else {
-      imageData = req.body.image;
+    if (!garment_image) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: garment_image'
+      });
     }
 
-    const result = await fashnAI.uploadImage(imageData, filename);
+    // Validate image formats
+    const isValidBase64 = (str: string) => str.startsWith('data:image/');
+    const isValidURL = (str: string) => str.startsWith('http://') || str.startsWith('https://');
+
+    if (!isValidBase64(model_image) && !isValidURL(model_image)) {
+      return res.status(400).json({
+        success: false,
+        error: 'model_image must be a valid base64 data URL or HTTP(S) URL'
+      });
+    }
+
+    if (!isValidBase64(garment_image) && !isValidURL(garment_image)) {
+      return res.status(400).json({
+        success: false,
+        error: 'garment_image must be a valid base64 data URL or HTTP(S) URL'
+      });
+    }
+
+    // Start the prediction
+    const startResult = await fashnAI.runTryOn(model_image, garment_image, options);
     
-    res.status(result.status || 200).json({
-      success: result.success,
-      message: result.success ? 'Image uploaded successfully' : 'Image upload failed',
-      data: result.data,
-      error: result.error
+    if (!startResult.success || !startResult.data?.id) {
+      return res.status(startResult.status || 500).json({
+        success: false,
+        error: startResult.error || 'Failed to start prediction',
+        data: startResult.data
+      });
+    }
+
+    const predictionId = startResult.data.id;
+    console.log('[FashnAI Route] Prediction started, ID:', predictionId);
+
+    // Poll until completion
+    const pollResult = await fashnAI.pollUntilComplete(predictionId);
+    
+    res.status(pollResult.status || 200).json({
+      success: pollResult.success,
+      message: pollResult.success ? 'Try-on completed successfully' : 'Try-on failed',
+      data: pollResult.data,
+      error: pollResult.error
     });
   } catch (error: any) {
-    console.error('[FashnAI Route] Image upload error:', error);
+    console.error('[FashnAI Route] Complete try-on error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -194,50 +263,10 @@ export async function uploadImage(req: Request, res: Response) {
 }
 
 /**
- * Run Fashn AI model
- * POST /api/fashn/run
- * Body: { model: string, parameters: any }
+ * Get FashnAI service status
+ * GET /api/fashn/service-status
  */
-export async function runModel(req: Request, res: Response) {
-  try {
-    if (!fashnAI) {
-      return res.status(500).json({
-        success: false,
-        error: 'Fashn AI service not initialized. Check API key configuration.'
-      });
-    }
-
-    const payload = req.body;
-
-    if (!payload) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing request payload'
-      });
-    }
-
-    const result = await fashnAI.runModel(payload);
-    
-    res.status(result.status || 200).json({
-      success: result.success,
-      message: result.success ? 'Model executed successfully' : 'Model execution failed',
-      data: result.data,
-      error: result.error
-    });
-  } catch (error: any) {
-    console.error('[FashnAI Route] Model execution error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-}
-
-/**
- * Get Fashn AI service status
- * GET /api/fashn/status
- */
-export async function getStatus(req: Request, res: Response) {
+export async function getServiceStatus(req: Request, res: Response) {
   try {
     const hasApiKey = !!process.env.FASHN_API_KEY;
     const serviceInitialized = !!fashnAI;
@@ -251,7 +280,7 @@ export async function getStatus(req: Request, res: Response) {
       }
     });
   } catch (error: any) {
-    console.error('[FashnAI Route] Status check error:', error);
+    console.error('[FashnAI Route] Service status check error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
