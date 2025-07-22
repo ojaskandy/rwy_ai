@@ -119,7 +119,6 @@ export default function CameraView({
   const [isVideoPaused, setIsVideoPaused] = useState<boolean>(false);
   const [showMediaSelector, setShowMediaSelector] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
-  const [showPreloadedSelector, setShowPreloadedSelector] = useState<boolean>(false);
   const [localRoutineNotes, setLocalRoutineNotes] = useState<string>('');
   const [testResults, setTestResults] = useState<TestResults>({
     isRunning: false,
@@ -2939,18 +2938,6 @@ export default function CameraView({
                   </div>
 
                   <div className="space-y-4">
-                                         {/* Pre-loaded Video Option */}
-                  <button
-                    onClick={() => {
-                            setShowMediaSelector(false);
-                         setShowPreloadedSelector(true);
-                    }}
-                       className="w-full h-16 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
-                  >
-                       <span className="material-icons text-2xl">video_library</span>
-                       Choose Pre-loaded Video
-                  </button>
-
                     {/* Upload Video Option */}
                   <button
                     onClick={() => {
@@ -2997,7 +2984,6 @@ export default function CameraView({
 
                   <div className="mt-6 pt-4 border-t border-red-900/30">
                     <div className="text-xs text-gray-500 text-center space-y-1">
-                      <p>Pre-loaded videos include martial arts forms and techniques</p>
                       <p>Upload supports: MP4, WEBM, OGG</p>
                     </div>
                   </div>
@@ -3005,27 +2991,7 @@ export default function CameraView({
               </div>
             )}
 
-            {/* Preloaded Video Selector */}
-            {showPreloadedSelector && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <PreloadedVideoSelector
-                  onVideoSelect={(video: HTMLVideoElement | null, url: string, videoData: MartialArtsVideo) => {
-                    if (video) {
-                      // Handle local video file
-                      const flaggedUrl = url + '#video';
-                      if (onScreenshot) {
-                        onScreenshot(flaggedUrl);
-                      }
-                    }
-                    setShowPreloadedSelector(false);
-                  }}
-                  onCancel={() => {
-                    setShowPreloadedSelector(false);
-                    setShowMediaSelector(true);
-                  }}
-                />
-              </div>
-            )}
+
           </div>
 
           {!isSplitView && (

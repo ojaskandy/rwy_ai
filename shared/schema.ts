@@ -291,6 +291,37 @@ export const insertShifuLogSchema = createInsertSchema(shifuLogs).pick({
 export type InsertShifuLog = z.infer<typeof insertShifuLogSchema>;
 export type ShifuLog = typeof shifuLogs.$inferSelect;
 
+// Calendar events table for pageant calendar
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(), // UUID from Supabase auth.users
+  title: text("title").notNull(),
+  description: text("description").default(""),
+  date: timestamp("date").notNull(),
+  time: text("time").notNull(), // stored as HH:MM format
+  type: text("type").notNull().default("pageant"), // pageant, interview, fitting, routine, photo, meeting, deadline, personal
+  location: text("location"),
+  reminder: integer("reminder").default(60), // minutes before event
+  completed: boolean("completed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).pick({
+  userId: true,
+  title: true,
+  description: true,
+  date: true,
+  time: true,
+  type: true,
+  location: true,
+  reminder: true,
+  completed: true,
+});
+
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+
 // Pose references table for Shifu Says challenge
 export const poseReferences = pgTable("shifusays_references", {
   id: serial("id").primaryKey(),

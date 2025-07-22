@@ -18,6 +18,8 @@ import PageantCalendar from "@/pages/PageantCalendar";
 // LIVE ROUTINE FEATURE
 import Routine from "@/pages/Routine";
 import GlobalDock from "@/components/GlobalDock";
+// RUNWAY AI WELCOME PAGE
+import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 
 function Router() {
   return (
@@ -25,6 +27,9 @@ function Router() {
       <Switch>
         {/* Authentication page - accessible without login */}
         <Route path="/auth" component={Auth} />
+
+        {/* Welcome page - accessible without login */}
+        <Route path="/welcome" component={RunwayAIWelcome} />
 
         {/* All protected routes require authentication */}
         <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />

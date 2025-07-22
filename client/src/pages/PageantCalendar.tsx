@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, Plus, Edit, Trash2, Bell, Clock,
   ChevronLeft, ChevronRight, MapPin, User, Crown, Award,
-  X, Check, AlertCircle, Star, Palette
+  X, Check, AlertCircle, Star, Palette, Loader2, Sparkles
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useCalendarEvents } from '@/hooks/use-calendar';
 
 // Event types with colors
 const EVENT_TYPES = [
@@ -32,69 +33,43 @@ const REMINDER_OPTIONS = [
   { value: 10080, label: '1 week before' }
 ];
 
+// Interface for the component (matches the hook's CalendarEvent interface)
 interface CalendarEvent {
-  id: string;
+  id: number;
+  userId: string; // Updated to string for UUID
   title: string;
   description: string;
   date: Date;
   time: string;
   type: string;
   location?: string;
-  reminder?: number;
-  completed?: boolean;
+  reminder: number;
+  completed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
-
-// Mock events - in production this would be stored in a database
-const MOCK_EVENTS: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'Miss Universe Audition',
-    description: 'Initial audition for Miss Universe competition',
-    date: new Date(2025, 0, 15),
-    time: '14:00',
-    type: 'pageant',
-    location: 'Convention Center',
-    reminder: 1440
-  },
-  {
-    id: '2',
-    title: 'Evening Gown Fitting',
-    description: 'Final fitting for pageant evening gown',
-    date: new Date(2025, 0, 10),
-    time: '10:30',
-    type: 'fitting',
-    location: 'Bella Boutique',
-    reminder: 60
-  },
-  {
-    id: '3',
-    title: 'Portfolio Photo Shoot',
-    description: 'Professional headshots and full-body photos',
-    date: new Date(2025, 0, 20),
-    time: '09:00',
-    type: 'photo',
-    location: 'Studio Downtown',
-    reminder: 1440
-  },
-  {
-    id: '4',
-    title: 'Interview Practice Session',
-    description: 'Mock interview with pageant coach',
-    date: new Date(2025, 0, 8),
-    time: '16:00',
-    type: 'interview',
-    reminder: 60
-  }
-];
 
 export default function PageantCalendar() {
   const [, navigate] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>(MOCK_EVENTS);
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [aiDescription, setAiDescription] = useState('');
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+  
+  // Use the calendar events hook
+  const { 
+    events, 
+    isLoading, 
+    createEvent, 
+    updateEvent, 
+    deleteEvent,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useCalendarEvents();
   
   // Form states
   const [formData, setFormData] = useState({
@@ -126,7 +101,7 @@ export default function PageantCalendar() {
     const days = [];
     const current = new Date(startDate);
     
-    for (let i = 0; i < 42; i++) {
+    while (current <= lastDay || current.getDay() !== 0) {
       days.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
@@ -134,6 +109,19 @@ export default function PageantCalendar() {
     return days;
   };
 
+  const calendarDays = generateCalendarDays();
+  const today = new Date();
+
+  // Navigation
+  const previousMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // Date utilities
   const formatMonth = (date: Date) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
@@ -143,17 +131,10 @@ export default function PageantCalendar() {
   };
 
   const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentDate.getMonth();
+    return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
   };
 
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
-
+  // Event handlers
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
   };
@@ -169,7 +150,52 @@ export default function PageantCalendar() {
       location: '',
       reminder: 60
     });
+    setAiDescription('');
     setShowEventModal(true);
+  };
+
+  const processAIDescription = async () => {
+    if (!aiDescription.trim()) return;
+    
+    setIsProcessingAI(true);
+    try {
+      const response = await fetch('/api/ai/parse-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description: aiDescription
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process event description');
+      }
+
+      const result = await response.json();
+      
+      // Pre-fill the form with AI-parsed data
+      setFormData({
+        title: result.title || '',
+        description: result.description || aiDescription,
+        date: result.date || formData.date,
+        time: result.time || '',
+        type: result.type || 'pageant',
+        location: result.location || '',
+        reminder: result.reminder || 60
+      });
+
+    } catch (error) {
+      console.error('Error processing AI description:', error);
+      // Fallback: still update the description field
+      setFormData(prev => ({
+        ...prev,
+        description: aiDescription
+      }));
+    } finally {
+      setIsProcessingAI(false);
+    }
   };
 
   const handleEditEvent = (event: CalendarEvent) => {
@@ -181,46 +207,60 @@ export default function PageantCalendar() {
       time: event.time,
       type: event.type,
       location: event.location || '',
-      reminder: event.reminder || 60
+      reminder: event.reminder
     });
+    setAiDescription('');
     setShowEventModal(true);
   };
 
-  const handleSaveEvent = () => {
-    const eventData: CalendarEvent = {
-      id: editingEvent?.id || Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      date: new Date(formData.date),
-      time: formData.time,
-      type: formData.type,
-      location: formData.location,
-      reminder: formData.reminder
-    };
-
-    if (editingEvent) {
-      setEvents(prev => prev.map(e => e.id === editingEvent.id ? eventData : e));
-    } else {
-      setEvents(prev => [...prev, eventData]);
+  const handleDeleteEvent = async (eventId: number) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      await deleteEvent(eventId);
     }
-
-    setShowEventModal(false);
-    setSelectedDate(eventData.date);
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
+  const handleSaveEvent = async () => {
+    try {
+      const eventData = {
+        title: formData.title,
+        description: formData.description,
+        date: formData.date, // Keep as string for the API
+        time: formData.time,
+        type: formData.type,
+        location: formData.location,
+        reminder: formData.reminder
+      };
+
+      if (editingEvent) {
+        await updateEvent({ id: editingEvent.id, ...eventData });
+      } else {
+        await createEvent(eventData);
+      }
+      
+      setShowEventModal(false);
+      setEditingEvent(null);
+    } catch (error) {
+      console.error('Error saving event:', error);
+    }
   };
 
-  const getEventType = (typeId: string) => {
-    return EVENT_TYPES.find(t => t.id === typeId) || EVENT_TYPES[0];
+  const getEventTypeInfo = (type: string) => {
+    return EVENT_TYPES.find(t => t.id === type) || EVENT_TYPES[0];
   };
 
-  const today = new Date();
-  const calendarDays = generateCalendarDays();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-3 flex items-center justify-center" style={{ backgroundColor: '#FFC5D3' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-600" />
+          <p className="text-gray-700">Loading calendar...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Header */}
       <div className="w-full bg-gradient-to-r from-indigo-800 to-purple-800 h-16 px-4 shadow-lg flex items-center">
         <button 
@@ -246,11 +286,11 @@ export default function PageantCalendar() {
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Calendar Section */}
           <div className="lg:col-span-3">
-            <Card className="bg-black/30 border-indigo-600/30">
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-indigo-300 flex items-center">
-                    <CalendarIcon className="w-5 h-5 mr-2" />
+                  <CardTitle className="text-gray-800 flex items-center">
+                    <CalendarIcon className="w-5 h-5 mr-2 text-pink-600" />
                     {formatMonth(currentDate)}
                   </CardTitle>
                   <div className="flex items-center space-x-2">
@@ -258,7 +298,7 @@ export default function PageantCalendar() {
                       onClick={previousMonth}
                       variant="outline"
                       size="sm"
-                      className="border-indigo-600 text-indigo-300 hover:bg-indigo-600/20"
+                      className="border-pink-200 text-pink-600 hover:bg-pink-50"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
@@ -266,7 +306,7 @@ export default function PageantCalendar() {
                       onClick={nextMonth}
                       variant="outline"
                       size="sm"
-                      className="border-indigo-600 text-indigo-300 hover:bg-indigo-600/20"
+                      className="border-pink-200 text-pink-600 hover:bg-pink-50"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -277,7 +317,7 @@ export default function PageantCalendar() {
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-1 mb-4">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-sm font-semibold text-indigo-300 p-2">
+                    <div key={day} className="text-center text-sm font-semibold text-gray-700 p-2">
                       {day}
                     </div>
                   ))}
@@ -299,18 +339,18 @@ export default function PageantCalendar() {
                         className={`
                           relative p-2 h-20 cursor-pointer rounded-lg border transition-all duration-200
                           ${isSelected 
-                            ? 'bg-indigo-600/50 border-indigo-400' 
+                            ? 'bg-pink-100 border-pink-400' 
                             : isToday 
-                              ? 'bg-purple-600/30 border-purple-400' 
-                              : 'border-gray-700 hover:border-indigo-500 hover:bg-indigo-900/20'
+                              ? 'bg-purple-100 border-purple-400' 
+                              : 'border-gray-200 hover:border-pink-300 hover:bg-pink-50'
                           }
                           ${!isCurrentMonthDay && 'opacity-40'}
                         `}
                       >
                         <div className={`text-sm font-medium ${
-                          isToday ? 'text-purple-200' : 
-                          isSelected ? 'text-indigo-200' : 
-                          isCurrentMonthDay ? 'text-gray-200' : 'text-gray-500'
+                          isToday ? 'text-purple-700' : 
+                          isSelected ? 'text-pink-700' : 
+                          isCurrentMonthDay ? 'text-gray-700' : 'text-gray-400'
                         }`}>
                           {date.getDate()}
                         </div>
@@ -318,16 +358,17 @@ export default function PageantCalendar() {
                         {/* Event indicators */}
                         <div className="absolute bottom-1 left-1 right-1 space-y-0.5">
                           {dayEvents.slice(0, 2).map((event, eventIndex) => {
-                            const eventType = getEventType(event.type);
+                            const typeInfo = getEventTypeInfo(event.type);
                             return (
                               <div
                                 key={eventIndex}
-                                className={`h-1 rounded-full ${eventType.color} opacity-80`}
+                                className={`h-1 rounded-full ${typeInfo.color} opacity-80`}
+                                title={event.title}
                               />
                             );
                           })}
                           {dayEvents.length > 2 && (
-                            <div className="text-xs text-gray-400 text-center">
+                            <div className="text-xs text-gray-500 text-center">
                               +{dayEvents.length - 2} more
                             </div>
                           )}
@@ -338,151 +379,86 @@ export default function PageantCalendar() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Events Sidebar */}
-          <div className="space-y-6">
-            {/* Selected Date Events */}
-            {selectedDate && (
-              <Card className="bg-black/30 border-indigo-600/30">
-                <CardHeader>
-                  <CardTitle className="text-indigo-300 text-sm">
-                    {selectedDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {getEventsForDate(selectedDate).length > 0 ? (
-                      getEventsForDate(selectedDate).map((event) => {
-                        const eventType = getEventType(event.type);
-                        return (
-                          <motion.div
-                            key={event.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-gray-900/50 rounded-lg p-3"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <Badge className={`${eventType.color} ${eventType.textColor} text-xs`}>
-                                    {eventType.name}
-                                  </Badge>
-                                  <span className="text-xs text-gray-400">{event.time}</span>
-                                </div>
-                                <h4 className="font-semibold text-sm text-gray-200">{event.title}</h4>
-                                {event.description && (
-                                  <p className="text-xs text-gray-400 mt-1">{event.description}</p>
-                                )}
-                                {event.location && (
-                                  <div className="flex items-center mt-1">
-                                    <MapPin className="w-3 h-3 mr-1 text-gray-500" />
-                                    <span className="text-xs text-gray-500">{event.location}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex space-x-1">
-                                <Button
-                                  onClick={() => handleEditEvent(event)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-gray-400 hover:text-indigo-300"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  onClick={() => handleDeleteEvent(event.id)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-gray-400 hover:text-red-300"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-6">
-                        <CalendarIcon className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                        <p className="text-gray-400 text-sm">No events scheduled</p>
-                        <Button
-                          onClick={handleAddEvent}
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 border-indigo-600 text-indigo-300 hover:bg-indigo-600/20"
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Add Event
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Upcoming Events */}
-            <Card className="bg-black/30 border-indigo-600/30">
-              <CardHeader>
-                <CardTitle className="text-indigo-300 text-sm flex items-center">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Upcoming Events
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {events
-                    .filter(event => event.date >= today)
-                    .sort((a, b) => a.date.getTime() - b.date.getTime())
-                    .slice(0, 5)
-                    .map((event) => {
-                      const eventType = getEventType(event.type);
-                      const daysUntil = Math.ceil((event.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                      
-                      return (
-                        <div key={event.id} className="bg-gray-900/50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge className={`${eventType.color} ${eventType.textColor} text-xs`}>
-                              {eventType.name}
-                            </Badge>
-                            <span className="text-xs text-gray-400">
-                              {daysUntil === 0 ? 'Today' : `${daysUntil} days`}
-                            </span>
-                          </div>
-                          <h4 className="font-semibold text-sm text-gray-200">{event.title}</h4>
-                          <p className="text-xs text-gray-400">
-                            {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {event.time}
-                          </p>
-                        </div>
-                      );
-                    })}
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Event Type Legend */}
-            <Card className="bg-black/30 border-indigo-600/30">
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
               <CardHeader>
-                <CardTitle className="text-indigo-300 text-sm">Event Types</CardTitle>
+                <CardTitle className="text-gray-800 text-sm">Event Types</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
                   {EVENT_TYPES.map((type) => (
                     <div key={type.id} className="flex items-center space-x-2">
                       <div className={`w-3 h-3 rounded-full ${type.color}`} />
-                      <span className="text-xs text-gray-300">{type.name}</span>
+                      <span className="text-xs text-gray-600">{type.name}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Sidebar for selected date events */}
+          {selectedDate && (
+            <div className="lg:col-span-1">
+              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-gray-800 text-sm">
+                    Events for {selectedDate.toLocaleDateString()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {getEventsForDate(selectedDate).length === 0 ? (
+                    <p className="text-gray-500 text-sm">No events scheduled</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {getEventsForDate(selectedDate).map((event) => {
+                        const typeInfo = getEventTypeInfo(event.type);
+                        return (
+                          <div key={event.id} className="border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge className={`${typeInfo.color} ${typeInfo.textColor} text-xs`}>
+                                {typeInfo.name}
+                              </Badge>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleEditEvent(event)}
+                                  className="text-gray-400 hover:text-pink-600"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  className="text-gray-400 hover:text-red-600"
+                                  disabled={isDeleting}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <h4 className="font-medium text-gray-800 text-sm">{event.title}</h4>
+                            <p className="text-xs text-gray-600 flex items-center mt-1">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {event.time}
+                            </p>
+                            {event.location && (
+                              <p className="text-xs text-gray-600 flex items-center mt-1">
+                                <MapPin className="w-3 h-3 mr-1" />
+                                {event.location}
+                              </p>
+                            )}
+                            {event.description && (
+                              <p className="text-xs text-gray-500 mt-2">{event.description}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 
@@ -499,15 +475,16 @@ export default function PageantCalendar() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-b from-indigo-900 to-purple-900 rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+              className="rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+              style={{ backgroundColor: '#FFC5D3' }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">
+                <h3 className="text-xl font-bold text-gray-800">
                   {editingEvent ? 'Edit Event' : 'Add New Event'}
                 </h3>
                 <button 
                   onClick={() => setShowEventModal(false)}
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-600 hover:text-gray-800"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -515,27 +492,27 @@ export default function PageantCalendar() {
               
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="title" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="title" className="text-sm font-medium text-gray-700">
                     Event Title
                   </Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="bg-black/30 border-indigo-600/30 text-white"
+                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
                     placeholder="Enter event title"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="description" className="text-sm font-medium text-gray-700">
                     Description
                   </Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="bg-black/30 border-indigo-600/30 text-white"
+                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
                     placeholder="Event description"
                     rows={3}
                   />
@@ -543,7 +520,7 @@ export default function PageantCalendar() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="date" className="text-sm font-medium text-gray-300">
+                    <Label htmlFor="date" className="text-sm font-medium text-gray-700">
                       Date
                     </Label>
                     <Input
@@ -551,12 +528,12 @@ export default function PageantCalendar() {
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                      className="bg-black/30 border-indigo-600/30 text-white"
+                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="time" className="text-sm font-medium text-gray-300">
+                    <Label htmlFor="time" className="text-sm font-medium text-gray-700">
                       Time
                     </Label>
                     <Input
@@ -564,20 +541,20 @@ export default function PageantCalendar() {
                       type="time"
                       value={formData.time}
                       onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                      className="bg-black/30 border-indigo-600/30 text-white"
+                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="type" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="type" className="text-sm font-medium text-gray-700">
                     Event Type
                   </Label>
                   <select
                     id="type"
                     value={formData.type}
                     onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full bg-black/30 border border-indigo-600/30 rounded-md px-3 py-2 text-white"
+                    className="w-full bg-white/80 border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
                   >
                     {EVENT_TYPES.map((type) => (
                       <option key={type.id} value={type.id}>
@@ -588,27 +565,27 @@ export default function PageantCalendar() {
                 </div>
 
                 <div>
-                  <Label htmlFor="location" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="location" className="text-sm font-medium text-gray-700">
                     Location (Optional)
                   </Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    className="bg-black/30 border-indigo-600/30 text-white"
+                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
                     placeholder="Event location"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="reminder" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="reminder" className="text-sm font-medium text-gray-700">
                     Reminder
                   </Label>
                   <select
                     id="reminder"
                     value={formData.reminder}
                     onChange={(e) => setFormData(prev => ({ ...prev, reminder: parseInt(e.target.value) }))}
-                    className="w-full bg-black/30 border border-indigo-600/30 rounded-md px-3 py-2 text-white"
+                    className="w-full bg-white/80 border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
                   >
                     {REMINDER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -618,19 +595,57 @@ export default function PageantCalendar() {
                   </select>
                 </div>
 
+                {/* AI Section */}
+                <div className="border-t border-gray-300 pt-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-medium text-gray-600">OR schedule with AI</span>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Describe your event
+                    </Label>
+                    <Textarea
+                      value={aiDescription}
+                      onChange={(e) => setAiDescription(e.target.value)}
+                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
+                      placeholder="e.g., 'Miss Universe interview practice tomorrow at 3pm at the studio'"
+                      rows={2}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={processAIDescription}
+                    disabled={!aiDescription.trim() || isProcessingAI}
+                    className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                    size="sm"
+                  >
+                    {isProcessingAI ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 mr-2" />
+                    )}
+                    Fill Form with AI
+                  </Button>
+                </div>
+
                 <div className="flex space-x-3 pt-4">
                   <Button
                     onClick={handleSaveEvent}
-                    disabled={!formData.title || !formData.date || !formData.time}
-                    className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    disabled={!formData.title || !formData.date || !formData.time || isCreating || isUpdating}
+                    className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
                   >
-                    <Check className="w-4 h-4 mr-2" />
+                    {(isCreating || isUpdating) ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-2" />
+                    )}
                     {editingEvent ? 'Update Event' : 'Add Event'}
                   </Button>
                   <Button
                     onClick={() => setShowEventModal(false)}
                     variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-600/20"
+                    className="border-gray-400 text-gray-600 hover:bg-gray-100"
                   >
                     Cancel
                   </Button>

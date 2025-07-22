@@ -69,23 +69,23 @@ export default function NotesEditor({
   };
 
   return (
-    <div className="bg-black border-t border-red-900/50 py-1 px-3 mt-0 w-full">
-      <div className="flex items-center justify-between py-1">
+    <div className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl py-4 px-4 mt-4 w-full">
+      <div className="flex items-center justify-between py-2">
         <div className="flex items-center">
-          <span className="material-icons text-red-600 mr-2">edit_note</span>
-          <h3 className="text-red-100 font-semibold">Routine Notes</h3>
+          <span className="material-icons text-pink-600 mr-2">edit_note</span>
+          <h3 className="text-gray-800 font-semibold">Routine Notes</h3>
         </div>
         <div className="flex gap-1">
-          <button onClick={() => applyFormat('bold')} className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1">
+          <button onClick={() => applyFormat('bold')} className="bg-pink-100 hover:bg-pink-200 text-pink-700 rounded p-1">
             <span className="material-icons text-xs">format_bold</span>
           </button>
-          <button onClick={() => applyFormat('italic')} className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1">
+          <button onClick={() => applyFormat('italic')} className="bg-pink-100 hover:bg-pink-200 text-pink-700 rounded p-1">
             <span className="material-icons text-xs">format_italic</span>
           </button>
-          <button onClick={() => applyFormat('heading')} className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1">
+          <button onClick={() => applyFormat('heading')} className="bg-pink-100 hover:bg-pink-200 text-pink-700 rounded p-1">
             <span className="material-icons text-xs">format_size</span>
           </button>
-          <button onClick={() => applyFormat('subheading')} className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1">
+          <button onClick={() => applyFormat('subheading')} className="bg-pink-100 hover:bg-pink-200 text-pink-700 rounded p-1">
             <span className="material-icons text-xs">text_fields</span>
           </button>
         </div>
@@ -94,16 +94,16 @@ export default function NotesEditor({
         id="routineNotesTextarea"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className="w-full bg-gray-900 border border-red-900/30 rounded-md p-2 text-white min-h-[70px] focus:ring-1 focus:ring-red-500"
+        className="w-full bg-white border border-pink-200 rounded-md p-3 text-gray-800 min-h-[70px] focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
         placeholder="Enter your notes about this routine here..."
       />
       
       {/* Action Buttons */}
-      <div className="flex justify-center space-x-2 sm:space-x-4 mt-3 mb-1 flex-wrap">
+      <div className="flex justify-center space-x-2 sm:space-x-4 mt-4 mb-2 flex-wrap gap-2">
         {isTestRunning ? (
           <button
             onClick={onStopTest}
-            className="px-5 sm:px-6 py-3 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-sm sm:text-base bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-700 hover:to-orange-600 animate-pulse"
+            className="px-5 sm:px-6 py-3 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-sm sm:text-base bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500 animate-pulse"
           >
             <span className="material-icons mr-1 sm:mr-2 text-base sm:text-lg">stop</span>
             Stop Test
@@ -113,7 +113,7 @@ export default function NotesEditor({
             {!isTracking ? (
               <button
                 onClick={onStartRoutine}
-                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700"
+                className="px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500"
               >
                 <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">play_arrow</span>
                 Start Routine
@@ -121,7 +121,7 @@ export default function NotesEditor({
             ) : (
               <button
                 onClick={onStopRoutine}
-                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-700 hover:to-orange-600"
+                className="px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500"
               >
                 <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">stop</span>
                 Stop Routine
@@ -132,10 +132,10 @@ export default function NotesEditor({
             {onRecord && (
               <button
                 onClick={onRecord}
-                className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+                className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
                   isRecording
                     ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'bg-purple-500 hover:bg-purple-600 text-white'
                 }`}
                 title={isRecording ? 'Stop Recording' : 'Record Camera'}
               >
@@ -148,10 +148,10 @@ export default function NotesEditor({
             {onToggleScreenRecording && (
               <button
                 onClick={onToggleScreenRecording}
-                className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+                className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
                   isScreenRecording
                     ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
                 title={isScreenRecording ? 'Stop Screen Recording' : 'Record Entire Screen'}
               >
@@ -163,10 +163,10 @@ export default function NotesEditor({
             {/* Test Button - Light up when media is available */}
             <button
               onClick={onStartTest}
-              className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+              className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
                 !hasReferenceMedia
-                  ? 'bg-gray-700 text-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-green-400 text-white hover:from-green-600 hover:to-green-500 border-2 border-green-300 shadow-xl'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-green-400 text-white hover:from-green-600 hover:to-green-500 border-2 border-green-300'
               }`}
               disabled={!hasReferenceMedia || isRecording || isScreenRecording}
               title={
@@ -184,7 +184,7 @@ export default function NotesEditor({
             {hasCompletedTest && (
               <button
                 onClick={onShowResults}
-                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 text-xs sm:text-sm"
+                className="px-4 sm:px-5 py-2.5 rounded-lg font-medium shadow-lg flex items-center justify-center transition-colors bg-gradient-to-r from-green-500 to-green-400 text-white hover:from-green-600 hover:to-green-500 text-xs sm:text-sm"
                 title="View your test results"
                 disabled={isRecording || isScreenRecording}
               >

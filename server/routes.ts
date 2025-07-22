@@ -2,6 +2,7 @@ import type { Express } from "express";
 import express, { Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { supabase } from "./db";
 // import shifuSaysPosesRoutes from "./routes/shifuSaysPoses"; // Temporarily disabled for migration
 import { 
   insertTrackingSettingsSchema, 
@@ -406,6 +407,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/interview/test", interview.testConnection);
   app.post("/api/interview/transcribe", interview.transcribeAudio);
   app.post("/api/interview/feedback", interview.generateFeedback);
+
+  // AI event parsing endpoint
+  app.post('/api/ai/parse-event', async (req, res) => {
+    try {
+      const { description } = req.body;
+      console.log('AI Parse Event - Received description:', description);
+
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ error: 'Description is required' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY || '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';
+      console.log('AI Parse Event - Using API key:', apiKey ? 'Present' : 'Missing');
+
+      // Use OpenAI to parse the event description
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an AI assistant that parses event descriptions for a pageant calendar. Extract the following information from the user's description and return it as a JSON object:
+
+{
+  "title": "Event title (string)",
+  "description": "Event description (string)",
+  "date": "Date in YYYY-MM-DD format (string, or empty if not specified)",
+  "time": "Time in HH:MM format (string, or empty if not specified)",
+  "type": "Event type - one of: pageant, interview, fitting, routine, photo, meeting, deadline, personal",
+  "location": "Location (string, or empty if not specified)",
+  "reminder": "Reminder in minutes - one of: 15, 60, 1440, 10080 (number, default to 60)"
+}
+
+Guidelines:
+- Extract dates even if they're relative (like "tomorrow", "next week")
+- For times, convert to 24-hour format
+- Choose the most appropriate event type based on the description
+- If the description mentions pageant-related activities, use "pageant" type
+- If it mentions interview practice, use "interview" type
+- If it mentions dress fitting, use "fitting" type
+- If it mentions routine practice or walk practice, use "routine" type
+- Default to "pageant" if unsure
+- Keep the title concise and clear
+- Include relevant details in the description
+
+Return only the JSON object, no additional text.`
+            },
+            {
+              role: 'user',
+              content: description
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API Error:', response.status, errorText);
+        throw new Error(`OpenAI API request failed: ${response.status}`);
+      }
+
+      const openaiResult = await response.json();
+      console.log('AI Parse Event - OpenAI response:', openaiResult);
+      const content = openaiResult.choices[0]?.message?.content;
+      console.log('AI Parse Event - Content:', content);
+
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      // Parse the JSON response
+      let parsedEvent;
+      try {
+        parsedEvent = JSON.parse(content);
+        console.log('AI Parse Event - Parsed event:', parsedEvent);
+      } catch (parseError) {
+        console.error('AI Parse Event - JSON parse error:', parseError);
+        console.log('AI Parse Event - Raw content that failed to parse:', content);
+        // If JSON parsing fails, return a basic structure
+        parsedEvent = {
+          title: description.substring(0, 50),
+          description: description,
+          date: '',
+          time: '',
+          type: 'pageant',
+          location: '',
+          reminder: 60
+        };
+      }
+
+      // Validate and sanitize the response
+      const eventData = {
+        title: parsedEvent.title || description.substring(0, 50),
+        description: parsedEvent.description || description,
+        date: parsedEvent.date || '',
+        time: parsedEvent.time || '',
+        type: ['pageant', 'interview', 'fitting', 'routine', 'photo', 'meeting', 'deadline', 'personal'].includes(parsedEvent.type) 
+          ? parsedEvent.type : 'pageant',
+        location: parsedEvent.location || '',
+        reminder: [15, 60, 1440, 10080].includes(parsedEvent.reminder) ? parsedEvent.reminder : 60
+      };
+
+      console.log('AI Parse Event - Final event data:', eventData);
+      res.json(eventData);
+
+    } catch (error) {
+      console.error('Error parsing event with AI:', error);
+      
+      // Fallback response
+      const fallbackEvent = {
+        title: req.body.description?.substring(0, 50) || 'New Event',
+        description: req.body.description || '',
+        date: '',
+        time: '',
+        type: 'pageant',
+        location: '',
+        reminder: 60
+      };
+
+      res.json(fallbackEvent);
+    }
+  });
+
+  // Helper function to get authenticated user from request
+  const getAuthenticatedUser = async (req: Request) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new Error("No authorization token");
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      throw new Error("Invalid token");
+    }
+
+    return user;
+  };
+
+  // Calendar Events routes - uses Supabase auth
+  app.get("/api/calendar/events", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const events = await storage.getCalendarEvents(user.id);
+      res.json(events);
+    } catch (error) {
+      console.error("Get calendar events error:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
+  app.get("/api/calendar/events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await getAuthenticatedUser(req);
+      const event = await storage.getCalendarEvent(parseInt(id), user.id);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Get calendar event error:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
+  app.post("/api/calendar/events", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      
+      // Validate the event data
+      const eventData = {
+        userId: user.id,
+        title: req.body.title,
+        description: req.body.description || "",
+        date: new Date(req.body.date),
+        time: req.body.time,
+        type: req.body.type || "pageant",
+        location: req.body.location || null,
+        reminder: req.body.reminder || 60,
+        completed: req.body.completed || false
+      };
+
+      const event = await storage.createCalendarEvent(eventData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error("Create calendar event error:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
+  app.put("/api/calendar/events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await getAuthenticatedUser(req);
+      
+      const updateData = {
+        title: req.body.title,
+        description: req.body.description,
+        date: req.body.date ? new Date(req.body.date) : undefined,
+        time: req.body.time,
+        type: req.body.type,
+        location: req.body.location,
+        reminder: req.body.reminder,
+        completed: req.body.completed
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+
+      const event = await storage.updateCalendarEvent(parseInt(id), user.id, updateData);
+      res.json(event);
+    } catch (error) {
+      console.error("Update calendar event error:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
+  app.delete("/api/calendar/events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await getAuthenticatedUser(req);
+      
+      const success = await storage.deleteCalendarEvent(parseInt(id), user.id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete calendar event error:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
 
      const server = createServer(app);
    return server;

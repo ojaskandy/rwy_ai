@@ -1,6 +1,6 @@
 import { 
   users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords, internshipApplications,
-  shifuData, shifuLogs, poseReferences,
+  shifuData, shifuLogs, poseReferences, calendarEvents,
   type User, type InsertUser, 
   type TrackingSettings, type InsertTrackingSettings,
   type UserProfile, type InsertUserProfile,
@@ -11,7 +11,8 @@ import {
   type InternshipApplication, type InsertInternshipApplication,
   type ShifuData, type InsertShifuData,
   type ShifuLog, type InsertShifuLog,
-  type PoseReference, type InsertPoseReference
+  type PoseReference, type InsertPoseReference,
+  type CalendarEvent, type InsertCalendarEvent
 } from "@shared/schema";
 import { supabase } from "./db";
 
@@ -75,6 +76,13 @@ export interface IStorage {
   createShifuLog(log: InsertShifuLog): Promise<ShifuLog>;
   updateShifuLog(userId: number, date: Date, updates: Partial<InsertShifuLog>): Promise<ShifuLog>;
   getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined>;
+  
+  // Calendar event methods
+  getCalendarEvents(userId: string): Promise<CalendarEvent[]>;
+  getCalendarEvent(id: number, userId: string): Promise<CalendarEvent | undefined>;
+  createCalendarEvent(data: InsertCalendarEvent): Promise<CalendarEvent>;
+  updateCalendarEvent(id: number, userId: string, updateData: Partial<InsertCalendarEvent>): Promise<CalendarEvent>;
+  deleteCalendarEvent(id: number, userId: string): Promise<boolean>;
   
   // Session store - simplified for no authentication
   sessionStore: any;
@@ -424,6 +432,106 @@ export class SupabaseStorage implements IStorage {
 
   async getTodaysShifuGoal(userId: number): Promise<ShifuLog | undefined> {
     return undefined; // No Shifu goals for guest users
+  }
+
+  // Calendar event methods
+  async getCalendarEvents(userId: string): Promise<CalendarEvent[]> {
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching calendar events:', error);
+      return [];
+    }
+    
+    return data || [];
+  }
+
+  async getCalendarEvent(id: number, userId: string): Promise<CalendarEvent | undefined> {
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) return undefined;
+    return data || undefined;
+  }
+
+  async createCalendarEvent(data: InsertCalendarEvent): Promise<CalendarEvent> {
+    // Map camelCase to database column names
+    const dbData = {
+      user_id: data.userId,
+      title: data.title,
+      description: data.description,
+      date: data.date,
+      time: data.time,
+      type: data.type,
+      location: data.location,
+      reminder: data.reminder,
+      completed: data.completed
+    };
+
+    const { data: result, error } = await supabase
+      .from('calendar_events')
+      .insert(dbData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating calendar event:', error);
+      throw new Error('Failed to create calendar event');
+    }
+    
+    return result;
+  }
+
+  async updateCalendarEvent(id: number, userId: string, updateData: Partial<InsertCalendarEvent>): Promise<CalendarEvent> {
+    // Map camelCase to database column names
+    const dbUpdateData: any = { updated_at: new Date() };
+    
+    if (updateData.title !== undefined) dbUpdateData.title = updateData.title;
+    if (updateData.description !== undefined) dbUpdateData.description = updateData.description;
+    if (updateData.date !== undefined) dbUpdateData.date = updateData.date;
+    if (updateData.time !== undefined) dbUpdateData.time = updateData.time;
+    if (updateData.type !== undefined) dbUpdateData.type = updateData.type;
+    if (updateData.location !== undefined) dbUpdateData.location = updateData.location;
+    if (updateData.reminder !== undefined) dbUpdateData.reminder = updateData.reminder;
+    if (updateData.completed !== undefined) dbUpdateData.completed = updateData.completed;
+
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .update(dbUpdateData)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating calendar event:', error);
+      throw new Error('Failed to update calendar event');
+    }
+    
+    return data;
+  }
+
+  async deleteCalendarEvent(id: number, userId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error deleting calendar event:', error);
+      return false;
+    }
+    
+    return true;
   }
 }
 

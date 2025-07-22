@@ -1,37 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Calendar, Star, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Star, User, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { useLocation } from 'wouter';
+import { useCalendarEvents } from '@/hooks/use-calendar';
 import UserMenu from '@/components/UserMenu';
 
-// Mock upcoming events data
-const upcomingEvents = [
-  {
-    id: 1,
-    title: "Evening Gown Fitting",
-    date: "Wednesday, Jul 23",
-    type: "Prep",
-    color: "bg-purple-500"
-  },
-  {
-    id: 2,
-    title: "Interview Practice Session", 
-    date: "Saturday, Jul 19",
-    type: "Practice",
-    color: "bg-blue-500"
-  },
-  {
-    id: 3,
-    title: "Runway Routine Rehearsal",
-    date: "Sunday, Jul 20", 
-    type: "Routine",
-    color: "bg-orange-500"
-  }
-];
+// Event type to color mapping
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  pageant: "bg-pink-500",
+  interview: "bg-blue-500", 
+  fitting: "bg-purple-500",
+  routine: "bg-orange-500",
+  photo: "bg-green-500",
+  meeting: "bg-gray-500",
+  deadline: "bg-red-500",
+  personal: "bg-indigo-500"
+};
 
 function MiniCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -104,7 +93,23 @@ function MiniCalendar() {
 
 export default function Home() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const { events, isLoading } = useCalendarEvents();
   const displayName = user?.email?.split('@')[0] || 'guest_user';
+
+  // Get upcoming events (next 3 events from today)
+  const today = new Date();
+  const upcomingEvents = events
+    .filter(event => event.date >= today)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 3)
+    .map(event => ({
+      id: event.id,
+      title: event.title,
+      date: event.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+      type: event.type.charAt(0).toUpperCase() + event.type.slice(1),
+      color: EVENT_TYPE_COLORS[event.type] || EVENT_TYPE_COLORS.personal
+    }));
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
@@ -147,32 +152,54 @@ export default function Home() {
         {/* Upcoming Events */}
         <div className="space-y-4">
           <h3 className="text-gray-800 font-bold text-xl">Coming Up</h3>
-          {upcomingEvents.map((event, index) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="bg-white/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl border-0 hover:scale-[1.02]">
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-4 h-4 rounded-full ${event.color} shadow-lg`} />
-                    <div>
-                      <p className="font-bold text-gray-800 text-lg">{event.title}</p>
-                      <p className="text-gray-600 font-medium">{event.date}</p>
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="bg-white/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl border-0 hover:scale-[1.02]">
+                  <CardContent className="flex items-center justify-between p-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-4 h-4 rounded-full ${event.color} shadow-lg`} />
+                      <div>
+                        <p className="font-bold text-gray-800 text-lg">{event.title}</p>
+                        <p className="text-gray-600 font-medium">{event.date}</p>
+                      </div>
                     </div>
-                  </div>
-                  <Badge 
-                    variant="secondary" 
-                    className={`${event.color} text-white border-0 px-4 py-2 rounded-full font-semibold shadow-md`}
+                    <Badge 
+                      variant="secondary" 
+                      className={`${event.color} text-white border-0 px-4 py-2 rounded-full font-semibold shadow-md`}
+                    >
+                      {event.type}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-8"
+            >
+              <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-3xl border-0">
+                <CardContent className="p-8">
+                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">No upcoming events scheduled</p>
+                  <Button 
+                    onClick={() => navigate('/calendar')}
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
                   >
-                    {event.type}
-                  </Badge>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Event
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
+          )}
         </div>
 
         {/* Mini Calendar */}

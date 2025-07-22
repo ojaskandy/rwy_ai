@@ -217,24 +217,24 @@ export default function Routine() {
   }, [stream]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Header */}
-      <div className="w-full bg-gradient-to-r from-[#6b1b1b] to-black h-16 px-4 shadow-md flex items-center justify-between">
+      <div className="w-full bg-white/90 backdrop-blur-sm border-0 shadow-lg h-16 px-4 flex items-center justify-between">
         <Link href="/">
-          <Button variant="ghost" className="text-white hover:text-red-400 hover:bg-white/10">
+          <Button variant="ghost" className="text-gray-800 hover:text-pink-600 hover:bg-pink-50">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Home
           </Button>
         </Link>
         
-        <h1 className="text-xl font-bold text-red-400">Live Routine</h1>
+        <h1 className="text-xl font-bold text-gray-800">Live Routine</h1>
         
         <div className="flex items-center space-x-2">
           <Button
             onClick={handlePermissionRequest}
             variant="outline"
             size="sm"
-            className="border-red-600 text-red-400 hover:bg-red-700/20"
+            className="border-pink-300 text-pink-600 hover:bg-pink-50"
           >
             <RefreshCw className="w-4 h-4 mr-1" />
             Reload
@@ -297,16 +297,16 @@ export default function Routine() {
 
             {/* Mobile-optimized Camera Settings Panel */}
             {sourceType === 'camera' && hasPermission && !isLoading && (
-              <div className="mt-4 bg-black/90 border border-red-900/40 rounded-lg p-4 shadow-lg">
-                <h3 className="text-red-400 text-sm font-semibold mb-3">Camera Options</h3>
+              <div className="mt-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl p-4">
+                <h3 className="text-gray-800 text-sm font-semibold mb-3">Camera Options</h3>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-300">Skeleton Color</label>
+                    <label className="text-xs text-gray-700">Skeleton Color</label>
                     <select
                       value={skeletonColorChoice}
                       onChange={(e) => setSkeletonColorChoice(e.target.value as any)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white"
+                      className="w-full bg-white border border-pink-200 rounded px-2 py-1 text-sm text-gray-800"
                     >
                       <option value="red">Red</option>
                       <option value="blue">Blue</option>
@@ -317,10 +317,10 @@ export default function Routine() {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-300">Camera</label>
+                    <label className="text-xs text-gray-700">Camera</label>
                     <button
                       onClick={() => setCameraFacing(cameraFacing === 'user' ? 'environment' : 'user')}
-                      className="w-full bg-red-700 hover:bg-red-600 text-white px-2 py-1 rounded text-sm"
+                      className="w-full bg-pink-500 hover:bg-pink-600 text-white px-2 py-1 rounded text-sm"
                     >
                       {cameraFacing === 'user' ? 'Front' : 'Back'}
                     </button>
@@ -328,7 +328,7 @@ export default function Routine() {
                 </div>
                 
                 <div className="mt-3 flex items-center space-x-4">
-                  <label className="flex items-center text-sm text-gray-300">
+                  <label className="flex items-center text-sm text-gray-700">
                     <input
                       type="checkbox"
                       checked={showSkeleton}
@@ -338,7 +338,7 @@ export default function Routine() {
                     Show Skeleton
                   </label>
                   
-                  <label className="flex items-center text-sm text-gray-300">
+                  <label className="flex items-center text-sm text-gray-700">
                     <input
                       type="checkbox"
                       checked={showPoints}

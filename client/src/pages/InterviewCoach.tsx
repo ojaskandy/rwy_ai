@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ChevronLeft, Mic, MicOff, Play, RotateCcw, 
+  Mic, MicOff, Play, RotateCcw, 
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
 } from 'lucide-react';
 import { useLocation } from 'wouter';
@@ -98,305 +98,205 @@ const INTERVIEW_QUESTIONS = [
   "If you could develop an app, what would it do?",
 
   // Personal Challenges, Ethics & Deeper Questions
-  "How do you handle criticism and negative feedback?",
-  "How do you stay confident and positive in the face of adversity?",
-  "How do you handle stress and pressure in high-stakes situations?",
-  "What is your biggest weakness and how are you working to overcome it?",
-  "Have you ever bullied anyone?",
-  "Share a personal accomplishment that you are most proud of and why.",
-  "Describe a situation where you had to confront a stereotype about your culture. How did you handle it?",
-  "Who is someone you have no respect for?",
-  "How do you relate to people who differ from you?",
-  "What's the hardest piece of criticism you have ever received?",
-  "Tell me about your platform and why it's important to you.",
-  "Would you be proud of your biography?",
-  "What is something you've learned about yourself during the Covid 19 pandemic?",
-  "Do you feel social media has helped or hurt society?",
-  "What is the best invention of the century?",
-  "What do you plan to do with your life in the next 5 years?",
-  "How do you define beauty and why do you believe it is important in today's society?",
-  "Would you rather be President or First Lady?",
-  "What topic would you want to address if you spoke at your school or city council?",
-  "What advice would you give to someone entering their first pageant?",
-  "Who is your favorite villain and why?",
-  "What makes you proud of your generation?"
+  "Tell me about a time you made a mistake and how you handled it.",
+  "Describe a time when you had to make a difficult decision.",
+  "Tell me about a time when you failed at something.",
+  "What is the biggest challenge you've faced and how did you overcome it?",
+  "Tell me about a time when you stood up for something you believed in.",
+  "Describe a situation where you had to work with someone you didn't like.",
+  "What would you do if you won but later found out there was an error?",
+  "How do you handle criticism?",
+  "If you saw another contestant breaking a rule, what would you do?",
+  "What would you do if you disagreed with a judge's decision?",
+  "Describe a time when you had to overcome a fear.",
+  "What is something you've had to sacrifice for pageantry?",
+  "How do you stay true to yourself while competing?",
+  "What would you do if you were having a bad day during your reign?",
+  "How do you balance confidence with humility?",
 ];
+
+// Speech analysis interfaces
+interface FeedbackAnswer {
+  questionNumber: number;
+  question: string;
+  transcript: string;
+  grades: {
+    clarity: number;
+    confidence: number;
+    content: number;
+    pace: number;
+    engagement: number;
+  };
+  coachingTip: string;
+}
+
+interface InterviewFeedback {
+  summary: string;
+  overallScore: number;
+  answers: FeedbackAnswer[];
+  overallTips: string[];
+}
 
 interface InterviewSession {
   questionNumber: number;
   question: string;
   transcript: string;
   duration: number;
-  timestamp: string;
-}
-
-interface AnswerFeedback {
-  questionNumber: number;
-  question: string;
-  transcript: string;
-  grades: {
-    confidence: number;
-    clarity: number;
-    engagement: number;
-    conciseness: number;
-    poise: number;
-  };
-  coachingTip: string;
-}
-
-interface SessionFeedback {
-  answers: AnswerFeedback[];
-  overallTips: string[];
-  summary: string;
 }
 
 export default function InterviewCoach() {
   const [, navigate] = useLocation();
-  const [currentStep, setCurrentStep] = useState<'setup' | 'interview' | 'feedback'>('setup');
+  
+  // Practice setup state
   const [mode, setMode] = useState<'question' | 'round'>('question');
-  const [numQuestions, setNumQuestions] = useState(1);
+  const [numQuestions, setNumQuestions] = useState(3);
+  const [timeLimit, setTimeLimit] = useState(90);
+  const [currentStep, setCurrentStep] = useState<'setup' | 'question' | 'feedback'>('setup');
+  
+  // Question state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [timer, setTimer] = useState(60);
-  const [timeRemaining, setTimeRemaining] = useState(60);
+  const [currentQuestion, setCurrentQuestion] = useState('');
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<InterviewSession | null>(null);
-  const [feedback, setFeedback] = useState<SessionFeedback | null>(null);
+  
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(timeLimit);
+  const [hasStarted, setHasStarted] = useState(false);
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
-  const [hasRecordedSpeech, setHasRecordedSpeech] = useState(false);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Speech Recognition Hook
+  // Speech recognition setup
   const {
     transcript,
     listening,
     resetTranscript,
-    browserSupportsSpeechRecognition,
-    isMicrophoneAvailable
+    browserSupportsSpeechRecognition
   } = useSpeechRecognition();
 
-  // Developer logging for speech recognition states
+  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
+
+  // Timer ref
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check speech recognition support
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Interview - Dev] Speech recognition state:', {
-        listening,
-        transcript: transcript.slice(0, 50) + (transcript.length > 50 ? '...' : ''),
-        transcriptLength: transcript.length,
-        browserSupported: browserSupportsSpeechRecognition,
-        micAvailable: isMicrophoneAvailable,
-        hasRecordedSpeech
-      });
-    }
-  }, [listening, transcript, browserSupportsSpeechRecognition, isMicrophoneAvailable, hasRecordedSpeech]);
+    setSpeechSupported(browserSupportsSpeechRecognition);
+  }, [browserSupportsSpeechRecognition]);
 
-  // Get current question - randomly select from the pool
-  const getCurrentQuestion = () => INTERVIEW_QUESTIONS[currentQuestionIndex];
-
-  // Check speech recognition support on component mount
+  // Timer management
   useEffect(() => {
-    console.log('[Interview] Checking browser support for speech recognition...');
-    
-    if (!browserSupportsSpeechRecognition) {
-      console.warn('[Interview] Speech recognition not supported in this browser');
-      setSpeechSupported(false);
-      setError('Speech recognition not supported in this browser. Please use Chrome for full functionality.');
-      return;
-    }
-
-    if (!isMicrophoneAvailable) {
-      console.warn('[Interview] Microphone not available');
-      setSpeechSupported(false);
-      setError('Microphone access is required. Please enable microphone permissions and refresh the page.');
-      return;
-    }
-
-    setSpeechSupported(true);
-    console.log('[Interview] Speech recognition supported and microphone available');
-  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable]);
-
-  // Track if user has spoken during recording
-  useEffect(() => {
-    if (listening && transcript.trim().length > 0) {
-      setHasRecordedSpeech(true);
-    }
-  }, [listening, transcript]);
-
-  // Timer countdown effect
-  useEffect(() => {
-    if (isRecording && timeRemaining > 0) {
+    if (isRecording && hasStarted && timeLeft > 0) {
       timerRef.current = setTimeout(() => {
-        setTimeRemaining(prev => prev - 1);
+        setTimeLeft(prev => prev - 1);
       }, 1000);
-    } else if (timeRemaining === 0 && isRecording) {
-      stopRecording();
+    } else if (timeLeft === 0 && isRecording) {
+      // Auto-stop when time runs out
+      handleStopRecording();
     }
 
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
-        timerRef.current = null;
       }
     };
-  }, [isRecording, timeRemaining]);
+  }, [isRecording, hasStarted, timeLeft]);
 
-  // Start recording
-  const startRecording = useCallback(async () => {
-    try {
-      setError(null);
-      setHasRecordedSpeech(false);
-      console.log('[Interview] Starting speech recognition...');
-      
-      if (!speechSupported) {
-        setError('Speech recognition not available. Please check browser compatibility.');
-        return;
-      }
-
-      // Reset transcript and start listening
-      resetTranscript();
-      
-      // Configure speech recognition options
-      SpeechRecognition.startListening({
-        continuous: true,
-        language: 'en-US',
-        interimResults: true
-      });
-      
-      setIsRecording(true);
-      setTimeRemaining(timer);
-      
-      console.log('[Interview] Speech recognition started');
-      
-    } catch (err: any) {
-      console.error('[Interview] Speech recognition start failed:', err);
-      setError('Failed to start speech recognition. Please check microphone permissions and try again.');
-    }
-  }, [speechSupported, resetTranscript, timer]);
-
-  // Stop recording and submit answer with a short delay to finalize transcript
-  const stopRecording = useCallback(() => {
-    console.log('[Interview] Stopping speech recognition...');
+  // Start practice session
+  const startPractice = () => {
+    const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
+    const selectedQuestions = shuffled.slice(0, numQuestions);
     
-    if (listening) {
-      SpeechRecognition.stopListening();
-    }
-    
-    setIsRecording(false);
-
-    // Clear the timer immediately when stopping
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    setIsProcessing(true);
-
-    // Wait a moment for the transcript to finalize
-    setTimeout(() => {
-      const currentTranscript = transcript.trim();
-      
-      if (currentTranscript.length === 0) {
-        setError('No speech detected. Please try again and speak clearly into your microphone.');
-        setIsProcessing(false);
-        console.warn('[Interview] No transcript captured');
-        return;
-      }
-      
-      // Save the session
-      const session: InterviewSession = {
-        questionNumber: currentQuestionIndex + 1,
-        question: getCurrentQuestion(),
-        transcript: currentTranscript,
-        duration: timer - timeRemaining,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('[Interview] Session saved:', {
-        questionNumber: session.questionNumber,
-        transcriptLength: session.transcript.length,
-        duration: session.duration
-      });
-      
-      setSessions(prev => [...prev, session]);
-      setCurrentSession(session);
-      
-      // In question mode, get immediate feedback
-      if (mode === 'question') {
-        generateFeedback([session]);
-      }
-      
-      setIsProcessing(false);
-    }, 500);
-  }, [listening, transcript, currentQuestionIndex, timer, timeRemaining, mode, getCurrentQuestion]);
-
-  // Start interview session
-  const startInterview = () => {
-    setCurrentStep('interview');
-    // Start with the first question (index 0)
-    const randomIndex = Math.floor(Math.random() * INTERVIEW_QUESTIONS.length);
-    setCurrentQuestionIndex(randomIndex);
+    setCurrentQuestionIndex(0);
+    setCurrentQuestion(selectedQuestions[0]);
+    setCurrentStep('question');
     setSessions([]);
-    setCurrentSession(null);
     setFeedback(null);
     setError(null);
-    setHasRecordedSpeech(false);
+    setTimeLeft(timeLimit);
+    setHasStarted(false);
+    resetTranscript();
   };
+
+  // Start recording
+  const handleStartRecording = () => {
+    if (!speechSupported) {
+      setError('Speech recognition is not supported in your browser. Please use Chrome for the best experience.');
+      return;
+    }
+
+    setIsRecording(true);
+    setHasStarted(true);
+    setError(null);
+    resetTranscript();
+    SpeechRecognition.startListening({ 
+      continuous: true,
+      language: 'en-US'
+    });
+  };
+
+  // Stop recording
+  const handleStopRecording = useCallback(() => {
+    setIsRecording(false);
+    SpeechRecognition.stopListening();
+    
+    // Save the session
+    const session: InterviewSession = {
+      questionNumber: currentQuestionIndex + 1,
+      question: currentQuestion,
+      transcript: transcript.trim(),
+      duration: timeLimit - timeLeft
+    };
+    
+    setSessions(prev => [...prev, session]);
+    
+    // Auto-process if we have a transcript
+    if (session.transcript) {
+      processFeedback([...sessions, session]);
+    } else {
+      setError('No speech detected. Please try speaking more clearly.');
+    }
+  }, [currentQuestion, currentQuestionIndex, transcript, timeLimit, timeLeft, sessions]);
 
   // Next question
   const nextQuestion = () => {
-    if (sessions.length < numQuestions - 1) {
-      // Randomly select next question
-      const randomIndex = Math.floor(Math.random() * INTERVIEW_QUESTIONS.length);
-      setCurrentQuestionIndex(randomIndex);
-      setCurrentSession(null);
-      setTimeRemaining(timer);
-      setFeedback(null);
-      setHasRecordedSpeech(false);
+    if (currentQuestionIndex < numQuestions - 1) {
+      const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
+      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestion(shuffled[currentQuestionIndex + 1] || shuffled[0]);
+      setTimeLeft(timeLimit);
+      setHasStarted(false);
       resetTranscript();
     } else {
-      // Round complete
-      if (mode === 'round') {
-        generateFeedback(sessions);
-      } else {
-        setCurrentStep('feedback');
-      }
+      // All questions completed, show final feedback
+      setCurrentStep('feedback');
     }
   };
-
-  // Manual submit function
-  const submitAnswer = useCallback(() => {
-    if (isRecording) {
-      stopRecording();
-    }
-  }, [isRecording, stopRecording]);
 
   // Retry current question
   const retryQuestion = () => {
-    setCurrentSession(null);
-    setTimeRemaining(timer);
-    setError(null);
-    setHasRecordedSpeech(false);
+    setTimeLeft(timeLimit);
+    setHasStarted(false);
     resetTranscript();
-    if (mode === 'question') {
-      setFeedback(null);
-    }
+    setError(null);
   };
 
-  // Generate feedback for all answers
-  const generateFeedback = async (sessionsToAnalyze: InterviewSession[]) => {
+  // Process speech and generate feedback
+  const processFeedback = async (allSessions: InterviewSession[]) => {
     setIsProcessing(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/interview/feedback', {
+      const response = await fetch('/api/interview/analyze', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          sessions: sessionsToAnalyze
+          sessions: allSessions,
+          mode: mode
         })
       });
 
@@ -430,45 +330,52 @@ export default function InterviewCoach() {
   const currentQuestionNumber = sessions.length + 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen p-3" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/')}
-            className="text-purple-600 hover:text-purple-800"
+        <div className="text-center mb-6">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-2xl font-bold text-gray-800 mb-2"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back to Dashboard
-          </Button>
-          
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-purple-800">Interview Coach</h1>
-            <p className="text-purple-600">Practice your pageant interview skills</p>
-          </div>
+            Interview Coach
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-gray-600 text-sm"
+          >
+            Practice your pageant interview skills
+          </motion.p>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <div>
-                <p className="text-red-800 font-medium">Oops! Something went wrong</p>
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setError(null)}
-                className="ml-auto text-red-500 hover:text-red-700"
-              >
-                ✕
-              </Button>
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4"
+          >
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertCircle className="w-4 h-4" />
+                  <p className="text-xs flex-1">{error}</p>
+                  <Button
+                    onClick={() => setError(null)}
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-700 hover:bg-red-100 p-1"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         <AnimatePresence mode="wait">
@@ -480,325 +387,250 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="border-2 border-purple-100 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-purple-800">
-                    <MessageSquare className="w-5 h-5" />
+              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-gray-800">
+                    <MessageSquare className="w-5 h-5 text-pink-600" />
                     Setup Interview Practice
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
                   {/* Browser Support Warning */}
                   {speechSupported === false && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle className="w-5 h-5 text-orange-500" />
-                        <p className="font-medium text-orange-800">Browser Compatibility Notice</p>
+                        <AlertCircle className="w-4 h-4 text-orange-500" />
+                        <p className="font-medium text-orange-800 text-sm">Browser Compatibility Notice</p>
                       </div>
-                      <p className="text-orange-700 text-sm">
+                      <p className="text-orange-700 text-xs">
                         Speech recognition works best in Chrome browser. Other browsers may have limited support.
                       </p>
                     </div>
                   )}
 
-                  {/* Mode Selection */}
+                  {/* Practice Mode */}
                   <div>
-                    <label className="block text-sm font-medium text-purple-700 mb-3">
-                      Practice Mode
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                          mode === 'question'
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-purple-300'
-                        }`}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Practice Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={mode === 'question' ? 'default' : 'outline'}
                         onClick={() => setMode('question')}
+                        className={mode === 'question' 
+                          ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                          : 'border-pink-200 text-pink-600 hover:bg-pink-50'
+                        }
+                        size="sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-full border-2 ${
-                            mode === 'question'
-                              ? 'border-purple-500 bg-purple-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {mode === 'question' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">Question Mode</p>
-                            <p className="text-sm text-gray-600">Get feedback after each question</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                          mode === 'round'
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-purple-300'
-                        }`}
+                        Single Questions
+                      </Button>
+                      <Button
+                        variant={mode === 'round' ? 'default' : 'outline'}
                         onClick={() => setMode('round')}
+                        className={mode === 'round' 
+                          ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                          : 'border-pink-200 text-pink-600 hover:bg-pink-50'
+                        }
+                        size="sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-full border-2 ${
-                            mode === 'round'
-                              ? 'border-purple-500 bg-purple-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {mode === 'round' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">Round Mode</p>
-                            <p className="text-sm text-gray-600">Complete all questions, then get feedback</p>
-                          </div>
-                        </div>
-                      </div>
+                        Full Round
+                      </Button>
                     </div>
                   </div>
 
                   {/* Number of Questions */}
                   <div>
-                    <label className="block text-sm font-medium text-purple-700 mb-2">
-                      Number of Questions
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Questions: {numQuestions}
                     </label>
-                    <select
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
                       value={numQuestions}
-                      onChange={(e) => setNumQuestions(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value={1}>1 Question</option>
-                      <option value={2}>2 Questions</option>
-                      <option value={3}>3 Questions</option>
-                      <option value={4}>4 Questions</option>
-                      <option value={5}>5 Questions</option>
-                    </select>
+                      onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                      className="w-full h-2 bg-pink-200 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #ec4899 0%, #ec4899 ${numQuestions * 10}%, #fce7f3 ${numQuestions * 10}%, #fce7f3 100%)`
+                      }}
+                    />
                   </div>
 
-                  {/* Timer Selection */}
+                  {/* Time Limit */}
                   <div>
-                    <label className="block text-sm font-medium text-purple-700 mb-2">
-                      Response Time Limit
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time Limit: {formatTime(timeLimit)}
                     </label>
-                    <select
-                      value={timer}
-                      onChange={(e) => setTimer(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value={30}>30 seconds</option>
-                      <option value={45}>45 seconds</option>
-                      <option value={60}>60 seconds</option>
-                      <option value={90}>90 seconds</option>
-                      <option value={120}>2 minutes</option>
-                    </select>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[60, 90, 120].map((time) => (
+                        <Button
+                          key={time}
+                          variant={timeLimit === time ? 'default' : 'outline'}
+                          onClick={() => setTimeLimit(time)}
+                          className={timeLimit === time 
+                            ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                            : 'border-pink-200 text-pink-600 hover:bg-pink-50'
+                          }
+                          size="sm"
+                        >
+                          {formatTime(time)}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Start Button */}
                   <Button
-                    onClick={startInterview}
-                    disabled={speechSupported === false}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={startPractice}
+                    className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-3"
                   >
-                    <Play className="w-5 h-5 mr-2" />
-                    Start {mode === 'question' ? 'Question' : 'Round'} Practice ({numQuestions} question{numQuestions > 1 ? 's' : ''})
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Practice Session
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
           )}
 
-          {/* Interview Step */}
-          {currentStep === 'interview' && (
+          {/* Question Step */}
+          {currentStep === 'question' && (
             <motion.div
-              key="interview"
+              key="question"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="space-y-6">
-                {/* Progress Bar */}
-                <div className="bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progressPercentage}%` }}
-                  />
-                </div>
-                <p className="text-center text-sm text-purple-600">
-                  Question {currentQuestionNumber} of {numQuestions}
-                </p>
-
-                {/* Current Question */}
-                <Card className="border-2 border-blue-100 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-800">
-                      <MessageSquare className="w-5 h-5" />
-                      Interview Question
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-lg text-gray-800 leading-relaxed">
-                      {getCurrentQuestion()}
-                    </p>
+              <div className="space-y-4">
+                {/* Progress */}
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Question {currentQuestionNumber} of {numQuestions}</span>
+                      <span className="text-sm text-gray-500">{Math.round(progressPercentage)}% Complete</span>
+                    </div>
+                    <div className="w-full bg-pink-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progressPercentage}%` }}
+                      ></div>
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Recording Interface */}
-                {!currentSession && (
-                  <Card className="border-2 border-purple-100 shadow-2xl bg-gradient-to-br from-white to-purple-50">
-                    <CardContent className="p-12">
-                      <div className="text-center space-y-8">
-                        {/* Timer */}
-                        <div className="flex items-center justify-center gap-3 mb-8">
-                          <Clock className="w-8 h-8 text-purple-600" />
-                          <span className={`text-4xl font-mono font-bold ${
-                            timeRemaining <= 10 ? 'text-red-500' : 'text-purple-800'
-                          }`}>
-                            {formatTime(timeRemaining)}
-                          </span>
-                        </div>
+                {/* Current Question */}
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <MessageSquare className="w-5 h-5 text-pink-600" />
+                      Interview Question
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-pink-50 p-4 rounded-lg border border-pink-100">
+                      <p className="text-gray-800 font-medium text-lg leading-relaxed">
+                        {currentQuestion}
+                      </p>
+                    </div>
 
-                        {/* Recording Button and Submit Button */}
-                        <div className="flex justify-center relative mb-8">
-                          <div className="relative">
-                            <Button
-                              onClick={isRecording ? stopRecording : startRecording}
-                              disabled={isProcessing || speechSupported === false}
-                              className={`w-40 h-40 rounded-full text-white shadow-2xl transition-all duration-300 transform hover:scale-105 ${
-                                isRecording 
-                                  ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' 
-                                  : speechSupported === false
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                              }`}
-                            >
-                              {isRecording ? (
-                                <div className="flex flex-col items-center">
-                                  <MicOff className="w-12 h-12 mb-2" />
-                                  <span className="text-lg font-semibold">STOP</span>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center">
-                                  <Mic className="w-12 h-12 mb-2" />
-                                  <span className="text-lg font-semibold">START</span>
-                                </div>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Submit Button - shown when recording and has speech */}
-                        {isRecording && hasRecordedSpeech && (
-                          <div className="flex justify-center mb-6">
-                            <Button
-                              onClick={submitAnswer}
-                              disabled={isProcessing}
-                              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold shadow-lg"
-                            >
-                              ✓ Submit Answer
-                            </Button>
+                    {/* Timer and Recording Controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-pink-600" />
+                        <span className={`font-mono text-lg font-bold ${
+                          timeLeft <= 30 ? 'text-red-500' : 'text-pink-600'
+                        }`}>
+                          {formatTime(timeLeft)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {isRecording && (
+                          <div className="flex items-center gap-2 text-red-500">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium">Recording</span>
                           </div>
                         )}
+                      </div>
+                    </div>
 
-                        {/* Status */}
-                        <div className="text-center space-y-4">
-                          <p className="text-xl font-semibold text-purple-700">
-                            {isRecording ? '🎤 Recording... Speak clearly' : 'Click START to begin recording'}
-                          </p>
-                          
-                          {isRecording && (
-                            <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-xl p-6">
-                              <p className="text-sm font-medium text-blue-800">
-                                🔴 Your speech is being transcribed live
-                              </p>
-                              
-                              {/* Listening indicator */}
-                              <div className="flex items-center justify-center gap-3">
-                                <span className="text-sm text-gray-600">Status:</span>
-                                <span className={`text-sm px-3 py-1 rounded-full font-medium ${
-                                  listening ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {listening ? '● Listening...' : '○ Not listening'}
-                                </span>
-                              </div>
-                              
-                              {!hasRecordedSpeech && isRecording && (
-                                <p className="text-sm text-orange-600 font-medium">
-                                  ⚠️ No speech detected yet - please speak into your microphone
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Speech Support Warning */}
-                          {speechSupported === false && (
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                              <p className="text-sm text-red-700 font-medium">
-                                🚫 Speech recognition not supported. Please use Chrome for full functionality.
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                    {/* Recording Button */}
+                    <div className="text-center">
+                      {!isRecording ? (
+                        <Button
+                          onClick={handleStartRecording}
+                          disabled={isProcessing}
+                          className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-8 py-4 rounded-xl"
+                        >
+                          <Mic className="w-5 h-5 mr-2" />
+                          Start Recording
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleStopRecording}
+                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-8 py-4 rounded-xl"
+                        >
+                          <MicOff className="w-5 h-5 mr-2" />
+                          Stop Recording
+                        </Button>
+                      )}
+                    </div>
 
-                        {/* Real-time Transcript Display */}
-                        {isRecording && transcript && (
-                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 mx-4">
-                            <p className="text-lg font-semibold text-blue-800 mb-3">💬 Live Transcript:</p>
-                            <div className="bg-white rounded-lg p-4 min-h-[4rem] border border-blue-100">
-                              <p className="text-gray-800 text-left leading-relaxed">
-                                {transcript || '...'}
-                              </p>
-                            </div>
-                            <div className="flex justify-between items-center mt-3 text-sm text-blue-600">
-                              <span>Words: {transcript.split(' ').filter((word: string) => word.length > 0).length}</span>
-                              <span>Characters: {transcript.length}</span>
-                            </div>
-                          </div>
-                        )}
+                    {/* Live Transcript Preview */}
+                    {transcript && (
+                      <div className="bg-gray-50 p-3 rounded-lg border">
+                        <p className="text-sm text-gray-600 mb-1">Live transcript:</p>
+                        <p className="text-gray-800 text-sm">{transcript}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                        {isProcessing && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                            <div className="flex items-center justify-center gap-3 text-yellow-700">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
-                              <span className="font-medium">Processing your response...</span>
-                            </div>
-                          </div>
-                        )}
+                {/* Processing Feedback */}
+                {isProcessing && (
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          className="mb-3"
+                        >
+                          <Sparkles className="w-8 h-8 mx-auto text-pink-500" />
+                        </motion.div>
+                        <p className="text-gray-600 font-medium">Analyzing your response...</p>
+                        <p className="text-gray-500 text-sm">This may take a few seconds</p>
                       </div>
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Final Transcript Display */}
-                {currentSession && (
-                  <Card className="border-2 border-green-100 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-green-800">
-                        <CheckCircle className="w-5 h-5" />
-                        Your Response
+                {/* Question Feedback */}
+                {feedback && feedback.answers.length > 0 && !isProcessing && (
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-gray-800">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        Question Feedback
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-gray-800 leading-relaxed">
-                          {currentSession.transcript}
-                        </p>
-                        <p className="text-sm text-green-600 mt-2">
-                          Duration: {currentSession.duration}s | Words: {currentSession.transcript.split(' ').length}
-                        </p>
-                      </div>
-                      
-                      {/* Show immediate feedback in question mode */}
-                      {mode === 'question' && feedback && feedback.answers.length > 0 && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="font-medium text-yellow-800 mb-2">Quick Feedback:</p>
-                          <div className="space-y-2">
-                            <div className="flex gap-2 text-sm">
-                              {Object.entries(feedback.answers[0].grades).map(([key, value]) => (
-                                <span key={key} className="bg-yellow-100 px-2 py-1 rounded">
-                                  {key}: {value}/10
-                                </span>
-                              ))}
+                      {/* Grades */}
+                      <div>
+                        <p className="font-medium text-gray-800 mb-3">Your Scores:</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          {Object.entries(feedback.answers[0].grades).map(([key, value]) => (
+                            <div key={key} className="text-center bg-pink-50 p-2 rounded-lg">
+                              <div className="text-lg font-bold text-pink-600">{value}/10</div>
+                              <div className="text-xs text-gray-600 capitalize">{key}</div>
                             </div>
-                            <p className="text-yellow-700">{feedback.answers[0].coachingTip}</p>
-                          </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Coaching Tip */}
+                      {feedback.answers[0].coachingTip && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <p className="font-medium text-yellow-800 mb-1 text-sm">Coaching Tip:</p>
+                          <p className="text-yellow-700 text-sm">{feedback.answers[0].coachingTip}</p>
                         </div>
                       )}
                       
@@ -806,14 +638,16 @@ export default function InterviewCoach() {
                         <Button
                           onClick={retryQuestion}
                           variant="outline"
-                          className="flex-1 border-purple-200 text-purple-600"
+                          className="flex-1 border-pink-200 text-pink-600 hover:bg-pink-50"
+                          size="sm"
                         >
-                          <RotateCcw className="w-4 h-4 mr-2" />
+                          <RotateCcw className="w-4 h-4 mr-1" />
                           Retry
                         </Button>
                         <Button
                           onClick={nextQuestion}
-                          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                          className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
+                          size="sm"
                         >
                           {sessions.length < numQuestions ? 'Next Question' : 'Get Final Feedback'}
                         </Button>
@@ -833,17 +667,17 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Summary */}
-                <Card className="border-2 border-green-100 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-800">
-                      <Sparkles className="w-5 h-5" />
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Sparkles className="w-5 h-5 text-green-600" />
                       Interview Summary
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-800 leading-relaxed">
+                    <p className="text-gray-800 leading-relaxed text-sm">
                       {feedback.summary}
                     </p>
                   </CardContent>
@@ -851,31 +685,31 @@ export default function InterviewCoach() {
 
                 {/* Individual Answer Feedback */}
                 {feedback.answers.map((answer, index) => (
-                  <Card key={index} className="border-2 border-purple-100 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-purple-800">
-                        <MessageSquare className="w-5 h-5" />
+                  <Card key={index} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
+                        <MessageSquare className="w-4 h-4 text-pink-600" />
                         Question {answer.questionNumber}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3">
                       <div>
-                        <p className="font-medium text-gray-800 mb-2">Question:</p>
-                        <p className="text-gray-700">{answer.question}</p>
+                        <p className="font-medium text-gray-800 mb-1 text-sm">Question:</p>
+                        <p className="text-gray-700 text-sm">{answer.question}</p>
                       </div>
                       
                       <div>
-                        <p className="font-medium text-gray-800 mb-2">Your Response:</p>
-                        <p className="text-gray-700 bg-gray-50 p-3 rounded">{answer.transcript}</p>
+                        <p className="font-medium text-gray-800 mb-1 text-sm">Your Response:</p>
+                        <p className="text-gray-700 bg-gray-50 p-2 rounded text-xs">{answer.transcript}</p>
                       </div>
 
                       {/* Grades */}
                       <div>
-                        <p className="font-medium text-gray-800 mb-3">Grades:</p>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <p className="font-medium text-gray-800 mb-2 text-sm">Scores:</p>
+                        <div className="grid grid-cols-3 gap-2">
                           {Object.entries(answer.grades).map(([key, value]) => (
-                            <div key={key} className="text-center">
-                              <div className="text-lg font-bold text-purple-600">{value}/10</div>
+                            <div key={key} className="text-center bg-pink-50 p-2 rounded">
+                              <div className="text-sm font-bold text-pink-600">{value}/10</div>
                               <div className="text-xs text-gray-600 capitalize">{key}</div>
                             </div>
                           ))}
@@ -883,9 +717,9 @@ export default function InterviewCoach() {
                       </div>
 
                       {/* Coaching Tip */}
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p className="font-medium text-yellow-800 mb-1">Coaching Tip:</p>
-                        <p className="text-yellow-700">{answer.coachingTip}</p>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="font-medium text-yellow-800 mb-1 text-xs">Coaching Tip:</p>
+                        <p className="text-yellow-700 text-xs">{answer.coachingTip}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -893,21 +727,21 @@ export default function InterviewCoach() {
 
                 {/* Overall Tips */}
                 {feedback.overallTips && feedback.overallTips.length > 0 && (
-                  <Card className="border-2 border-blue-100 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-blue-800">
-                        <Sparkles className="w-5 h-5" />
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
                         Overall Improvement Tips
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {feedback.overallTips.map((tip, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold mt-0.5">
+                          <div key={index} className="flex items-start gap-2">
+                            <div className="w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">
                               {index + 1}
                             </div>
-                            <p className="text-gray-800">{tip}</p>
+                            <p className="text-gray-800 text-sm">{tip}</p>
                           </div>
                         ))}
                       </div>
@@ -916,20 +750,15 @@ export default function InterviewCoach() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <Button
                     onClick={() => setCurrentStep('setup')}
                     variant="outline"
-                    className="flex-1 border-purple-200 text-purple-600"
+                    className="flex-1 border-pink-200 text-pink-600 hover:bg-pink-50"
+                    size="sm"
                   >
-                    <RotateCcw className="w-4 h-4 mr-2" />
+                    <RotateCcw className="w-4 h-4 mr-1" />
                     Practice Again
-                  </Button>
-                  <Button
-                    onClick={() => navigate('/')}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    Back to Dashboard
                   </Button>
                 </div>
               </div>
