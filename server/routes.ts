@@ -23,6 +23,7 @@ import { Resend } from 'resend';
 import multer from "multer";
 import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
+import * as fashnAI from './routes/fashnAI';
 
 // Default guest user context for Runway AI (no authentication needed)
 const DEFAULT_GUEST_USER = {
@@ -390,6 +391,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to send email" });
     }
   });
+
+  // Fashn AI routes
+  app.get("/api/fashn/status", fashnAI.getStatus);
+  app.get("/api/fashn/test", fashnAI.testFashnAI);
+  app.get("/api/fashn/credits", fashnAI.checkCredits);
+  app.get("/api/fashn/status/:id", fashnAI.checkStatus);
+  app.post("/api/fashn/tryon", fashnAI.generateTryOn);
+  app.post("/api/fashn/upload", fashnAI.uploadImage);
+  app.post("/api/fashn/run", fashnAI.runModel);
 
      const server = createServer(app);
    return server;
