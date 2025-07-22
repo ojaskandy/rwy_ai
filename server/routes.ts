@@ -24,6 +24,7 @@ import multer from "multer";
 import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
 import * as fashnAI from './routes/fashnAI';
+import * as interview from './routes/interview';
 
 
 // Default guest user context for Runway AI (no authentication needed)
@@ -400,6 +401,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/fashn/status/:id", fashnAI.checkStatus);
   app.post("/api/fashn/tryon", fashnAI.generateTryOn);
   app.post("/api/fashn/tryon-complete", fashnAI.runTryOnComplete);
+
+  // Interview Coach routes
+  app.get("/api/interview/test", interview.testConnection);
+  app.post("/api/interview/transcribe", interview.transcribeAudio);
+  app.post("/api/interview/feedback", interview.generateFeedback);
 
      const server = createServer(app);
    return server;

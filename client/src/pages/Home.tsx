@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import UserMenu from '@/components/UserMenu';
 
 // Mock upcoming events data
 const upcomingEvents = [
@@ -103,7 +104,7 @@ function MiniCalendar() {
 
 export default function Home() {
   const { user } = useAuth();
-  const username = user?.username || 'guest_user';
+  const displayName = user?.email?.split('@')[0] || 'guest_user';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
@@ -114,13 +115,17 @@ export default function Home() {
             Welcome back,
           </h1>
           <div className="flex items-center gap-2">
-            <span className="text-white text-lg font-medium">{username}</span>
+            <span className="text-white text-lg font-medium">{displayName}</span>
             <Star className="h-5 w-5 text-yellow-300 fill-current" />
           </div>
         </div>
-        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-          <User className="h-6 w-6 text-white" />
-        </div>
+        {user ? (
+          <UserMenu />
+        ) : (
+          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <User className="h-6 w-6 text-white" />
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
@@ -135,7 +140,7 @@ export default function Home() {
             Ready to Own the
           </h2>
           <h2 className="text-4xl font-bold text-gray-800">
-            Runway, {username}?
+            Runway, {displayName}?
           </h2>
         </motion.div>
 

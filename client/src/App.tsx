@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 import Profile from "@/pages/Profile";
+import Auth from "@/pages/Auth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/hooks/use-auth";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
@@ -21,49 +23,22 @@ function Router() {
   return (
     <>
       <Switch>
-        {/* Default route redirects to main app */}
-        <Route path="/" component={Home} />
+        {/* Authentication page - accessible without login */}
+        <Route path="/auth" component={Auth} />
 
-        {/* Main application with pose tracking */}
-        <Route path="/app" component={Home} />
+        {/* All protected routes require authentication */}
+        <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/app" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/profile" component={() => <ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/dress-tryon" component={() => <ProtectedRoute><DressTryOn /></ProtectedRoute>} />
+        <Route path="/interview-coach" component={() => <ProtectedRoute><InterviewCoach /></ProtectedRoute>} />
+        <Route path="/calendar" component={() => <ProtectedRoute><PageantCalendar /></ProtectedRoute>} />
+        <Route path="/routine" component={() => <ProtectedRoute><Routine /></ProtectedRoute>} />
 
-        {/* User profile page */}
-        <Route path="/profile" component={Profile} />
-
-        {/* NEW PAGEANT FEATURES */}
-        {/* Virtual Dress Try-On & Style Coach */}
-        <Route path="/dress-tryon" component={DressTryOn} />
-
-        {/* Interview & Communication Coach */}
-        <Route path="/interview-coach" component={InterviewCoach} />
-
-        {/* Pageant Calendar */}
-        <Route path="/calendar" component={PageantCalendar} />
-
-        {/* LIVE ROUTINE FEATURE */}
-        <Route path="/routine" component={Routine} />
-
-        {/* Redirect legacy routes to main app */}
-        <Route path="/practice" component={() => {
-          window.location.href = '/';
-          return <div>Redirecting...</div>;
-        }} />
-        
-        <Route path="/challenges" component={() => {
-          window.location.href = '/';
-          return <div>Redirecting...</div>;
-        }} />
-        
-        <Route path="/workouts" component={() => {
-          window.location.href = '/';
-          return <div>Redirecting...</div>;
-        }} />
-
-        {/* Redirect auth and onboarding to main app */}
-        <Route path="/auth" component={() => {
-          window.location.href = '/app';
-          return <div>Redirecting...</div>;
-        }} />
+        {/* Redirect legacy routes to main app (also protected) */}
+        <Route path="/practice" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
+        <Route path="/challenges" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
+        <Route path="/workouts" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
         
         <Route path="/onboarding" component={() => {
           window.location.href = '/app';
