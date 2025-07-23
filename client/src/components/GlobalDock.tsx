@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 export default function GlobalDock() {
   const [location, setLocation] = useLocation();
 
-  // Only hide dock on auth pages
-  const hiddenRoutes = ['/auth', '/onboarding'];
+  // Only hide dock on auth pages and welcome page
+  const hiddenRoutes = ['/auth', '/onboarding', '/welcome'];
   const shouldHideDock = hiddenRoutes.includes(location);
 
   // Don't render dock at all on hidden routes
