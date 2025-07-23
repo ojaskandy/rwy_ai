@@ -677,10 +677,7 @@ Return only the JSON object, no additional text.`
     }
   });
 
-  // Interview Coach API endpoints
-  app.post("/api/interview/analyze", interview.generateFeedback);
-  app.post("/api/interview/transcribe", interview.transcribeAudio);
-  app.get("/api/interview/test", interview.testConnection);
+  // Interview Coach API endpoints - removed duplicates (already defined above)
 
      const server = createServer(app);
    return server;

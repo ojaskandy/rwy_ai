@@ -6,7 +6,7 @@ import { Readable } from 'stream';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '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',
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 interface InterviewSession {
@@ -195,7 +195,15 @@ BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. 
     // Parse the JSON response
     let feedback: SessionFeedback;
     try {
-      feedback = JSON.parse(responseText);
+      // Remove markdown code blocks if present
+      let cleanResponse = responseText.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanResponse.startsWith('```')) {
+        cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      feedback = JSON.parse(cleanResponse);
     } catch (parseError) {
       console.error('[Interview] Failed to parse OpenAI response:', responseText);
       throw new Error('Invalid response format from AI');

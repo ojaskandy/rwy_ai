@@ -7,7 +7,6 @@ import {
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
 } from 'lucide-react';
 import { useLocation } from 'wouter';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 // Interview question data - Real pageant questions
 const INTERVIEW_QUESTIONS = [
@@ -42,41 +41,52 @@ const INTERVIEW_QUESTIONS = [
   "What makes you unique?",
   "What do you do to make a difference?",
   "What is your favorite social media platform?",
-  "Who is your favorite celebrity and what characteristics do you have in common with them?",
-  "What is your favorite thing to do with your family?",
-  "If you could take a vacation anywhere in the world, where would you go?",
-  "What do you love to eat for breakfast?",
-  "What is your favorite TV show or movie, and why?",
-  "What book are you currently reading?",
-  "What do you like most about pageants?",
-  "What is your favorite color?",
-  "If you could live anywhere in the world, where would you live?",
-  "Who is your favorite cartoon character?",
-  "What is your favorite thing to do in the summer?",
-  "What is your favorite game to play?",
-  "Which animal do you like the most?",
-  "What is your favorite part of pageant weekend?",
-  "What do you look for in a friend?",
-  "What qualities do you think are essential for a role model?",
-  "What makes you happy?",
+  "What is your favorite holiday and why?",
+  "What are your hobbies and interests?",
+  "If you could have dinner with anyone, dead or alive, who would it be?",
+  "What is your favorite book?",
+  "What is your favorite movie?",
+  "What is your favorite song?",
+  "What is your favorite quote?",
+  "If you could travel anywhere in the world, where would you go?",
   "What is your dream job?",
-  "Who do you think is the most popular person in the world right now and why?",
-  "What is the nicest thing someone could say about you?",
-  "What makes you different from the other contestants?",
-  "What has been your greatest accomplishment?",
+  "What is your biggest fear?",
+  "What makes you laugh?",
+  "What is something people would be surprised to know about you?",
+  "How do you handle stress?",
+  "What motivates you?",
+  "What are you passionate about?",
+  "What is your favorite memory?",
+  "What do you do in your free time?",
+  "Who has been the most influential person in your life?",
+  "What is the best advice you've ever received?",
+  "What would you do with a million dollars?",
+  "If you could change one thing about the world, what would it be?",
+  "What does success mean to you?",
+  "What are three words that best describe you?",
+  "What is your biggest accomplishment?",
+  "What is something you've always wanted to try?",
+  "How do you define beauty?",
+  "What is your favorite charity or cause?",
 
-  // Social and Current Events
-  "What current topic in the news has caught your attention and why?",
-  "What do you think is the biggest misconception people have about beauty pageants?",
-  "What is the most significant challenge facing young people today, and how can they overcome it?",
-  "What is the biggest problem facing your generation? How can you solve this?",
-  "How would you promote diversity and inclusion within your community?",
-  "How do you plan to use this platform to make a positive impact in your community?",
-  "If you could change one thing about the world, what would it be and why?",
-  "What role do you think education plays in shaping a person's character?",
-  "How do you define success?",
-  "What does the term 'defund the police' mean to you?",
-  "Why do you think race continues to be an issue in our society?",
+  // Social Issues and Current Events
+  "What do you think is the biggest issue facing young people today?",
+  "How do you stay informed about current events?",
+  "What is your opinion on social media's impact on society?",
+  "How would you address bullying in schools?",
+  "What are your thoughts on environmental conservation?",
+  "How can we make our communities safer?",
+  "What role should pageant winners play in social causes?",
+  "How would you promote education in underserved communities?",
+  "What is your stance on mental health awareness?",
+  "How can we bridge generational divides?",
+  "What would you do to promote diversity and inclusion?",
+  "How do you think we can combat poverty?",
+  "What is your opinion on the importance of voting?",
+  "How would you encourage young people to get involved in their communities?",
+  "What do you think about the role of technology in our daily lives?",
+  "How can we support veterans and their families?",
+  "What would you do to promote literacy?",
   "How do you plan to advocate for equal opportunities and rights for all individuals?",
   "Share a personal experience that has helped you develop empathy and understanding for others.",
   "How would you address the issue of gender inequality in the workplace?",
@@ -162,29 +172,21 @@ export default function InterviewCoach() {
   const [isRecording, setIsRecording] = useState(false);
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [hasStarted, setHasStarted] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState('');
   
   // Feedback state
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Speech recognition setup
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition
-  } = useSpeechRecognition();
-
-  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
+  // Audio recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const transcriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer ref
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Check speech recognition support
-  useEffect(() => {
-    setSpeechSupported(browserSupportsSpeechRecognition);
-  }, [browserSupportsSpeechRecognition]);
 
   // Timer management
   useEffect(() => {
@@ -204,61 +206,228 @@ export default function InterviewCoach() {
     };
   }, [isRecording, hasStarted, timeLeft]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (transcriptionIntervalRef.current) {
+        clearInterval(transcriptionIntervalRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   // Start practice session
   const startPractice = () => {
     const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
-    const selectedQuestions = shuffled.slice(0, numQuestions);
+    
+    // For Questions mode: prepare one question at a time
+    // For Rounds mode: prepare all questions upfront
+    if (mode === 'question') {
+      setCurrentQuestion(shuffled[0]);
+    } else {
+      // Store all questions for the round
+      setCurrentQuestion(shuffled[0]);
+    }
     
     setCurrentQuestionIndex(0);
-    setCurrentQuestion(selectedQuestions[0]);
     setCurrentStep('question');
     setSessions([]);
     setFeedback(null);
     setError(null);
     setTimeLeft(timeLimit);
     setHasStarted(false);
-    resetTranscript();
+    setCurrentTranscript('');
   };
 
-  // Start recording
-  const handleStartRecording = () => {
-    if (!speechSupported) {
-      setError('Speech recognition is not supported in your browser. Please use Chrome for the best experience.');
-      return;
-    }
+  // Start recording with real-time transcription
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      setIsRecording(true);
+      setHasStarted(true);
+      setError(null);
+      setCurrentTranscript('Starting to listen...');
+      audioChunksRef.current = [];
 
-    setIsRecording(true);
-    setHasStarted(true);
-    setError(null);
-    resetTranscript();
-    SpeechRecognition.startListening({ 
-      continuous: true,
-      language: 'en-US'
-    });
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        await processRecordedAudio();
+      };
+
+      // Start recording with 1-second intervals for real-time transcription
+      mediaRecorderRef.current.start(1000);
+      setCurrentTranscript('🎤 Listening... speak now!');
+
+      // Start real-time transcription every 2 seconds
+      let chunkCount = 0;
+      transcriptionIntervalRef.current = setInterval(async () => {
+        if (audioChunksRef.current.length > chunkCount) {
+          chunkCount = audioChunksRef.current.length;
+          await transcribeRealTime();
+        }
+      }, 2000);
+
+    } catch (error: any) {
+      setError('Failed to access microphone. Please ensure you have granted microphone permissions.');
+      console.error('Microphone access error:', error);
+    }
+  };
+
+  // Real-time transcription during recording
+  const transcribeRealTime = async () => {
+    if (audioChunksRef.current.length === 0) return;
+
+    try {
+      // Create audio blob from current chunks
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      
+      // Only transcribe if we have enough audio data (at least 1 second worth)
+      if (audioBlob.size < 10000) return;
+
+      // Convert to base64 for API
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+
+      // Send to Whisper API for real-time transcription
+      const response = await fetch('/api/interview/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          audio: base64Audio,
+          questionNumber: currentQuestionIndex + 1,
+          question: currentQuestion,
+          duration: timeLimit - timeLeft,
+          realtime: true
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.transcript) {
+        setCurrentTranscript(`🎤 "${result.transcript}"`);
+      }
+    } catch (error) {
+      // Don't show errors for real-time transcription, just continue
+      console.log('Real-time transcription update failed, continuing...');
+    }
   };
 
   // Stop recording
   const handleStopRecording = useCallback(() => {
-    setIsRecording(false);
-    SpeechRecognition.stopListening();
-    
-    // Save the session
-    const session: InterviewSession = {
-      questionNumber: currentQuestionIndex + 1,
-      question: currentQuestion,
-      transcript: transcript.trim(),
-      duration: timeLimit - timeLeft
-    };
-    
-    setSessions(prev => [...prev, session]);
-    
-    // Auto-process if we have a transcript
-    if (session.transcript) {
-      processFeedback([...sessions, session]);
-    } else {
-      setError('No speech detected. Please try speaking more clearly.');
+    if (mediaRecorderRef.current && isRecording) {
+      setIsRecording(false);
+      mediaRecorderRef.current.stop();
+      
+      // Stop real-time transcription
+      if (transcriptionIntervalRef.current) {
+        clearInterval(transcriptionIntervalRef.current);
+        transcriptionIntervalRef.current = null;
+      }
+      
+      // Stop the stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      setCurrentTranscript('🔄 Processing your complete answer...');
     }
-  }, [currentQuestion, currentQuestionIndex, transcript, timeLimit, timeLeft, sessions]);
+  }, [isRecording]);
+
+  // Process recorded audio with Whisper
+  const processRecordedAudio = async () => {
+    if (audioChunksRef.current.length === 0) {
+      setError('No audio recorded. Please try again.');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      // Create audio blob
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      
+      // Convert to base64 for API using FileReader
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1]; // Remove data:audio/webm;base64, prefix
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+
+      // Send to Whisper API for transcription
+      const transcribeResponse = await fetch('/api/interview/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          audio: base64Audio,
+          questionNumber: currentQuestionIndex + 1,
+          question: currentQuestion,
+          duration: timeLimit - timeLeft
+        })
+      });
+
+      const transcribeResult = await transcribeResponse.json();
+
+      if (!transcribeResponse.ok) {
+        throw new Error(transcribeResult.error || 'Failed to transcribe audio');
+      }
+
+      const transcript = transcribeResult.transcript.trim();
+      setCurrentTranscript(transcript);
+
+      if (!transcript) {
+        setError('No speech detected. Please try speaking more clearly.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Save the session
+      const session: InterviewSession = {
+        questionNumber: currentQuestionIndex + 1,
+        question: currentQuestion,
+        transcript: transcript,
+        duration: timeLimit - timeLeft
+      };
+      
+      setSessions(prev => [...prev, session]);
+      
+      // Process feedback
+      await processFeedback([...sessions, session]);
+
+    } catch (error: any) {
+      setError(error.message || 'Failed to process audio');
+      setIsProcessing(false);
+    }
+  };
 
   // Next question
   const nextQuestion = () => {
@@ -268,7 +437,7 @@ export default function InterviewCoach() {
       setCurrentQuestion(shuffled[currentQuestionIndex + 1] || shuffled[0]);
       setTimeLeft(timeLimit);
       setHasStarted(false);
-      resetTranscript();
+      setCurrentTranscript('');
     } else {
       // All questions completed, show final feedback
       setCurrentStep('feedback');
@@ -279,7 +448,7 @@ export default function InterviewCoach() {
   const retryQuestion = () => {
     setTimeLeft(timeLimit);
     setHasStarted(false);
-    resetTranscript();
+    setCurrentTranscript('');
     setError(null);
   };
 
@@ -290,7 +459,7 @@ export default function InterviewCoach() {
     setCurrentStep('grading');
 
     try {
-      const response = await fetch('/api/interview/analyze', {
+      const response = await fetch('/api/interview/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -309,18 +478,22 @@ export default function InterviewCoach() {
 
       setFeedback(result.feedback);
       
-      // In question mode, show feedback after each question
-      // In rounds mode, continue to next question until all done
+      // CRITICAL DIFFERENCE: Questions mode vs Rounds mode
       if (mode === 'question') {
+        // Questions mode: Show feedback immediately after each question
         setCurrentStep('feedback');
       } else if (mode === 'rounds') {
+        // Rounds mode: Continue to next question OR show final feedback if done
         if (currentQuestionIndex >= numQuestions - 1) {
-          setCurrentStep('feedback'); // All rounds complete
+          // All rounds complete - show comprehensive feedback
+          setCurrentStep('feedback'); 
         } else {
+          // More questions remaining - automatically go to next question
           setTimeout(() => {
             nextQuestion();
             setCurrentStep('question');
-          }, 2000); // Brief pause to show "grading" state
+            setIsProcessing(false);
+          }, 1000); // Brief pause
         }
       }
 
@@ -328,7 +501,10 @@ export default function InterviewCoach() {
       setError(err.message || 'Failed to generate feedback');
       setCurrentStep('question'); // Go back to question on error
     } finally {
-      setIsProcessing(false);
+      if (mode === 'question') {
+        setIsProcessing(false);
+      }
+      // For rounds mode, setIsProcessing(false) is handled in the setTimeout above
     }
   };
 
@@ -405,116 +581,158 @@ export default function InterviewCoach() {
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-gray-800">
                     <MessageSquare className="w-5 h-5 text-pink-600" />
-                    Setup Interview Practice
+                    Choose Your Interview Practice Mode
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Browser Support Warning */}
-                  {speechSupported === false && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle className="w-4 h-4 text-orange-500" />
-                        <p className="font-medium text-orange-800 text-sm">Browser Compatibility Notice</p>
+                <CardContent className="space-y-6">
+                  {/* Mode Selection - Completely Different Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Questions Mode Card */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        mode === 'question' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 bg-white hover:border-blue-300'
+                      }`}
+                      onClick={() => setMode('question')}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                          <MessageSquare className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-blue-700">Questions Mode</h3>
+                          <p className="text-xs text-blue-600">Practice one question at a time</p>
+                        </div>
                       </div>
-                      <p className="text-orange-700 text-xs">
-                        Speech recognition works best in Chrome browser. Other browsers may have limited support.
-                      </p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>✓ Get feedback after EACH question</li>
+                        <li>✓ Choose to continue or stop anytime</li>
+                        <li>✓ Immediate coaching tips</li>
+                        <li>✓ Perfect for skill building</li>
+                      </ul>
+                    </div>
+
+                    {/* Rounds Mode Card */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        mode === 'rounds' 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-gray-200 bg-white hover:border-purple-300'
+                      }`}
+                      onClick={() => setMode('rounds')}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-purple-700">Rounds Mode</h3>
+                          <p className="text-xs text-purple-600">Full interview simulation</p>
+                        </div>
+                      </div>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>✓ Answer ALL questions first</li>
+                        <li>✓ Comprehensive feedback at the end</li>
+                        <li>✓ Simulates real pageant interviews</li>
+                        <li>✓ Overall performance analysis</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Mode-Specific Settings */}
+                  {mode === 'question' && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-medium text-blue-800 mb-3">Questions Mode Settings</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-blue-700 mb-2">
+                            Time limit per question:
+                          </label>
+                          <div className="flex gap-2 flex-wrap">
+                            {[30, 45, 60, 75, 90].map((time) => (
+                              <button
+                                key={time}
+                                onClick={() => setTimeLimit(time)}
+                                className={`px-3 py-1 rounded text-sm transition-colors ${
+                                  timeLimit === time
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-100'
+                                }`}
+                              >
+                                {time}s
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-xs text-blue-600">
+                          <strong>How it works:</strong> Answer one question → Get immediate feedback → Choose to continue or stop
+                        </p>
+                      </div>
                     </div>
                   )}
 
-                  {/* Practice Mode */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Practice Mode</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant={mode === 'question' ? 'default' : 'outline'}
-                        onClick={() => setMode('question')}
-                        className={mode === 'question' 
-                          ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                          : 'border-pink-200 text-pink-600 hover:bg-pink-50'
-                        }
-                        size="sm"
-                      >
-                        Single Questions
-                      </Button>
-                      <Button
-                        variant={mode === 'rounds' ? 'default' : 'outline'}
-                        onClick={() => setMode('rounds')}
-                        className={mode === 'rounds' 
-                          ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                          : 'border-pink-200 text-pink-600 hover:bg-pink-50'
-                        }
-                        size="sm"
-                      >
-                        Full Rounds
-                      </Button>
+                  {mode === 'rounds' && (
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <h4 className="font-medium text-purple-800 mb-3">Rounds Mode Settings</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-purple-700 mb-2">
+                            Number of questions in this round:
+                          </label>
+                          <div className="flex gap-2 flex-wrap">
+                            {[3, 5, 7, 10].map((num) => (
+                              <button
+                                key={num}
+                                onClick={() => setNumQuestions(num)}
+                                className={`px-3 py-1 rounded text-sm transition-colors ${
+                                  numQuestions === num
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                                }`}
+                              >
+                                {num}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-purple-700 mb-2">
+                            Time limit per question:
+                          </label>
+                          <div className="flex gap-2 flex-wrap">
+                            {[30, 45, 60, 75, 90].map((time) => (
+                              <button
+                                key={time}
+                                onClick={() => setTimeLimit(time)}
+                                className={`px-3 py-1 rounded text-sm transition-colors ${
+                                  timeLimit === time
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                                }`}
+                              >
+                                {time}s
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-xs text-purple-600">
+                          <strong>How it works:</strong> Answer {numQuestions} questions in a row → Get comprehensive feedback at the end
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Number of Questions */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Number of Questions: {numQuestions}
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={numQuestions}
-                      onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                      className="w-full h-2 bg-pink-200 rounded-lg appearance-none cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, #ec4899 0%, #ec4899 ${numQuestions * 10}%, #fce7f3 ${numQuestions * 10}%, #fce7f3 100%)`
-                      }}
-                    />
-                  </div>
-
-                  {/* Time Limit */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time Limit: {formatTime(timeLimit)}
-                    </label>
-                    <div className="grid grid-cols-4 gap-2 mb-2">
-                      {[60, 90, 120, 180].map((time) => (
-                        <Button
-                          key={time}
-                          variant={timeLimit === time ? 'default' : 'outline'}
-                          onClick={() => setTimeLimit(time)}
-                          className={timeLimit === time 
-                            ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                            : 'border-pink-200 text-pink-600 hover:bg-pink-50'
-                          }
-                          size="sm"
-                        >
-                          {formatTime(time)}
-                        </Button>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[240, 300, 600].map((time) => (
-                        <Button
-                          key={time}
-                          variant={timeLimit === time ? 'default' : 'outline'}
-                          onClick={() => setTimeLimit(time)}
-                          className={timeLimit === time 
-                            ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                            : 'border-pink-200 text-pink-600 hover:bg-pink-50'
-                          }
-                          size="sm"
-                        >
-                          {formatTime(time)}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Start Button */}
                   <Button
                     onClick={startPractice}
-                    className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-3"
+                    className={`w-full py-3 text-white font-medium rounded-lg ${
+                      mode === 'question'
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    Start Practice Session
+                    Start {mode === 'question' ? 'Questions' : 'Rounds'} Practice
                   </Button>
                 </CardContent>
               </Card>
@@ -563,9 +781,18 @@ export default function InterviewCoach() {
                 {/* Current Question */}
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
                   <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-gray-800">
-                      <MessageSquare className="w-5 h-5 text-pink-600" />
-                      Interview Question
+                    <CardTitle className="flex items-center justify-between text-gray-800">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-pink-600" />
+                        Interview Question
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        mode === 'question' 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {mode === 'question' ? 'Questions Mode' : 'Rounds Mode'}
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -573,6 +800,19 @@ export default function InterviewCoach() {
                       <p className="text-gray-800 font-medium text-lg leading-relaxed">
                         {currentQuestion}
                       </p>
+                    </div>
+
+                    {/* Mode-specific instructions */}
+                    <div className={`p-3 rounded-lg text-sm ${
+                      mode === 'question' 
+                        ? 'bg-blue-50 border border-blue-200 text-blue-800' 
+                        : 'bg-purple-50 border border-purple-200 text-purple-800'
+                    }`}>
+                      {mode === 'question' ? (
+                        <p><strong>Questions Mode:</strong> You'll get feedback after this question and can choose to continue or stop.</p>
+                      ) : (
+                        <p><strong>Rounds Mode:</strong> Answer all {numQuestions} questions, then get comprehensive feedback at the end.</p>
+                      )}
                     </div>
 
                     {/* Timer and Recording Controls */}
@@ -597,108 +837,86 @@ export default function InterviewCoach() {
                     </div>
 
                     {/* Recording Button */}
-                    <div className="text-center">
-                      {!isRecording ? (
+                    <div className="flex justify-center">
+                      {!isRecording && !hasStarted ? (
                         <Button
                           onClick={handleStartRecording}
-                          disabled={isProcessing}
-                          className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-8 py-4 rounded-xl"
+                          size="lg"
+                          className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-full shadow-lg"
                         >
                           <Mic className="w-5 h-5 mr-2" />
                           Start Recording
                         </Button>
-                      ) : (
+                      ) : isRecording ? (
                         <Button
                           onClick={handleStopRecording}
-                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-8 py-4 rounded-xl"
+                          size="lg"
+                          className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full shadow-lg border-2 border-red-800 animate-pulse"
                         >
                           <MicOff className="w-5 h-5 mr-2" />
                           Stop Recording
                         </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={retryQuestion}
+                            variant="outline"
+                            size="sm"
+                            className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Retry
+                          </Button>
+                        </div>
                       )}
                     </div>
 
                     {/* Live Transcript Preview */}
-                    {transcript && (
-                      <div className="bg-gray-50 p-3 rounded-lg border">
-                        <p className="text-sm text-gray-600 mb-1">Live transcript:</p>
-                        <p className="text-gray-800 text-sm">{transcript}</p>
+                    {currentTranscript && (
+                      <div className={`p-4 rounded-lg border-2 ${
+                        isRecording 
+                          ? 'bg-green-50 border-green-300 border-dashed animate-pulse' 
+                          : 'bg-blue-50 border-blue-300'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {isRecording ? (
+                            <>
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                              <p className="text-sm font-semibold text-green-700">Live transcript:</p>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                              <p className="text-sm font-semibold text-blue-700">Transcript:</p>
+                            </>
+                          )}
+                        </div>
+                        <p className={`text-sm leading-relaxed ${
+                          isRecording ? 'text-green-800' : 'text-blue-800'
+                        }`}>
+                          {currentTranscript}
+                        </p>
+                        {isRecording && (
+                          <p className="text-xs text-green-600 mt-2 italic">
+                            ✨ Updating in real-time as you speak...
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Processing Indicator */}
+                    {isProcessing && (
+                      <div className="text-center">
+                        <div className="inline-flex items-center gap-2 text-pink-600">
+                          <div className="w-4 h-4 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm font-medium">
+                            Processing your response...
+                          </span>
+                        </div>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-
-                {/* Processing Feedback */}
-                {isProcessing && (
-                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                          className="mb-3"
-                        >
-                          <Sparkles className="w-8 h-8 mx-auto text-pink-500" />
-                        </motion.div>
-                        <p className="text-gray-600 font-medium">Analyzing your response...</p>
-                        <p className="text-gray-500 text-sm">This may take a few seconds</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Question Feedback */}
-                {feedback && feedback.answers.length > 0 && !isProcessing && (
-                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="flex items-center gap-2 text-gray-800">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        Question Feedback
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Grades */}
-                      <div>
-                        <p className="font-medium text-gray-800 mb-3">Your Scores:</p>
-                        <div className="grid grid-cols-3 gap-3">
-                          {Object.entries(feedback.answers[0].grades).map(([key, value]) => (
-                            <div key={key} className="text-center bg-pink-50 p-2 rounded-lg">
-                              <div className="text-lg font-bold text-pink-600">{value}/10</div>
-                              <div className="text-xs text-gray-600 capitalize">{key}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Coaching Tip */}
-                      {feedback.answers[0].coachingTip && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                          <p className="font-medium text-yellow-800 mb-1 text-sm">Coaching Tip:</p>
-                          <p className="text-yellow-700 text-sm">{feedback.answers[0].coachingTip}</p>
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-3">
-                        <Button
-                          onClick={retryQuestion}
-                          variant="outline"
-                          className="flex-1 border-pink-200 text-pink-600 hover:bg-pink-50"
-                          size="sm"
-                        >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          Retry
-                        </Button>
-                        <Button
-                          onClick={nextQuestion}
-                          className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
-                          size="sm"
-                        >
-                          {sessions.length < numQuestions ? 'Next Question' : 'Get Final Feedback'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </motion.div>
           )}
@@ -707,31 +925,32 @@ export default function InterviewCoach() {
           {currentStep === 'grading' && (
             <motion.div
               key="grading"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
             >
               <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                <CardContent className="p-8">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="mb-6"
-                  >
-                    <Sparkles className="w-16 h-16 mx-auto text-pink-500" />
-                  </motion.div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">AI is Grading Your Response</h3>
-                  <p className="text-gray-600 text-lg mb-2">Analyzing your answer using advanced AI...</p>
-                  <p className="text-gray-500 text-sm">This might take a moment for thorough evaluation</p>
-                  
-                  {mode === 'rounds' && (
-                    <div className="mt-6 p-4 bg-pink-50 rounded-lg border border-pink-200">
-                      <p className="text-pink-700 text-sm">
-                        <strong>Rounds Mode:</strong> After grading, you'll move to the next question automatically.
-                      </p>
+                <CardContent className="p-8 text-center">
+                  <div className="mb-6">
+                    <div className="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="w-8 h-8 text-white animate-pulse" />
                     </div>
-                  )}
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                      Analyzing Your Response
+                    </h3>
+                    <p className="text-gray-600">
+                      Our AI pageant coach is evaluating your answer...
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-pink-600">
+                      <div className="w-2 h-2 bg-pink-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-pink-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-pink-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <p className="text-sm text-gray-500">This usually takes a few seconds...</p>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -746,12 +965,54 @@ export default function InterviewCoach() {
               exit={{ opacity: 0, y: -20 }}
             >
               <div className="space-y-4">
+                {/* Mode Banner */}
+                <Card className={`border-0 shadow-lg rounded-2xl ${
+                  mode === 'question' ? 'bg-blue-50' : 'bg-purple-50'
+                }`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          mode === 'question' ? 'bg-blue-500' : 'bg-purple-500'
+                        }`}>
+                          {mode === 'question' ? (
+                            <MessageSquare className="w-5 h-5 text-white" />
+                          ) : (
+                            <Sparkles className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className={`font-bold ${
+                            mode === 'question' ? 'text-blue-700' : 'text-purple-700'
+                          }`}>
+                            {mode === 'question' ? 'Questions Mode' : 'Rounds Mode'} - Feedback
+                          </h3>
+                          <p className={`text-xs ${
+                            mode === 'question' ? 'text-blue-600' : 'text-purple-600'
+                          }`}>
+                            {mode === 'question' 
+                              ? `Question ${currentQuestionIndex + 1} of ${numQuestions} completed`
+                              : `All ${numQuestions} questions completed - Comprehensive review`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      {mode === 'question' && currentQuestionIndex < numQuestions - 1 && (
+                        <div className="text-right">
+                          <p className="text-xs text-blue-600">More questions available!</p>
+                          <p className="font-semibold text-blue-700">Choose to continue →</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Summary */}
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-gray-800">
                       <Sparkles className="w-5 h-5 text-green-600" />
-                      Interview Summary
+                      {mode === 'question' ? 'Question Feedback' : 'Interview Summary'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -768,6 +1029,7 @@ export default function InterviewCoach() {
                       <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
                         <MessageSquare className="w-4 h-4 text-pink-600" />
                         Question {answer.questionNumber}
+                        {mode === 'question' && <span className="text-sm text-blue-600 font-normal">(Current Question)</span>}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -803,8 +1065,8 @@ export default function InterviewCoach() {
                   </Card>
                 ))}
 
-                {/* Overall Tips */}
-                {feedback.overallTips && feedback.overallTips.length > 0 && (
+                {/* Overall Tips - Only show in Rounds mode */}
+                {mode === 'rounds' && feedback.overallTips && feedback.overallTips.length > 0 && (
                   <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
@@ -827,18 +1089,76 @@ export default function InterviewCoach() {
                   </Card>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setCurrentStep('setup')}
-                    variant="outline"
-                    className="flex-1 border-pink-200 text-pink-600 hover:bg-pink-50"
-                    size="sm"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" />
-                    Practice Again
-                  </Button>
-                </div>
+                {/* Navigation Buttons - CLEARLY DIFFERENT FOR EACH MODE */}
+                <Card className={`border-0 shadow-lg rounded-2xl ${
+                  mode === 'question' ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'
+                }`}>
+                  <CardContent className="p-4">
+                    {mode === 'question' ? (
+                      /* QUESTIONS MODE: Individual question controls */
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-blue-700 text-center">What would you like to do next?</h4>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => {
+                              setCurrentStep('question');
+                              retryQuestion();
+                            }}
+                            variant="outline"
+                            className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-100"
+                            size="sm"
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Retry This Question
+                          </Button>
+                          
+                          {currentQuestionIndex < numQuestions - 1 ? (
+                            <Button
+                              onClick={() => {
+                                nextQuestion();
+                                setCurrentStep('question');
+                              }}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                              size="sm"
+                            >
+                              Next Question →
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => setCurrentStep('setup')}
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                              size="sm"
+                            >
+                              ✓ Finish Practice
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-blue-600 text-center">
+                          {currentQuestionIndex < numQuestions - 1 
+                            ? `${numQuestions - currentQuestionIndex - 1} more questions available` 
+                            : 'You\'ve completed all questions!'
+                          }
+                        </p>
+                      </div>
+                    ) : (
+                      /* ROUNDS MODE: Round completion */
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-purple-700 text-center">Interview Round Complete!</h4>
+                        <p className="text-sm text-purple-600 text-center">
+                          You answered all {numQuestions} questions. Review your feedback above.
+                        </p>
+                        <Button
+                          onClick={() => setCurrentStep('setup')}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+                          size="sm"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" />
+                          Start New Practice Session
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </motion.div>
           )}
