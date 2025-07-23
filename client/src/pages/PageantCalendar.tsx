@@ -488,29 +488,28 @@ export default function PageantCalendar() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="rounded-xl p-4 sm:p-6 w-[95vw] sm:w-full max-w-lg max-h-[95vh] overflow-y-auto bg-white shadow-2xl"
+              className="rounded-xl p-3 sm:p-4 w-[92vw] sm:w-full max-w-md max-h-[90vh] overflow-y-auto bg-white shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-800">
                   {editingEvent ? 'Edit Event' : 'Add New Event'}
                 </h3>
                 <button 
                   onClick={() => setShowEventModal(false)}
-                  className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="text-gray-600 hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* AI Section - Now at Top */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4">
-                  <div className="text-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-800 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 mr-2 text-purple-600" />
-                      Describe Your Event (AI-Powered)
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3">
+                  <div className="text-center mb-3">
+                    <h4 className="text-base font-semibold text-gray-800 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 mr-2 text-purple-600" />
+                      Describe Your Event
                     </h4>
-                    <p className="text-sm text-gray-600 mt-1">Let AI help you schedule your event quickly!</p>
                   </div>
                   
                   <div>
@@ -520,35 +519,33 @@ export default function PageantCalendar() {
                     <Textarea
                       value={aiDescription}
                       onChange={(e) => setAiDescription(e.target.value)}
-                      className="bg-white border-purple-200 text-gray-800 mt-2"
-                      placeholder="e.g., 'Miss Universe interview practice tomorrow at 3pm at the studio' or 'Dress fitting this Friday at 2pm'"
-                      rows={3}
+                      className="bg-white border-purple-200 text-gray-800 mt-1"
+                      placeholder="e.g., 'photoshoot july 24 at 10am in bellevue square'"
+                      rows={2}
                     />
                   </div>
 
                   <Button
                     onClick={processAIDescription}
                     disabled={!aiDescription.trim() || isProcessingAI}
-                    className="w-full mt-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3"
-                    size="lg"
+                    className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2"
                   >
                     {isProcessingAI ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <Sparkles className="w-5 h-5 mr-2" />
+                      <Sparkles className="w-4 h-4 mr-2" />
                     )}
                     Fill Form with AI
                   </Button>
                 </div>
 
                 {/* Manual Entry Section */}
-                <div className="border-t border-gray-300 pt-4">
-                  <div className="text-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-800">Manual Entry</h4>
-                    <p className="text-sm text-gray-600">Fill out the event details manually</p>
+                <div className="border-t border-gray-300 pt-3">
+                  <div className="text-center mb-3">
+                    <h4 className="text-base font-semibold text-gray-800">Manual Entry</h4>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
                       <Label htmlFor="title" className="text-sm font-medium text-gray-700">
                         Event Title *
@@ -657,25 +654,23 @@ export default function PageantCalendar() {
                 </div>
 
                 {/* Action Buttons - Fixed at Bottom */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-300 sticky bottom-0 bg-white p-4 -mx-4 sm:-mx-6 rounded-b-xl">
+                <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-300 sticky bottom-0 bg-white p-3 -mx-3 sm:-mx-4 rounded-b-xl mt-4">
                   <Button
                     onClick={handleSaveEvent}
                     disabled={!formData.title || !formData.date || !formData.time || isCreating || isUpdating}
-                    className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white py-3"
-                    size="lg"
+                    className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white py-2"
                   >
                     {(isCreating || isUpdating) ? (
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <Check className="w-5 h-5 mr-2" />
+                      <Check className="w-4 h-4 mr-2" />
                     )}
                     {editingEvent ? 'Update Event' : 'Add Event'}
                   </Button>
                   <Button
                     onClick={() => setShowEventModal(false)}
                     variant="outline"
-                    className="sm:w-auto border-gray-400 text-gray-600 hover:bg-gray-100 py-3"
-                    size="lg"
+                    className="sm:w-auto border-gray-400 text-gray-600 hover:bg-gray-100 py-2"
                   >
                     Cancel
                   </Button>
