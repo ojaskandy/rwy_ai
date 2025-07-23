@@ -141,10 +141,12 @@ export default function PageantCalendar() {
 
   const handleAddEvent = () => {
     setEditingEvent(null);
+    const today = new Date();
+    const defaultDate = selectedDate ? selectedDate : (today.getFullYear() >= 2025 ? today : new Date(2025, 0, 1));
     setFormData({
       title: '',
       description: '',
-      date: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
+      date: defaultDate.toISOString().split('T')[0],
       time: '',
       type: 'pageant',
       location: '',
@@ -274,15 +276,26 @@ export default function PageantCalendar() {
         </div>
         <Button
           onClick={handleAddEvent}
-          size="sm"
-          className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+          size="lg"
+          className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3"
         >
-          <Plus className="w-4 h-4 mr-1" />
-          <span className="hidden sm:inline">Add Event</span>
+          <Plus className="w-5 h-5 mr-2" />
+          <span className="font-semibold">Add Event</span>
         </Button>
       </div>
 
       <div className="container mx-auto px-4 py-6">
+        {/* Prominent Add Event Section for Mobile */}
+        <div className="lg:hidden mb-6">
+          <Button
+            onClick={handleAddEvent}
+            size="lg"
+            className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-lg text-lg py-4"
+          >
+            <Plus className="w-6 h-6 mr-3" />
+            <span className="font-bold">Add New Event</span>
+          </Button>
+        </div>
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Calendar Section */}
           <div className="lg:col-span-3">
@@ -475,177 +488,194 @@ export default function PageantCalendar() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
-              style={{ backgroundColor: '#FFC5D3' }}
+              className="rounded-xl p-4 sm:p-6 w-[95vw] sm:w-full max-w-lg max-h-[95vh] overflow-y-auto bg-white shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-800">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
                   {editingEvent ? 'Edit Event' : 'Add New Event'}
                 </h3>
                 <button 
                   onClick={() => setShowEventModal(false)}
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title" className="text-sm font-medium text-gray-700">
-                    Event Title
-                  </Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                    placeholder="Enter event title"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                    placeholder="Event description"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="date" className="text-sm font-medium text-gray-700">
-                      Date
-                    </Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="time" className="text-sm font-medium text-gray-700">
-                      Time
-                    </Label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="type" className="text-sm font-medium text-gray-700">
-                    Event Type
-                  </Label>
-                  <select
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full bg-white/80 border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
-                  >
-                    {EVENT_TYPES.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="location" className="text-sm font-medium text-gray-700">
-                    Location (Optional)
-                  </Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                    placeholder="Event location"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="reminder" className="text-sm font-medium text-gray-700">
-                    Reminder
-                  </Label>
-                  <select
-                    id="reminder"
-                    value={formData.reminder}
-                    onChange={(e) => setFormData(prev => ({ ...prev, reminder: parseInt(e.target.value) }))}
-                    className="w-full bg-white/80 border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
-                  >
-                    {REMINDER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* AI Section */}
-                <div className="border-t border-gray-300 pt-4">
-                  <div className="text-center mb-3">
-                    <span className="text-sm font-medium text-gray-600">OR schedule with AI</span>
+              <div className="space-y-6">
+                {/* AI Section - Now at Top */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4">
+                  <div className="text-center mb-4">
+                    <h4 className="text-lg font-semibold text-gray-800 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 mr-2 text-purple-600" />
+                      Describe Your Event (AI-Powered)
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">Let AI help you schedule your event quickly!</p>
                   </div>
                   
                   <div>
                     <Label className="text-sm font-medium text-gray-700">
-                      Describe your event
+                      Tell AI about your event
                     </Label>
                     <Textarea
                       value={aiDescription}
                       onChange={(e) => setAiDescription(e.target.value)}
-                      className="bg-white/80 border-pink-200 text-gray-800 mt-1"
-                      placeholder="e.g., 'Miss Universe interview practice tomorrow at 3pm at the studio'"
-                      rows={2}
+                      className="bg-white border-purple-200 text-gray-800 mt-2"
+                      placeholder="e.g., 'Miss Universe interview practice tomorrow at 3pm at the studio' or 'Dress fitting this Friday at 2pm'"
+                      rows={3}
                     />
                   </div>
 
                   <Button
                     onClick={processAIDescription}
                     disabled={!aiDescription.trim() || isProcessingAI}
-                    className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                    size="sm"
+                    className="w-full mt-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3"
+                    size="lg"
                   >
                     {isProcessingAI ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="w-5 h-5 mr-2" />
                     )}
                     Fill Form with AI
                   </Button>
                 </div>
 
-                <div className="flex space-x-3 pt-4">
+                {/* Manual Entry Section */}
+                <div className="border-t border-gray-300 pt-4">
+                  <div className="text-center mb-4">
+                    <h4 className="text-lg font-semibold text-gray-800">Manual Entry</h4>
+                    <p className="text-sm text-gray-600">Fill out the event details manually</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                        Event Title *
+                      </Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        className="bg-white border-pink-200 text-gray-800 mt-1"
+                        placeholder="Enter event title"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        className="bg-white border-pink-200 text-gray-800 mt-1"
+                        placeholder="Event description"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                          Date *
+                        </Label>
+                        <Input
+                          id="date"
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                          className="bg-white border-pink-200 text-gray-800 mt-1"
+                          min="2025-01-01"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="time" className="text-sm font-medium text-gray-700">
+                          Time *
+                        </Label>
+                        <Input
+                          id="time"
+                          type="time"
+                          value={formData.time}
+                          onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
+                          className="bg-white border-pink-200 text-gray-800 mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="type" className="text-sm font-medium text-gray-700">
+                        Event Type
+                      </Label>
+                      <select
+                        id="type"
+                        value={formData.type}
+                        onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full bg-white border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
+                      >
+                        {EVENT_TYPES.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+                        Location (Optional)
+                      </Label>
+                      <Input
+                        id="location"
+                        value={formData.location}
+                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                        className="bg-white border-pink-200 text-gray-800 mt-1"
+                        placeholder="Event location"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="reminder" className="text-sm font-medium text-gray-700">
+                        Reminder
+                      </Label>
+                      <select
+                        id="reminder"
+                        value={formData.reminder}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reminder: parseInt(e.target.value) }))}
+                        className="w-full bg-white border border-pink-200 rounded-md px-3 py-2 text-gray-800 mt-1"
+                      >
+                        {REMINDER_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons - Fixed at Bottom */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-300 sticky bottom-0 bg-white p-4 -mx-4 sm:-mx-6 rounded-b-xl">
                   <Button
                     onClick={handleSaveEvent}
                     disabled={!formData.title || !formData.date || !formData.time || isCreating || isUpdating}
-                    className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
+                    className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white py-3"
+                    size="lg"
                   >
                     {(isCreating || isUpdating) ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     ) : (
-                      <Check className="w-4 h-4 mr-2" />
+                      <Check className="w-5 h-5 mr-2" />
                     )}
                     {editingEvent ? 'Update Event' : 'Add Event'}
                   </Button>
                   <Button
                     onClick={() => setShowEventModal(false)}
                     variant="outline"
-                    className="border-gray-400 text-gray-600 hover:bg-gray-100"
+                    className="sm:w-auto border-gray-400 text-gray-600 hover:bg-gray-100 py-3"
+                    size="lg"
                   >
                     Cancel
                   </Button>
