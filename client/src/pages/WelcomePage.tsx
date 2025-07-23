@@ -20,17 +20,17 @@ const features = [
   },
   {
     title: "Live Routine",
-    description: "Start a live routine and get real-time feedback on your performance.",
+    description: "Start a live routine and get real-time feedback on your runway walk and stage presence.",
     image: liveRoutineImage,
   },
   {
     title: "Practice Library",
-    description: "Access a vast library of techniques and forms to hone your skills at your own pace.",
+    description: "Access a vast library of runway techniques and poses to hone your skills at your own pace.",
     image: practiceLibraryImage,
   },
   {
-    title: "Shifu Chat",
-    description: "Get guidance and support from Master Shifu, your personal AI martial arts coach.",
+    title: "AI Coach",
+    description: "Get guidance and support from your personal AI pageant coach, available 24/7.",
     image: shifuChatImage,
   },
   {
@@ -40,33 +40,33 @@ const features = [
   },
   {
     title: "Workouts",
-    description: "Access a range of workouts designed to improve your strength, flexibility, and endurance for martial arts.",
+    description: "Access a range of workouts designed to improve your strength, flexibility, and confidence for pageants.",
     image: workoutsImage,
   },
 ];
 
 const testimonials_col1 = [
-    { name: "Sarah (Mom)", city: "New York", text: "My 12-year-old daughter's confidence has skyrocketed since using CoachT. She practices daily and her form has improved dramatically." },
-    { name: "Alex (17)", city: "Chicago", text: "As a competitive athlete, CoachT gives me the edge I need. The AI feedback is more detailed than any coach I've worked with." },
-    { name: "Jennifer (Mom)", city: "Philadelphia", text: "Finally, an app that keeps my son engaged with martial arts at home. He actually asks to practice now!" },
-    { name: "Marcus (16)", city: "San Diego", text: "I'm preparing for my black belt test and CoachT helps me perfect every detail. It's like having a master available 24/7." },
-    { name: "Lisa (Mom)", city: "Columbus", text: "Worth every penny. My daughter's discipline and focus have improved not just in martial arts but in everything she does." },
+    { name: "Sarah (Mom)", city: "New York", text: "My 16-year-old daughter's confidence has skyrocketed since using RunwayAI. She practices daily and her runway walk has improved dramatically." },
+    { name: "Alex (17)", city: "Chicago", text: "As a competitive pageant contestant, RunwayAI gives me the edge I need. The AI feedback is more detailed than any coach I've worked with." },
+    { name: "Jennifer (Mom)", city: "Philadelphia", text: "Finally, an app that keeps my daughter engaged with pageant training at home. She actually asks to practice now!" },
+    { name: "Marcus (16)", city: "San Diego", text: "I'm preparing for my first major pageant and RunwayAI helps me perfect every detail. It's like having a coach available 24/7." },
+    { name: "Lisa (Mom)", city: "Columbus", text: "Worth every penny. My daughter's discipline and confidence have improved not just in pageants but in everything she does." },
 ]
 
 const testimonials_col2 = [
-    { name: "Maria (15)", city: "Los Angeles", text: "The practice library is amazing. I can learn new forms anytime and the AI catches mistakes I didn't even know I was making." },
-    { name: "David (Dad)", city: "Houston", text: "As a parent, I love seeing my son's progress tracked so clearly. CoachT makes it easy to celebrate his achievements." },
+    { name: "Maria (15)", city: "Los Angeles", text: "The practice library is amazing. I can learn new poses anytime and the AI catches mistakes I didn't even know I was making." },
+    { name: "David (Dad)", city: "Houston", text: "As a parent, I love seeing my daughter's progress tracked so clearly. RunwayAI makes it easy to celebrate her achievements." },
     { name: "Emma (14)", city: "San Antonio", text: "I'm naturally competitive and the leaderboards keep me motivated to train harder every single day." },
-    { name: "Michael (Dad)", city: "Dallas", text: "My twins were losing interest in martial arts until we found CoachT. Now they compete with each other daily!" },
-    { name: "Sophia (16)", city: "Charlotte", text: "Getting ready for tournaments is so much easier with CoachT. I can drill my forms perfectly at home." },
+    { name: "Michael (Dad)", city: "Dallas", text: "My daughter was losing interest in pageants until we found RunwayAI. Now she competes with herself daily!" },
+    { name: "Sophia (16)", city: "Charlotte", text: "Getting ready for competitions is so much easier with RunwayAI. I can practice my routines perfectly at home." },
 ]
 
 const testimonials_col3 = [
-    { name: "Ben (15)", city: "Phoenix", text: "The challenges are addictive! I've improved more in 3 months with CoachT than in my previous year of training." },
-    { name: "Rachel (Mom)", city: "Austin", text: "My daughter is naturally shy, but CoachT has built her confidence. She's now teaching her little brother!" },
-    { name: "James (17)", city: "Fort Worth", text: "Training for my black belt has never been this focused. Every session with CoachT pushes me to be better." },
-    { name: "Nina (13)", city: "Indianapolis", text: "I love how CoachT explains exactly what I need to fix. It's like having the world's most patient teacher." },
-         { name: "Kevin (Dad)", city: "Seattle", text: "Best investment we've made for our kids. They're more disciplined, confident, and physically fit than ever before." },
+    { name: "Ben (15)", city: "Phoenix", text: "The challenges are addictive! I've improved more in 3 months with RunwayAI than in my previous year of training." },
+    { name: "Rachel (Mom)", city: "Austin", text: "My daughter is naturally shy, but RunwayAI has built her confidence. She's now teaching her little sister!" },
+    { name: "James (17)", city: "Fort Worth", text: "Training for my next title has never been this focused. Every session with RunwayAI pushes me to be better." },
+    { name: "Nina (13)", city: "Indianapolis", text: "I love how RunwayAI explains exactly what I need to fix. It's like having the world's most patient teacher." },
+         { name: "Kevin (Dad)", city: "Seattle", text: "Best investment we've made for our kids. They're more disciplined, confident, and stage-ready than ever before." },
 ]
 
 // Interactive Help Chat Component
@@ -77,12 +77,12 @@ function InteractiveHelpChat() {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
 
   const presetSuggestions = [
-    "Forms practice",
+    "Runway walk practice",
     "Not motivated enough", 
-    "Trouble with specific moves",
+    "Trouble with specific poses",
     "Wants to compete better",
     "Asking questions and planning",
-    "Getting instant feedback on a kick"
+    "Getting instant feedback on posture"
   ];
 
   const analyzeUserInput = async (prompt: string) => {
@@ -105,7 +105,7 @@ function InteractiveHelpChat() {
       console.error('Error analyzing input:', error);
       setAiResponse({
         feature: "Live Routine",
-        explanation: "CoachT's AI coaching provides real-time feedback to help your child perfect their technique and build confidence in their martial arts journey."
+        explanation: "RunwayAI's coaching provides real-time feedback to help your child perfect their technique and build confidence in their pageant journey."
       });
       setSelectedFeature("Live Routine");
     } finally {
@@ -140,7 +140,7 @@ function InteractiveHelpChat() {
         className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 rounded-2xl p-8 border border-gray-700 backdrop-blur-sm"
       >
         <div className="flex items-center gap-3 mb-6">
-          <MessageCircle className="w-8 h-8 text-red-500" />
+          <MessageCircle className="w-8 h-8 text-pink-500" />
           <h3 className="text-3xl font-bold text-white">What would help your kid the most?</h3>
         </div>
 
@@ -151,7 +151,7 @@ function InteractiveHelpChat() {
               <motion.button
                 key={index}
                 onClick={() => handlePresetClick(suggestion)}
-                className="px-6 py-3 bg-gray-700/50 hover:bg-red-600/50 text-gray-300 hover:text-white rounded-full text-base transition-all duration-300 border border-gray-600/50 hover:border-red-500/50"
+                className="px-6 py-3 bg-gray-700/50 hover:bg-pink-600/50 text-gray-300 hover:text-white rounded-full text-base transition-all duration-300 border border-gray-600/50 hover:border-pink-500/50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -168,13 +168,13 @@ function InteractiveHelpChat() {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="Or something else"
-            className="w-full px-4 py-4 pr-12 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+            className="w-full px-4 py-4 pr-12 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
             disabled={isAnalyzing}
           />
           <button
             type="submit"
             disabled={isAnalyzing || !userInput.trim()}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             {isAnalyzing ? (
               <Sparkles className="w-5 h-5 text-white animate-spin" />
@@ -194,11 +194,11 @@ function InteractiveHelpChat() {
           className="space-y-6"
         >
           {/* AI Explanation */}
-          <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-red-900/30 rounded-xl p-6 border border-gray-700">
+          <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-pink-900/30 rounded-xl p-6 border border-gray-700">
             <div className="flex items-start gap-3">
               <Sparkles className="w-6 h-6 text-blue-400 mt-1 flex-shrink-0" />
               <div>
-                <h4 className="text-lg font-semibold text-white mb-2">Here's how CoachT can help with "{userInput || 'your challenge'}":</h4>
+                <h4 className="text-lg font-semibold text-white mb-2">Here's how RunwayAI can help with "{userInput || 'your challenge'}":</h4>
                 <p className="text-gray-300 leading-relaxed">{aiResponse.explanation}</p>
               </div>
             </div>
@@ -209,12 +209,12 @@ function InteractiveHelpChat() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-red-500/50 transition-all duration-300"
+            className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-pink-500/50 transition-all duration-300"
           >
             <div className="p-6">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm text-red-400 font-medium">Recommended for you</span>
+                <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                <span className="text-sm text-pink-400 font-medium">Recommended for you</span>
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">{getFeatureData(selectedFeature!).title}</h3>
               <p className="text-gray-400 mb-6">{getFeatureData(selectedFeature!).description}</p>
@@ -226,9 +226,9 @@ function InteractiveHelpChat() {
                 className="w-full h-full object-contain transform transition-transform duration-300 group-hover:scale-105"
               />
             </div>
-            <div className="p-6 bg-gradient-to-r from-red-600/10 to-purple-600/10">
+            <div className="p-6 bg-gradient-to-r from-pink-600/10 to-purple-600/10">
               <Link href="/early">
-                <Button className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3">
+                <Button className="w-full bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white font-semibold py-3">
                   Try {getFeatureData(selectedFeature!).title} Now
                 </Button>
               </Link>
@@ -245,7 +245,7 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-black text-white">
       {/* Navigation - Simplified */}
       <div className="bg-black py-4 px-6 flex justify-between items-center">
-        <span className="text-2xl font-bold text-red-500">CoachT</span>
+        <span className="text-2xl font-bold text-pink-500">RunwayAI</span>
         <Link href="/auth">
           <Button 
             className="bg-white text-black hover:bg-gray-100 px-6 py-3 text-lg font-semibold"
@@ -256,14 +256,14 @@ export default function WelcomePage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-700/80 via-red-600/80 to-blue-600/80">
+      <div className="relative overflow-hidden bg-gradient-to-br from-purple-700/80 via-pink-600/80 to-blue-600/80">
         <div className="relative z-10 px-6 pt-32 pb-20 text-center flex flex-col items-center">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-6 leading-tight"
           >
-            The AI Martial<br />Arts Coach
+            The AI Pageant<br />Coach
           </motion.h1>
 
           <motion.p 
@@ -319,7 +319,7 @@ export default function WelcomePage() {
           <div className="max-w-4xl mx-auto">
               <img 
                 src={coachtProductImage}
-                alt="AI Martial Arts Coach" 
+                alt="AI Pageant Coach" 
                 className="w-full h-auto rounded-lg shadow-2xl border-2 border-gray-800/50"
               />
           </div>
@@ -332,7 +332,7 @@ export default function WelcomePage() {
         <div className="absolute inset-0 z-0">
           <img 
             src="/images/young_martial_artist_kick.png"
-            alt="Young Martial Artist Excellence" 
+            alt="Young Pageant Contestant Excellence" 
             className="w-full h-full object-cover object-center"
           />
           {/* Dark overlay for text readability */}
@@ -358,7 +358,7 @@ export default function WelcomePage() {
               transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
               viewport={{ once: true }}
             >
-              <span className="bg-gradient-to-r from-red-400 via-orange-500 to-red-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-pink-400 via-purple-500 to-pink-600 bg-clip-text text-transparent">
                 Your Journey to Excellence
             </span>
               <br />
@@ -392,10 +392,10 @@ export default function WelcomePage() {
                 }}
                 transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
               >
-                <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent font-bold">
+                <span className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-transparent font-bold">
                   98%
                 </span>
-                {" "}of kids stand out and advance faster with CoachT
+                {" "}of contestants stand out and advance faster with RunwayAI
               </motion.p>
               </motion.div>
 
@@ -477,45 +477,45 @@ export default function WelcomePage() {
         <div className="max-w-6xl mx-auto">
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center mb-16">
             <motion.div 
-              className="bg-gradient-to-br from-red-600/20 via-red-500/10 to-transparent rounded-2xl p-6 border border-red-500/30 hover:border-red-500/50 transition-all duration-300"
+              className="bg-gradient-to-br from-pink-600/20 via-pink-500/10 to-transparent rounded-2xl p-6 border border-pink-500/30 hover:border-pink-500/50 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-5xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent mb-2">97%</div>
+              <div className="text-5xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent mb-2">97%</div>
               <h3 className="text-xl font-bold text-white mb-2">of Parents</h3>
               <p className="text-gray-300">
                 Saw faster progress — in just 7 days.
               </p>
             </motion.div>
             <motion.div 
-              className="bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent rounded-2xl p-6 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-300"
+              className="bg-gradient-to-br from-purple-600/20 via-purple-500/10 to-transparent rounded-2xl p-6 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-5xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent mb-2">4x</div>
+              <div className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent mb-2">4x</div>
               <h3 className="text-xl font-bold text-white mb-2">More Practice</h3>
               <p className="text-gray-300">
-                Students using CoachT train 4x more at home, without being told.
+                Students using RunwayAI train 4x more at home, without being told.
               </p>
             </motion.div>
             <motion.div 
-              className="bg-gradient-to-br from-purple-600/20 via-purple-500/10 to-transparent rounded-2xl p-6 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300"
+              className="bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-transparent rounded-2xl p-6 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent mb-2">81%</div>
-              <h3 className="text-xl font-bold text-white mb-2">of Students</h3>
+              <div className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent mb-2">81%</div>
+              <h3 className="text-xl font-bold text-white mb-2">of Contestants</h3>
               <p className="text-gray-300">
-                See faster belt progression than ever before.
+                See faster title progression than ever before.
               </p>
             </motion.div>
             <motion.div 
@@ -527,7 +527,7 @@ export default function WelcomePage() {
               whileHover={{ scale: 1.05 }}
             >
               <div className="text-5xl font-bold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent mb-2">88%</div>
-              <h3 className="text-xl font-bold text-white mb-2">Mastered New Moves</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Mastered New Poses</h3>
               <p className="text-gray-300">
                 Within the first 3 sessions.
               </p>
@@ -538,22 +538,22 @@ export default function WelcomePage() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 rounded-2xl p-8 border border-gray-700">
               <div className="flex items-center gap-3 mb-6">
-                <MessageCircle className="w-6 h-6 text-red-500" />
+                <MessageCircle className="w-6 h-6 text-pink-500" />
                 <h3 className="text-xl font-bold text-white">Top Feedback from Parents:</h3>
               </div>
               
               <div className="space-y-4 text-gray-300">
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="italic">"Leila was stuck at red stripe for 8 months. This pushed her to 1st Dan in just 1 month!"</p>
+                  <div className="w-2 h-2 bg-pink-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="italic">"Leila was struggling with her confidence for months. RunwayAI helped her win her first title in just 6 weeks!"</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="italic">"Kiko is finally confident in class. He knows what he's doing."</p>
+                  <div className="w-2 h-2 bg-pink-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="italic">"Kiko is finally confident on stage. She knows exactly how to present herself."</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="italic">"This saved us from quitting Taekwondo. Challenges and progress reports really keep kids motivated."</p>
+                  <div className="w-2 h-2 bg-pink-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="italic">"This saved us from quitting pageants. Challenges and progress reports really keep kids motivated."</p>
                 </div>
               </div>
 
@@ -567,7 +567,7 @@ export default function WelcomePage() {
                     <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center group-hover:bg-green-400 transition-colors">
                       <div className="w-3 h-2 bg-white rounded"></div>
                     </div>
-                    <span className="text-2xl font-bold">Join 500+ families using CoachT</span>
+                    <span className="text-2xl font-bold">Join 500+ families using RunwayAI</span>
                   </motion.div>
                 </Link>
                 
@@ -627,7 +627,7 @@ export default function WelcomePage() {
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-4">Train Like a Champion</h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Personalized AI coaching designed to help ambitious students reach their full potential.
+              Personalized AI coaching designed to help ambitious contestants reach their full potential.
             </p>
           </div>
           
@@ -639,11 +639,11 @@ export default function WelcomePage() {
       <div className="py-20 px-6 text-center">
         <div className="max-w-4xl mx-auto">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 via-purple-600/20 to-orange-600/20 rounded-2xl blur-3xl"></div>
-            <div className="relative bg-gradient-to-r from-red-600/10 via-purple-600/10 to-orange-600/10 rounded-2xl p-12 border border-gray-800">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-600/20 via-purple-600/20 to-blue-600/20 rounded-2xl blur-3xl"></div>
+            <div className="relative bg-gradient-to-r from-pink-600/10 via-purple-600/10 to-blue-600/10 rounded-2xl p-12 border border-gray-800">
               <h2 className="text-5xl font-bold mb-6">Start Your Journey Today</h2>
               <p className="text-xl text-gray-300 mb-8">
-                Give your child the competitive edge with AI-powered martial arts training
+                Give your child the competitive edge with AI-powered pageant training
                 </p>
                 <Link href="/early">
                 <Button 
@@ -654,7 +654,7 @@ export default function WelcomePage() {
                 </Link>
               
               <div className="absolute -bottom-8 right-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-red-500 via-purple-500 to-orange-500 rounded-lg transform rotate-12 opacity-80"></div>
+                <div className="w-20 h-20 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 rounded-lg transform rotate-12 opacity-80"></div>
               </div>
             </div>
           </div>
@@ -664,9 +664,9 @@ export default function WelcomePage() {
       {/* Testimonials */}
       <div id="testimonials" className="py-20 px-6 bg-black overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-4">Loved by ambitious students and parents</h2>
+          <h2 className="text-4xl font-bold mb-4">Loved by ambitious contestants and parents</h2>
           <p className="text-lg text-gray-400 mb-12">
-            Families all around the world choose CoachT to unlock their potential.
+            Families all around the world choose RunwayAI to unlock their potential.
           </p>
           <div className="relative flex gap-8 h-[600px] [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)]">
             <div className="flex flex-col gap-8 animate-scroll-up">
@@ -706,7 +706,7 @@ export default function WelcomePage() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-purple-500 to-orange-500 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -714,7 +714,7 @@ export default function WelcomePage() {
             >
               <Link href="/early">
                 <Button 
-                  className="bg-gradient-to-r from-red-500 via-purple-500 to-orange-500 text-white hover:from-red-600 hover:via-purple-600 hover:to-orange-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-white/20 transform transition-all duration-300 hover:shadow-3xl"
+                  className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-white/20 transform transition-all duration-300 hover:shadow-3xl"
                 >
                   🚀 Start Training Now
                 </Button>
