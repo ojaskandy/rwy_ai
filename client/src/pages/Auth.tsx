@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
+import runwayAILogo from '@assets/rwyailogo_1753298739746.png';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -152,8 +153,12 @@ const Auth = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="flex justify-center mb-6"
           >
-            <div className="w-20 h-20 bg-gradient-to-br from-pink-600 to-pink-700 rounded-2xl flex items-center justify-center shadow-2xl border-4 border-white/30">
-              <span className="text-3xl">✈️</span>
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl border-4 border-white/30 p-2">
+              <img 
+                src={runwayAILogo} 
+                alt="Runway AI Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
           </motion.div>
           <motion.div
