@@ -1,0 +1,105 @@
+## No-Code Prompt for Replit Agent: Interview Coach (Pageant Edition, Whisper-based)
+
+**Goal:**  
+Enable pageant contestants to practice and receive feedback using speech-to-text (Whisper API), with seamless UX for "Questions" and "Rounds" interview coaching.
+
+### User Journey & UI Flow
+
+#### 1. **Coach Tab: Entry Point**
+- User clicks **“Coach”**.
+- Two options appear:
+  - **Questions**
+  - **Rounds**
+
+#### 2. **If User Selects “Questions”**
+- Prompt: “Choose your time limit for each answer”  
+  - Options: 30s, 45s, 60s, 75s, 90s.
+- On selection, randomly display a question from the existing pool.
+- Show a **countdown timer** matching the selected limit.
+- User starts speaking; audio is streamed or recorded.
+
+  - While user speaks, **transcribe speech using Whisper Speech-to-Text**.
+    - Display live transcription in a text area for confirmation.
+
+- On timer reaching zero (or if the user clicks “Submit”):
+  - Stop recording.
+  - Submit the transcript to OpenAI for **grading** as a pageant response.
+    - Grading prompt should consider criteria like clarity, impact, authenticity, relevance, poise, and “wow factor” judged as a pageant would.
+  - Display feedback.
+    - Show options: **“Next Question”** or **“Stop”**.
+
+#### 3. **If User Selects “Rounds”**
+- Prompt: “How many questions in this round?” (user picks any value, e.g., 3–10).
+- Prompt: “Choose your time limit per question” (same time options).
+- On start, execute this loop:
+  - For each round/question:
+    - Randomly select a question from the pool.
+    - Show timer, start recording/transcription.
+    - Stop and log user’s response at the end of time.
+    - No feedback shown after each question.
+- After the last question:
+  - Submit all responses to OpenAI **at once**:
+    - Request **comprehensive feedback on overall interview performance**.
+    - Also request **individual feedback per question**, referencing the precise answer given.
+
+### No-Code Prompt to Replit Agent
+
+**Prompt Start**
+
+```
+You are building an Interview Coach for pageant contestants.
+The user enters the Coach tab and chooses between two modes:
+
+### 1. “Questions” Mode:
+- Ask the user to pick a time limit for their answer (30s, 45s, 60s, 75s, or 90s).
+- Randomly choose a question from the pool and display it.
+- Start a countdown timer for the chosen duration.
+- While timer is running, record the user's speech and use the Whisper API (gpt-4o-transcribe or whisper-1) to transcribe their answer in real time. Show the transcription as feedback.
+- When the timer ends, submit the transcribed answer to OpenAI completion API with the following grading prompt:
+
+> “You are a top judge in elite international pageants. Grade the answer below as if it is a pageant interview question response by a contestant. Focus on content, clarity, authenticity, impact, relevance to the question, and poise. Provide feedback the way a coach would: what was strong, what could be improved, and a 1–10 score on overall impression.”
+> [USER RESPONSE HERE]
+
+- After feedback, ask if the user wants to try another question (“Next Question”) or end the session.
+
+### 2. “Rounds” Mode:
+- Ask the user how many questions they want in their round (any number, e.g., 3–10).
+- Ask for a time limit for each answer (same time options).
+- For each question:
+  - Randomly select a question from the pool and display.
+  - Start the timer.
+  - Record/transcribe the user’s answer with Whisper.
+  - Proceed to next question without giving feedback.
+- After all questions are answered:
+  - Submit all responses together to OpenAI with the following grading prompt:
+
+> “You are judging a simulated pageant interview. Below is a series of interview questions and the contestant’s answers. Provide:
+> 1. Overall feedback on their interview skills, strengths, areas for improvement, and emotional impression.
+> 2. For each question, give a brief specific critique referencing what was actually said and a 1–10 score.”
+> [LIST OF QUESTIONS & USER RESPONSES]
+
+- Display both overall feedback and per-question feedback at the end.
+
+**Additional Implementation Notes:**
+- If you need live transcription, use OpenAI’s streaming transcription API endpoints and show interim results.
+- Ensure time limits are enforced (recording/transcription cuts off at the set timer).
+- Pick questions randomly each time (do not repeat in same round).
+- All prompts, timers, and flows are managed in the UI—no code required from the user.
+```
+
+**Prompt End**
+
+### Table: Feature-to-API Mapping
+
+| User Action                       | Whisper/OpenAI API Usage                              |
+|-----------------------------------|------------------------------------------------------|
+| Record/transcribe response        | Whisper Speech-to-Text (`gpt-4o-transcribe` or `whisper-1`) |
+| Grading for single answer         | OpenAI Chat Completion with pageant grading prompt    |
+| Grading for rounds                | OpenAI Chat Completion with multi-answer grading prompt|
+
+**Pro Tip:**  
+If you want to enrich grading with inflection/emotion/voice analytics, pipe the user’s original audio into a prosody/emotion detection module and add that as context in the grading prompt. (Optional, but gives premium feel for advanced users!)
+
+[1] https://platform.openai.com/chat
+[2] https://platform.openai.com/docs
+[3] https://platform.openai.com/docs/api-reference/audio/crea
