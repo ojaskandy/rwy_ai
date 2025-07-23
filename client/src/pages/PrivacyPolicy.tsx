@@ -173,7 +173,7 @@ export default function PrivacyPolicy() {
                 <li><strong>Access:</strong> You may view your account and content information at any time in-app.</li>
                 <li><strong>Correction:</strong> Update your profile or fix errors in-app.</li>
                 <li><strong>Erasure:</strong> Delete your account in-app for data removal; contact support for additional requests.</li>
-                <li><strong>Children's Privacy:</strong> Runway AI is intended for users 13+. If you believe a child under 13 has created an account, contact us immediately for removal.</li>
+
               </ul>
             </section>
 
@@ -208,7 +208,7 @@ export default function PrivacyPolicy() {
               <p className="text-gray-700 leading-relaxed mb-4">
                 For questions, data deletion, or privacy concerns, email us at:
               </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
                 <p className="text-gray-700 mb-2">
                   <strong>Ojas Kandhare:</strong> <a href="mailto:okandy@uw.edu" className="text-pink-600 hover:underline">okandy@uw.edu</a>
                 </p>
@@ -216,6 +216,9 @@ export default function PrivacyPolicy() {
                   <strong>Arshia Kathpalia:</strong> <a href="mailto:arshia.x.kathpalia@gmail.com" className="text-pink-600 hover:underline">arshia.x.kathpalia@gmail.com</a>
                 </p>
               </div>
+              <p className="text-gray-700 leading-relaxed">
+                For additional privacy resources and tools, visit: <a href="https://www.termsfeed.com/live/f58e233a-b329-4978-89a8-873327bb78ef" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">Privacy Policy Generator</a>
+              </p>
             </section>
 
             {/* Summary Note */}
