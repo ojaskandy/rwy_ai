@@ -54,18 +54,23 @@ const inspirationalWords = [
 
 const whyRunwayAICards = [
   {
-    text: "While doing pageants, I felt like I was",
-    highlight: "training blind",
-    emoji: "🎭"
+    text: "Because we all need a little help",
+    highlight: "before the spotlight hits.",
+    emoji: "💫"
   },
   {
-    text: "No real-time feedback. No way to track progress.",
-    highlight: "No personalized coaching.",
-    emoji: "😔"
+    text: "Runway AI is like your pageant bestie — giving sweet, honest feedback on your walk, your answers,",
+    highlight: "and everything in between.",
+    emoji: "💁‍♀️"
   },
   {
-    text: "So I built RunwayAI to help every contestant",
-    highlight: "reach their full potential.",
+    text: "It's not about being perfect, it's about",
+    highlight: "growing with every step (in heels, of course).",
+    emoji: "👠"
+  },
+  {
+    text: "We're not flawless —",
+    highlight: "but we're pretty fabulous trying.",
     emoji: "✨"
   }
 ];
@@ -581,7 +586,7 @@ export default function RunwayAIWelcome() {
                 className="space-y-6 text-gray-700 leading-relaxed"
               >
                 <p className="text-lg">
-                  Arshia Kathpalia is the 2024 Miss Teen India USA and a passionate advocate for diversity and inclusion in STEM. As president of her school's Girls Who Code club and a volunteer at Girls Rock Math, Arshia has experienced firsthand the importance of representation for young women. After feeling like she was "training blind" during her pageant preparation, she built RunwayAI to ensure no contestant ever has to face those challenges again.
+                  Arshia Kathpalia is the 2024 Miss Teen India USA and a passionate advocate for diversity and inclusion in STEM. As president of her school's Girls Who Code club and a volunteer at Girls Rock Math, Arshia has experienced firsthand the importance of representation for young women. She built RunwayAI to help every contestant reach their full potential with personalized AI coaching and support.
                 </p>
               </motion.div>
               
