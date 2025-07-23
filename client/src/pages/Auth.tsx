@@ -129,13 +129,13 @@ const Auth = () => {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8" style={{ backgroundColor: '#FFC5D3' }}>
+    <main className="min-h-screen flex items-center justify-center px-4 py-8" style={{ backgroundColor: '#8B5A6B' }}>
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-pink-300/20 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-24 h-24 bg-pink-400/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-32 left-20 w-40 h-40 bg-pink-200/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 right-10 w-28 h-28 bg-pink-500/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-400/15 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-pink-400/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-32 left-20 w-40 h-40 bg-purple-300/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-10 w-28 h-28 bg-pink-500/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: '3s' }}></div>
       </div>
 
       <motion.div 
@@ -161,10 +161,10 @@ const Auth = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <h1 className="text-4xl font-bold text-pink-900 mb-3">
+            <h1 className="text-4xl font-bold text-white mb-3">
               Runway AI
             </h1>
-            <p className="text-pink-800 text-lg font-medium">
+            <p className="text-pink-100 text-lg font-medium">
               {forgotPassword 
                 ? 'Reset your password' 
                 : isSignUp 
