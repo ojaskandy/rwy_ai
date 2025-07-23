@@ -1,0 +1,83 @@
+# Runway AI Privacy Policy
+
+_Last updated: July 23, 2025_
+
+## 1. Introduction
+
+Runway AI (“we”, “us”, or “our”) is committed to protecting your privacy. This policy explains how we collect, use, store, and safeguard information when you use the Runway AI app and related services.
+
+If you have questions or concerns about this policy or your data, contact us at [support email address].
+
+## 2. Information We Collect
+
+### a. Information Provided by You
+
+- **Account Details**
+  - Email address (used for account registration with our authentication provider, Supabase)
+  - Display name or username (if provided)
+
+- **Profile and User Content**
+  - Profile photo (if added)
+  - Event and calendar data that you create in the app (such as event titles, times, descriptions)
+
+- **Uploaded Content**
+  - Photos, videos, or audio recordings that you upload or create within the app (such as for Runway feedback, Interview Coach, or Dress Try-On)
+  - **Note:** We do not access, analyze, or share the contents of your uploaded media; all files remain private to your account unless you choose to share them.
+
+### b. Device Permissions and Usage Data
+
+- **Camera Access:** For photo/video features (e.g., dress try-on, runway feedback)
+- **Microphone Access:** For audio/video features (e.g., interview coaching)
+- **Location Data:** Used to enhance select features (such as event tracking, attendance, or analytics)
+- **Basic Usage Data:** Metrics such as feature usage frequency, error logs, and app navigation (used for internal improvements only)
+- **Device and App Info:** Such as device type, operating system, anonymous app identifiers
+
+## 3. How We Use Your Information
+
+- To create, maintain, and verify your account
+- To provide core features: live feedback, virtual try-on, event management, and coaching tools
+- To store your content (media, calendar events) securely for your access
+- To comply with legal and regulatory requirements
+- To troubleshoot, maintain, and improve app performance
+
+## 4. Deletion and User Control
+
+- **In-App Account Deletion:** You can delete your Runway AI account at any time from within the app. This will permanently erase your profile, calendar, and all associated data from our systems.
+- **Access Control:** You may review or update your profile and personal data in the app at any time.
+- **Permissions:** Camera, microphone, and location access can be controlled at the device level. Disabling permissions may limit certain features.
+
+## 5. Data Sharing and Disclosure
+
+- **No Sale of Personal Data:** We do not sell, rent, or trade your personal information.
+- **No Third-Party Services:** As of July 23, 2025, Runway AI does not use any third-party analytics, advertising, or marketing platforms.
+- **Legal Compliance Only:** We may disclose information if required to do so by law or in response to valid legal requests (court order, government regulation, etc.).
+- **Business Changes:** In the event of a merger, acquisition, or asset sale, users will be notified before their information becomes subject to a different privacy policy.
+
+## 6. Data Security and Storage
+
+- **Data Storage:** All user data is securely stored on Supabase infrastructure; only authorized personnel have system-level access.
+- **Uploaded Content:** We cannot access, view, or use your uploaded media, except for internal debugging in rare, permission-granted cases (e.g., you report a bug with a file).
+- **Encryption & Access Control:** Data is encrypted at rest and in transit.
+
+## 7. Your Rights and Choices
+
+- **Access:** You may view your account and content information at any time in-app.
+- **Correction:** Update your profile or fix errors in-app.
+- **Erasure:** Delete your account in-app for data removal; contact support for additional requests.
+- **Children’s Privacy:** Runway AI is intended for users 13+. If you believe a child under 13 has created an account, contact us immediately for removal.
+
+## 8. International Data
+
+- Data may be stored or processed in countries outside your own. We ensure appropriate safeguards are in place as required by applicable law.
+
+## 9. Changes to This Policy
+
+- We may update this policy as our app, features, or legal requirements evolve. Updates will be posted in-app and on our website, and a change of policy will be noted to all users.
+
+## 10. Contact
+
+For questions, data deletion, or privacy concerns, email us at [support email address].
+
+> **No marketing, advertising, or third-party analytics are used. You control your data, and all personal and uploaded information remains private and secure.**
+
+Let us know if you need region-specific compliance language (GDPR/CCPA), accessibility improvements, or a custom clause for organizational/coach admins.

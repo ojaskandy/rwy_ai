@@ -20,6 +20,7 @@ import Routine from "@/pages/Routine";
 import GlobalDock from "@/components/GlobalDock";
 // RUNWAY AI WELCOME PAGE
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 function Router() {
   return (
@@ -30,6 +31,9 @@ function Router() {
 
         {/* Welcome page - accessible without login */}
         <Route path="/welcome" component={RunwayAIWelcome} />
+
+        {/* Privacy Policy - accessible without login */}
+        <Route path="/privacy-policy" component={PrivacyPolicy} />
 
         {/* All protected routes require authentication */}
         <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
