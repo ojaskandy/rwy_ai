@@ -148,10 +148,10 @@ export default function InterviewCoach() {
   const [, navigate] = useLocation();
   
   // Practice setup state
-  const [mode, setMode] = useState<'question' | 'round'>('question');
+  const [mode, setMode] = useState<'question' | 'rounds'>('question');
   const [numQuestions, setNumQuestions] = useState(3);
   const [timeLimit, setTimeLimit] = useState(90);
-  const [currentStep, setCurrentStep] = useState<'setup' | 'question' | 'feedback'>('setup');
+  const [currentStep, setCurrentStep] = useState<'setup' | 'question' | 'grading' | 'feedback'>('setup');
   
   // Question state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -287,6 +287,7 @@ export default function InterviewCoach() {
   const processFeedback = async (allSessions: InterviewSession[]) => {
     setIsProcessing(true);
     setError(null);
+    setCurrentStep('grading');
 
     try {
       const response = await fetch('/api/interview/analyze', {
@@ -307,12 +308,25 @@ export default function InterviewCoach() {
       }
 
       setFeedback(result.feedback);
-      if (mode === 'round' || (mode === 'question' && currentQuestionIndex >= numQuestions - 1)) {
+      
+      // In question mode, show feedback after each question
+      // In rounds mode, continue to next question until all done
+      if (mode === 'question') {
         setCurrentStep('feedback');
+      } else if (mode === 'rounds') {
+        if (currentQuestionIndex >= numQuestions - 1) {
+          setCurrentStep('feedback'); // All rounds complete
+        } else {
+          setTimeout(() => {
+            nextQuestion();
+            setCurrentStep('question');
+          }, 2000); // Brief pause to show "grading" state
+        }
       }
 
     } catch (err: any) {
       setError(err.message || 'Failed to generate feedback');
+      setCurrentStep('question'); // Go back to question on error
     } finally {
       setIsProcessing(false);
     }
@@ -424,15 +438,15 @@ export default function InterviewCoach() {
                         Single Questions
                       </Button>
                       <Button
-                        variant={mode === 'round' ? 'default' : 'outline'}
-                        onClick={() => setMode('round')}
-                        className={mode === 'round' 
+                        variant={mode === 'rounds' ? 'default' : 'outline'}
+                        onClick={() => setMode('rounds')}
+                        className={mode === 'rounds' 
                           ? 'bg-pink-500 hover:bg-pink-600 text-white' 
                           : 'border-pink-200 text-pink-600 hover:bg-pink-50'
                         }
                         size="sm"
                       >
-                        Full Round
+                        Full Rounds
                       </Button>
                     </div>
                   </div>
@@ -460,8 +474,24 @@ export default function InterviewCoach() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Time Limit: {formatTime(timeLimit)}
                     </label>
+                    <div className="grid grid-cols-4 gap-2 mb-2">
+                      {[60, 90, 120, 180].map((time) => (
+                        <Button
+                          key={time}
+                          variant={timeLimit === time ? 'default' : 'outline'}
+                          onClick={() => setTimeLimit(time)}
+                          className={timeLimit === time 
+                            ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                            : 'border-pink-200 text-pink-600 hover:bg-pink-50'
+                          }
+                          size="sm"
+                        >
+                          {formatTime(time)}
+                        </Button>
+                      ))}
+                    </div>
                     <div className="grid grid-cols-3 gap-2">
-                      {[60, 90, 120].map((time) => (
+                      {[240, 300, 600].map((time) => (
                         <Button
                           key={time}
                           variant={timeLimit === time ? 'default' : 'outline'}
@@ -507,11 +537,25 @@ export default function InterviewCoach() {
                       <span className="text-sm font-medium text-gray-700">Question {currentQuestionNumber} of {numQuestions}</span>
                       <span className="text-sm text-gray-500">{Math.round(progressPercentage)}% Complete</span>
                     </div>
-                    <div className="w-full bg-pink-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-pink-500 to-pink-600 h-2 rounded-full transition-all duration-300"
+                    <div className="w-full bg-pink-200 rounded-full h-2 relative">
+                      <motion.div
+                        className="bg-pink-500 h-full rounded-full"
                         style={{ width: `${progressPercentage}%` }}
-                      ></div>
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercentage}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                      {/* Fixed blue dot positioning - now properly aligned at end of pink bar */}
+                      <motion.div
+                        className="absolute top-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm"
+                        style={{ 
+                          left: `calc(${progressPercentage}% - 6px)`,
+                          transform: 'translateY(-50%)'
+                        }}
+                        initial={{ left: '0%' }}
+                        animate={{ left: `calc(${progressPercentage}% - 6px)` }}
+                        transition={{ duration: 0.5 }}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -656,6 +700,40 @@ export default function InterviewCoach() {
                   </Card>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* Grading Step */}
+          {currentStep === 'grading' && (
+            <motion.div
+              key="grading"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="text-center"
+            >
+              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                <CardContent className="p-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="mb-6"
+                  >
+                    <Sparkles className="w-16 h-16 mx-auto text-pink-500" />
+                  </motion.div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">AI is Grading Your Response</h3>
+                  <p className="text-gray-600 text-lg mb-2">Analyzing your answer using advanced AI...</p>
+                  <p className="text-gray-500 text-sm">This might take a moment for thorough evaluation</p>
+                  
+                  {mode === 'rounds' && (
+                    <div className="mt-6 p-4 bg-pink-50 rounded-lg border border-pink-200">
+                      <p className="text-pink-700 text-sm">
+                        <strong>Rounds Mode:</strong> After grading, you'll move to the next question automatically.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
 

@@ -171,7 +171,7 @@ Format as JSON:
 BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. Don't be nice.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: 'system',
@@ -226,7 +226,7 @@ BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. 
 export async function testConnection(req: Request, res: Response) {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [{ role: 'user', content: 'Hello' }],
       max_tokens: 5,
     });
