@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Eye, EyeOff, Mail, Lock, Loader2, Heart, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, User, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,8 +168,8 @@ const Auth = () => {
               {forgotPassword 
                 ? 'Reset your password' 
                 : isSignUp 
-                  ? 'Join the runway' 
-                  : 'Welcome back, beautiful'
+                  ? 'Create your account' 
+                  : 'Welcome back'
               }
             </p>
           </motion.div>
@@ -204,7 +204,7 @@ const Auth = () => {
                   />
                 )}
                 <span className="relative z-10 flex items-center justify-center">
-                  <Heart className="w-4 h-4 mr-2" />
+                  <User className="w-4 h-4 mr-2" />
                   Sign In
                 </span>
               </motion.button>
@@ -227,7 +227,7 @@ const Auth = () => {
                   />
                 )}
                 <span className="relative z-10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-4 h-4 mr-2" />
                   Sign Up
                 </span>
               </motion.button>
@@ -254,7 +254,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-12 h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-pink-500 focus:ring-2 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900"
-                  placeholder="princess@runway.ai"
+                  placeholder="your.email@example.com"
                   required
                   aria-describedby="email-description"
                 />
