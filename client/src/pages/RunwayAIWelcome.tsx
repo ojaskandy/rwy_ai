@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import runwayLogo from "@assets/runwayailogo_1753229923969.png";
 
 const features = [
   {
@@ -40,9 +41,12 @@ export default function RunwayAIWelcome() {
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
-              RunwayAI
-            </span>
+            <div className="flex items-center space-x-3">
+              <img src={runwayLogo} alt="Runway AI" className="h-10 w-10" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
+                RunwayAI
+              </span>
+            </div>
             <div className="hidden md:flex space-x-6 text-sm">
               <a href="#features" className="text-gray-600 hover:text-pink-500 transition-colors">Features</a>
               <a href="#about" className="text-gray-600 hover:text-pink-500 transition-colors">About Arshia</a>
@@ -66,9 +70,12 @@ export default function RunwayAIWelcome() {
             transition={{ duration: 0.8 }}
             className="mb-8"
           >
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 leading-tight">
-              The AI Pageant Coach
-            </h1>
+            <div className="flex flex-col items-center mb-6">
+              <img src={runwayLogo} alt="Runway AI" className="h-20 w-20 mb-4" />
+              <h1 className="text-6xl md:text-8xl font-bold leading-tight text-center">
+                The AI Pageant Coach
+              </h1>
+            </div>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto leading-relaxed">
               Built to make you extraordinarily confident. RunwayAI is the best way to train for pageants with AI.
             </p>

@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { useLocation } from 'wouter';
 import { useCalendarEvents } from '@/hooks/use-calendar';
 import UserMenu from '@/components/UserMenu';
+import runwayLogo from "@assets/runwayailogo_1753229923969.png";
 
 // Event type to color mapping
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -115,13 +116,16 @@ export default function Home() {
     <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 pt-12 bg-pink-700 shadow-lg">
-        <div>
-          <h1 className="text-white text-lg font-medium">
-            Welcome back,
-          </h1>
-          <div className="flex items-center gap-2">
-            <span className="text-white text-lg font-medium">{displayName}</span>
-            <Star className="h-5 w-5 text-yellow-300 fill-current" />
+        <div className="flex items-center gap-3">
+          <img src={runwayLogo} alt="Runway AI" className="h-8 w-8" />
+          <div>
+            <h1 className="text-white text-lg font-medium">
+              Welcome back,
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className="text-white text-lg font-medium">{displayName}</span>
+              <Star className="h-5 w-5 text-yellow-300 fill-current" />
+            </div>
           </div>
         </div>
         {user ? (
