@@ -163,13 +163,13 @@ export default function Health() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && authenticate()}
-                  className={authError ? 'border-red-300 focus:border-red-500' : ''}
+                  className={`text-black placeholder:text-gray-500 bg-white ${authError ? 'border-red-300 focus:border-red-500' : ''}`}
                 />
                 {authError && (
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-red-600 flex items-center gap-2"
+                    className="text-sm text-red-700 flex items-center gap-2 font-medium"
                   >
                     <AlertCircle className="w-4 h-4" />
                     {authError}
@@ -178,7 +178,7 @@ export default function Health() {
               </div>
               <Button 
                 onClick={authenticate}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600"
+                className="w-full bg-black text-white hover:bg-gray-800 font-medium"
               >
                 Access Health Monitor
               </Button>
@@ -212,7 +212,7 @@ export default function Health() {
                 <Button
                   onClick={runAllTests}
                   disabled={isRunningTests}
-                  className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600"
+                  className="bg-black text-white hover:bg-gray-800 font-medium"
                 >
                   {isRunningTests ? (
                     <>
