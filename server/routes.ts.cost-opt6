@@ -432,10 +432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
         ? "Expert pageant coach. Give detailed analysis and improvement tips."
-        : "Pageant coach. Max 10 words. One tip only.";
+        : "Pageant coach. Give 1 short sentence of encouragement and 1 tip. Max 15 words total.";
 
       const userPrompt = isSequenceSummary
-        ? "Analyze this complete routine. Give comprehensive feedback."
+        ? "Analyze this complete pageant routine sequence. Provide comprehensive feedback on the overall performance, highlighting strengths and specific areas for improvement. Give actionable advice for future practice sessions."
         : "Quick tip for this pose?";
 
       // Prepare image content for OpenAI
@@ -471,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ]
             }
           ],
-          max_tokens: isSequenceSummary ? 150 : 20,
+          max_tokens: isSequenceSummary ? 200 : 30,
           temperature: 0.7
         })
       });

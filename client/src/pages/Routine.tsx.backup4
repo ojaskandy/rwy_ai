@@ -1,0 +1,389 @@
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'wouter';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Play, Square, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+interface FeedbackOverlayProps {
+  feedback: string;
+  isAnalyzing: boolean;
+}
+
+function FeedbackOverlay({ feedback, isAnalyzing }: FeedbackOverlayProps) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className="absolute bottom-6 left-4 right-4 z-10"
+      >
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-pink-200">
+          {isAnalyzing ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <span className="text-gray-600 ml-2">Analyzing...</span>
+            </div>
+          ) : (
+            <p className="text-gray-800 text-sm font-medium leading-tight h-10 overflow-hidden line-clamp-2">
+              {feedback || "Ready to start your pageant practice! Click Start Practice to begin."}
+            </p>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+interface CameraPermissionOverlayProps {
+  onRequestPermission: () => void;
+}
+
+function CameraPermissionOverlay({ onRequestPermission }: CameraPermissionOverlayProps) {
+  return (
+    <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-white flex items-center justify-center z-20">
+      <div className="text-center p-8 max-w-md">
+        <Camera className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Camera Access Needed</h3>
+        <p className="text-gray-600 mb-6">
+          We need access to your camera to provide real-time pageant coaching feedback.
+        </p>
+        <Button 
+          onClick={onRequestPermission}
+          className="bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500"
+        >
+          Allow Camera Access
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface SummaryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  feedback: string;
+  isLoading: boolean;
+}
+
+function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
+            Practice Session Summary
+          </DialogTitle>
+          <DialogDescription>
+            Here's your comprehensive performance feedback
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex space-x-2">
+                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-gray-600 ml-3">Analyzing your complete routine...</span>
+            </div>
+          ) : (
+            <div className="bg-pink-50 rounded-lg p-6">
+              <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                {feedback || "Great session! Keep practicing to build your confidence and perfect your technique."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <Button 
+            onClick={onClose}
+            className="bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500"
+          >
+            Done
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Routine() {
+  // Core state
+  const [isActive, setIsActive] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Summary modal state
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryFeedback, setSummaryFeedback] = useState('');
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  
+  // Refs
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const frameBufferRef = useRef<string[]>([]);
+  const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sendIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const allFramesRef = useRef<string[]>([]);
+
+  // Request camera permission
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      streamRef.current = stream;
+      setHasPermission(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Camera permission denied:', error);
+      setHasPermission(false);
+    }
+  };
+
+  // Capture frame from video
+  const captureFrame = (): string | null => {
+    if (!videoRef.current || !canvasRef.current) return null;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx || video.videoWidth === 0) return null;
+    
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current video frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to base64 JPEG (compressed for speed)
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
+  // Send frames to backend for analysis
+  const sendFramesForAnalysis = async (frames: string[], isSequenceSummary = false) => {
+    if (frames.length === 0) return;
+    
+    try {
+      setIsAnalyzing(true);
+      
+      const response = await fetch('/api/pageant-coaching', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          frames,
+          isSequenceSummary
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('API error:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (isSequenceSummary) {
+        setSummaryFeedback(data.feedback);
+        setSummaryLoading(false);
+      } else {
+        setFeedback(data.feedback);
+      }
+      
+    } catch (error) {
+      console.error('Failed to get feedback:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Start practice session
+  const startPractice = () => {
+    if (!hasPermission) {
+      requestCameraPermission();
+      return;
+    }
+
+    setIsActive(true);
+    setFeedback('');
+    frameBufferRef.current = [];
+    allFramesRef.current = [];
+
+    // Capture frame every 0.5 seconds
+    captureIntervalRef.current = setInterval(() => {
+      const frame = captureFrame();
+      if (frame) {
+        frameBufferRef.current.push(frame);
+        allFramesRef.current.push(frame);
+        
+        // Keep only last 4 frames in buffer
+        if (frameBufferRef.current.length > 4) {
+          frameBufferRef.current.shift();
+        }
+      }
+    }, 1000);
+
+    // Send 4 frames every 2 seconds
+    sendIntervalRef.current = setInterval(() => {
+      if (frameBufferRef.current.length >= 4) {
+        sendFramesForAnalysis([...frameBufferRef.current]);
+      }
+    }, 4000);
+  };
+
+  // Stop practice session
+  const stopPractice = () => {
+    setIsActive(false);
+    
+    // Clear intervals
+    if (captureIntervalRef.current) {
+      clearInterval(captureIntervalRef.current);
+    }
+    if (sendIntervalRef.current) {
+      clearInterval(sendIntervalRef.current);
+    }
+
+    // Show summary if we have frames
+    if (allFramesRef.current.length > 0) {
+      setShowSummary(true);
+      setSummaryLoading(true);
+      
+      // Sample frames for summary (take every 4th frame to reduce payload)
+      const sampleFrames = allFramesRef.current.filter((_, index) => index % 4 === 0);
+      const maxFrames = Math.min(sampleFrames.length, 10); // Limit to 10 frames for summary
+      
+      sendFramesForAnalysis(sampleFrames.slice(0, maxFrames), true);
+    }
+  };
+
+  // Initialize camera on mount
+  useEffect(() => {
+    requestCameraPermission();
+    
+    return () => {
+      // Cleanup
+      if (captureIntervalRef.current) clearInterval(captureIntervalRef.current);
+      if (sendIntervalRef.current) clearInterval(sendIntervalRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex flex-col">
+      {/* Header */}
+      <div className="w-full bg-white/95 backdrop-blur-sm shadow-sm h-14 px-4 flex items-center justify-between border-b border-pink-100 z-30">
+        <Link href="/">
+          <Button variant="ghost" className="text-gray-800 hover:text-pink-600 hover:bg-pink-50">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+        </Link>
+        
+        <h1 className="text-xl font-bold text-gray-800">Live Pageant Coach</h1>
+        
+        <div className="w-20"></div> {/* Spacer for center alignment */}
+      </div>
+
+      {/* Main Camera View */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Video Element */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Hidden canvas for frame capture */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Camera Permission Overlay */}
+        {hasPermission === false && (
+          <CameraPermissionOverlay onRequestPermission={requestCameraPermission} />
+        )}
+
+        {/* Feedback Overlay */}
+        <FeedbackOverlay feedback={feedback} isAnalyzing={isAnalyzing} />
+
+        {/* Start/Stop Button */}
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
+          <Button
+            onClick={isActive ? stopPractice : startPractice}
+            disabled={hasPermission === false}
+            className={`
+              px-8 py-4 rounded-2xl font-semibold shadow-lg text-white
+              ${isActive 
+                ? 'bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500' 
+                : 'bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500'
+              }
+            `}
+          >
+            {isActive ? (
+              <>
+                <Square className="w-5 h-5 mr-2" />
+                Stop Practice
+              </>
+            ) : (
+              <>
+                <Play className="w-5 h-5 mr-2" />
+                Start Practice
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Recording Indicator */}
+        {isActive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute top-6 right-6 z-20"
+          >
+            <div className="flex items-center space-x-2 bg-red-500/90 text-white px-3 py-2 rounded-full">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">LIVE</span>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Summary Modal */}
+      <SummaryModal
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        feedback={summaryFeedback}
+        isLoading={summaryLoading}
+      />
+    </div>
+  );
+} 
