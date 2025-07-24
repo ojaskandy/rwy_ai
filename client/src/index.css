@@ -74,6 +74,22 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Crown pulse animation for Runway AI logo */
+@keyframes crown-pulse {
+  0%, 100% { 
+    filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.4));
+    transform: scale(1);
+  }
+  50% { 
+    filter: drop-shadow(0 0 16px rgba(236, 72, 153, 0.6));
+    transform: scale(1.02);
+  }
+}
+
+.crown-pulse {
+  animation: crown-pulse 4.5s ease-in-out infinite;
+}
+
 @keyframes emboss-shift {
   0%, 100% { text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5), -1px -1px 1px rgba(255, 255, 255, 0.1); }
   50% { text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.7), -2px -2px 2px rgba(255, 255, 255, 0.15); }

@@ -153,11 +153,11 @@ const Auth = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="flex justify-center mb-6"
           >
-            <div className="w-28 h-28 flex items-center justify-center">
+            <div className="w-32 h-32 flex items-center justify-center">
               <img 
                 src={runwayAILogo} 
                 alt="Runway AI Logo" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain crown-pulse"
               />
             </div>
           </motion.div>
@@ -266,7 +266,7 @@ const Auth = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-pink-500 focus:ring-2 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900"
+                  className="pl-12 min-h-[48px] h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-400/60 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900 transition-all duration-150"
                   placeholder="your.email@example.com"
                   required
                   aria-describedby="email-description"
@@ -293,7 +293,7 @@ const Auth = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-pink-500 focus:ring-2 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900"
+                    className="pl-12 pr-12 min-h-[48px] h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-400/60 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900 transition-all duration-150"
                     placeholder="Your secret runway code"
                     required
                     minLength={6}
@@ -336,7 +336,7 @@ const Auth = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-12 pr-12 h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-pink-500 focus:ring-2 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900"
+                      className="pl-12 pr-12 min-h-[48px] h-14 border-2 border-pink-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-400/60 rounded-xl text-lg bg-white/80 placeholder:text-pink-500 text-pink-900 transition-all duration-150"
                       placeholder="Confirm your runway code"
                       required
                       minLength={6}
@@ -400,7 +400,8 @@ const Auth = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold text-lg rounded-xl shadow-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 backdrop-blur-sm"
+                  aria-label={forgotPassword ? 'Send password reset link' : isSignUp ? 'Create new account' : 'Sign in to your account'}
+                  className="w-full min-h-[48px] h-14 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold text-lg rounded-xl shadow-xl transition-all duration-200 transform hover:scale-105 hover:-translate-y-0.5 hover:shadow-[0_0_20px_#ec4899] disabled:hover:scale-100 disabled:hover:translate-y-0 disabled:hover:shadow-xl backdrop-blur-sm"
                 >
                 {loading ? (
                   <motion.div
