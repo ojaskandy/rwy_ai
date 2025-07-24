@@ -32,7 +32,7 @@ export default function Health() {
   ];
 
   const authenticate = () => {
-    if (password === process.env.VITE_HEALTH_CODE || password === '280806') {
+    if (password === import.meta.env.VITE_CODE || password === '280806') {
       setIsAuthenticated(true);
       setAuthError('');
       initializeChecks();
@@ -148,10 +148,10 @@ export default function Health() {
               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
                 <Shield className="w-8 h-8 text-white" />
               </div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text">
+              <CardTitle className="text-2xl font-bold text-gray-900">
                 System Health Monitor
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600">
                 Enter access code to view system diagnostics
               </CardDescription>
             </CardHeader>
@@ -198,10 +198,10 @@ export default function Health() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
             System Health Monitor
           </h1>
-          <p className="text-gray-600">Real-time diagnostics for all Runway AI services</p>
+          <p className="text-gray-700">Real-time diagnostics for all Runway AI services</p>
         </motion.div>
 
         {/* Controls */}
@@ -231,7 +231,7 @@ export default function Health() {
                   Reset
                 </Button>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-700">
                 Last updated: {new Date().toLocaleTimeString()}
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function Health() {
                 <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{check.name}</CardTitle>
+                      <CardTitle className="text-lg text-gray-900">{check.name}</CardTitle>
                       {getStatusIcon(check.status)}
                     </div>
                   </CardHeader>
@@ -264,7 +264,7 @@ export default function Health() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 min-h-[20px]">
+                    <p className="text-sm text-gray-700 min-h-[20px]">
                       {check.message}
                     </p>
                   </CardContent>
@@ -278,7 +278,7 @@ export default function Health() {
         {checks.length > 0 && (
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>System Summary</CardTitle>
+              <CardTitle className="text-gray-900">System Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
