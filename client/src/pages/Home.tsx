@@ -157,6 +157,12 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file || uploading) return;
 
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('File too large. Maximum size is 5MB.');
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -169,14 +175,26 @@ export default function Home() {
 
       if (response.ok) {
         const result = await response.json();
-        setUserPhotos(prev => [...prev, result.url]);
+        // Add the new photo URL to the state and save to database
+        const newPhotos = [...userPhotos, result.url];
+        setUserPhotos(newPhotos);
+        
+        // Save updated photos to backend
+        await fetch('/api/save-user-photos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photos: newPhotos })
+        });
       } else {
-        console.error('Failed to upload photo');
+        const errorData = await response.json();
+        console.error('Failed to upload photo:', errorData.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Upload error:', error);
     } finally {
       setUploading(false);
+      // Clear the input so the same file can be uploaded again
+      event.target.value = '';
     }
   };
 
@@ -198,26 +216,24 @@ export default function Home() {
       <div className="px-6 space-y-6 pt-6">
         
         {/* 7-Day Engagement Tracker - Cal AI Style */}
-        <div className="flex justify-center">
-          <div className="bg-white rounded-lg shadow-sm p-3">
-            <div className="flex gap-3">
-              {weeklyEngagement.map((day, index) => (
-                <div key={index} className="flex flex-col items-center gap-1.5">
-                  <div 
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 ${
-                      day.hasEngagement 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    {format(day.date, 'd')}
-                  </div>
-                  <span className="text-xs text-gray-500 font-medium">
-                    {day.day}
-                  </span>
+        <div className="px-4">
+          <div className="flex justify-between items-center">
+            {weeklyEngagement.map((day, index) => (
+              <div key={index} className="flex flex-col items-center gap-1.5">
+                <div 
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 ${
+                    day.hasEngagement 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {format(day.date, 'd')}
                 </div>
-              ))}
-            </div>
+                <span className="text-xs text-gray-500 font-medium">
+                  {day.day}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 

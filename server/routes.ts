@@ -678,16 +678,33 @@ Return only the JSON object, no additional text.`
     }
   });
 
+  // In-memory storage for user photos (for development)
+  let userPhotos: string[] = [];
+
   // Photo upload and profile routes
   app.get("/api/user-profile", async (req, res) => {
     try {
-      // Return mock profile with empty gallery for development
       res.json({
         userId: 1,
-        galleryImages: []
+        galleryImages: userPhotos
       });
     } catch (error) {
       console.error('Get profile error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.post("/api/save-user-photos", async (req, res) => {
+    try {
+      const { photos } = req.body;
+      if (Array.isArray(photos)) {
+        userPhotos = photos;
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: 'Invalid photos data' });
+      }
+    } catch (error) {
+      console.error('Save photos error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -696,8 +713,12 @@ Return only the JSON object, no additional text.`
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      cb(null, allowedTypes.includes(file.mimetype));
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+      }
     }
   });
 
@@ -707,13 +728,19 @@ Return only the JSON object, no additional text.`
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      // Create a mock photo URL for development
-      const photoUrl = `https://via.placeholder.com/200x200/FFB6C1/FFFFFF?text=Photo-${Date.now()}`;
+      // Create a unique mock photo URL for development
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000);
+      const photoUrl = `https://picsum.photos/200/200?random=${timestamp}${random}`;
       
       res.json({ url: photoUrl });
     } catch (error) {
       console.error('Photo upload error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({ error: 'File too large. Maximum size is 5MB.' });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   });
 
