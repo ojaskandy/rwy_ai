@@ -273,10 +273,10 @@ export default function OceanWaves() {
                       className={`max-w-xs px-4 py-2 rounded-2xl ${
                         message.sender === 'user'
                           ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                          : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
+                          : 'bg-gray-800 text-white shadow-sm'
                       }`}
                     >
-                      <p className="text-sm">{message.text}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-line">{message.text}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -287,20 +287,20 @@ export default function OceanWaves() {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-start"
                   >
-                    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm">
+                    <div className="bg-gray-800 rounded-2xl px-4 py-2 shadow-sm">
                       <div className="flex space-x-1">
                         <motion.div
-                          className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                          className="w-2 h-2 bg-white rounded-full"
                           animate={{ scale: [1, 1.5, 1] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                         />
                         <motion.div
-                          className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                          className="w-2 h-2 bg-white rounded-full"
                           animate={{ scale: [1, 1.5, 1] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                         />
                         <motion.div
-                          className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                          className="w-2 h-2 bg-white rounded-full"
                           animate={{ scale: [1, 1.5, 1] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                         />
@@ -318,7 +318,7 @@ export default function OceanWaves() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Ask about pageant tips, runway walks, interviews..."
-                    className="flex-1 border-pink-200 focus:border-pink-400 focus:ring-pink-400"
+                    className="flex-1 border-pink-200 focus:border-pink-400 focus:ring-pink-400 text-gray-800 placeholder:text-gray-500"
                     disabled={isLoading}
                   />
                   <Button
