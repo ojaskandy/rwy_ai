@@ -1,0 +1,83 @@
+Please upgrade the design of the /app dashboard screen for Runway AI to feel elegant, modern, and emotionally resonant — while maintaining structure and not appearing empty.
+
+🧁 Aesthetic Goals:
+Clean, premium, pageant-inspired
+
+Interactive and motivating
+
+Designed for Gen Z & millennial pageant competitors
+
+🎨 UI & Layout Instructions:
+1. Header Section (Top)
+Remove the magenta block and replace it with:
+
+A soft translucent or frosted glass container (backdrop-blur) that blends into the pink background
+
+Include:
+Welcome back, okandy ✨
+👑 Queen Mode: ON in soft gold or animated sparkle tag
+
+Add a subtle animated crown or sparkle in the top-right corner
+
+2. Hero Headline
+Replace with a split-style heading for stronger hierarchy:
+
+First line: Ready to (light, uppercase, smaller)
+
+Second line: OWN THE RUNWAY (bold, larger, elegant serif or display font)
+
+Third line: okandy? (italic or script style, playful)
+
+3. Coming Up Card (Event Block)
+Keep the "Photoshoot – Monday July 28" event, but enhance:
+
+Add an icon thumbnail (e.g., 📸 or silhouette of a camera)
+
+Button: [ Practice Now → ] styled as soft pink with glow
+
+Animated entrance: slight fade and slide-in from right
+
+Use soft shadows and hover glow
+
+4. Calendar Block
+Retain the calendar but upgrade style:
+
+Add soft pink glow aura on selected date
+
+Add mini icons for special event days (👗 for Dress Day, 🎤 for Practice, 📸 for Shoot)
+
+Hover interaction: subtle zoom or light ring
+
+Consider rounded container with slight padding and shadow for modern feel
+
+5. Add New Section: Daily Practice Pick
+Add a new card under the calendar:
+
+Title: "Today’s Practice Pick"
+
+Content: "Turn & Pose – Precision Drill (Level 2)"
+
+Button: [ Start Practice → ]
+
+Optional: animated shimmer bar or avatar preview
+
+Slight vertical bounce on hover or entry animation
+
+6. Bottom Nav Bar
+Keep as-is but add:
+
+Animated glow underline on selected tab (Home)
+
+Confirm icons are centered and responsive
+
+✨ Visual Treatments:
+Maintain a soft blush pink gradient background
+
+Use shadows, rounded corners, glowing accents
+
+Apply transition-all for smooth animations (~200ms)
+
+Use high-contrast white for card containers (bg-white/80), elevated with shadow-xl or ring-1 ring-pink-300/20
+
+✅ Summary:
+Keep structure, enhance clarity, emotion, and elegance. The result should feel aspirational, motivating, and luxurious — like entering a personal coaching lounge with a touch of magic ✨
