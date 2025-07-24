@@ -538,6 +538,102 @@ Return only the JSON object, no additional text.`
     }
   });
 
+  // Ocean Waves Chat API endpoint
+  app.post('/api/ocean-chat', async (req, res) => {
+    try {
+      const { message, conversationHistory } = req.body;
+      console.log('Ocean Chat - Received message:', message);
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY || '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';
+
+      // Build conversation context
+      const messages = [
+        {
+          role: 'system',
+          content: `You are an expert AI pageant coach and runway mentor with deep knowledge of:
+
+🏆 PAGEANT EXPERTISE:
+- Runway walking techniques, posture, and confidence
+- Interview preparation and presentation skills  
+- Competition strategies and mental preparation
+- Fashion and styling advice for pageants
+- Confidence building and stage presence
+- Body language and non-verbal communication
+- Voice training and public speaking
+- Personal branding and social media presence
+
+✨ PERSONALITY:
+- Encouraging and supportive, like a wise mentor
+- Use relevant emojis occasionally (👑✨🌟💫)
+- Motivational but realistic and practical
+- Warm, friendly, and professional tone
+- Give specific, actionable advice
+
+🎯 RESPONSE STYLE:
+- Keep responses concise but comprehensive
+- Provide step-by-step guidance when helpful
+- Share insider tips and professional secrets
+- Include confidence-building elements
+- Always end with encouragement or next steps
+
+Remember: You're helping future queens achieve their dreams! Be inspiring while being practical.`
+        },
+        ...(conversationHistory || []),
+        {
+          role: 'user',
+          content: message
+        }
+      ];
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: messages,
+          temperature: 0.8,
+          max_tokens: 800,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API Error:', response.status, errorText);
+        throw new Error(`OpenAI API request failed: ${response.status}`);
+      }
+
+      const openaiResult = await response.json();
+      console.log('Ocean Chat - OpenAI response received');
+      const content = openaiResult.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      console.log('Ocean Chat - Response sent successfully');
+      res.json({
+        success: true,
+        message: content
+      });
+
+    } catch (error) {
+      console.error('Ocean Chat error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate response',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Helper function to get authenticated user from request
   const getAuthenticatedUser = async (req: Request) => {
     const authHeader = req.headers.authorization;

@@ -1,12 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Camera, Mic, Shirt, User } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from 'date-fns';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useCalendarEvents } from '@/hooks/use-calendar';
+import { useAuth } from '@/hooks/use-auth';
 import UserMenu from '@/components/UserMenu';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  Calendar, 
+  Clock, 
+  Plus, 
+  Sparkles, 
+  Star,
+  User,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useCalendarEvents } from '@/hooks/use-calendar';
+import runwayLogo from '/images/shifu_coacht.png';
+import OceanWaves from '@/components/OceanWaves';
+import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from 'date-fns';
 
 // Event type to color mapping - subtle dots for calendar
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -199,7 +211,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+    <div className="h-screen overflow-hidden" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Top Welcome Banner */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
         <div className="flex items-center justify-between px-6 py-6">
@@ -213,10 +225,10 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 space-y-6 pt-6">
+      <div className="px-6 space-y-4 pt-6 h-full overflow-hidden flex flex-col">
         
         {/* 7-Day Engagement Tracker - Cal AI Style */}
-        <div className="px-4">
+        <div className="px-4 flex-shrink-0">
           <div className="flex justify-between items-center">
             {weeklyEngagement.map((day, index) => (
               <div key={index} className="flex flex-col items-center gap-1.5">
@@ -238,7 +250,7 @@ export default function Home() {
         </div>
 
         {/* Coming Up Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-gray-800 font-medium text-lg">Coming Up</h2>
             <button 
@@ -287,6 +299,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+          className="flex-shrink-0"
         >
           <WeeklyCalendar />
         </motion.div>
@@ -296,7 +309,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="pb-24"
+          className="flex-shrink-0"
         >
           <div className="flex items-center justify-center">
             <div className="flex items-center">
@@ -341,6 +354,17 @@ export default function Home() {
             </div>
           </div>
         </motion.div>
+
+        {/* Ocean Waves Component - Visible and Contained */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-auto"
+        >
+          <OceanWaves />
+        </motion.div>
+
       </div>
     </div>
   );
