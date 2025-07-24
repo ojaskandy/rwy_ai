@@ -26,6 +26,7 @@ import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
 import * as fashnAI from './routes/fashnAI';
 import * as interview from './routes/interview';
+// import photoRoutes from './routes/photo'; // Now using inline routes
 
 
 // Default guest user context for Runway AI (no authentication needed)
@@ -677,7 +678,44 @@ Return only the JSON object, no additional text.`
     }
   });
 
-  // Interview Coach API endpoints - removed duplicates (already defined above)
+  // Photo upload and profile routes
+  app.get("/api/user-profile", async (req, res) => {
+    try {
+      // Return mock profile with empty gallery for development
+      res.json({
+        userId: 1,
+        galleryImages: []
+      });
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  const photoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      cb(null, allowedTypes.includes(file.mimetype));
+    }
+  });
+
+  app.post("/api/upload-photo", photoUpload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Create a mock photo URL for development
+      const photoUrl = `https://via.placeholder.com/200x200/FFB6C1/FFFFFF?text=Photo-${Date.now()}`;
+      
+      res.json({ url: photoUrl });
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
      const server = createServer(app);
    return server;

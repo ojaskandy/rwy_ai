@@ -111,6 +111,7 @@ function WeeklyCalendar() {
 
 export default function Home() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const { events, isLoading } = useCalendarEvents();
   const displayName = user?.email?.split('@')[0] || 'okandy';
   const weeklyEngagement = getWeeklyEngagement();
@@ -131,13 +132,53 @@ export default function Home() {
             event.title.toLowerCase().includes('fitting') || event.title.toLowerCase().includes('dress') ? '👗' : '📅'
     }));
 
-  // Mock photo data
-  const userPhotos = [
-    { id: 1, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=1', rotation: '-rotate-2' },
-    { id: 2, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=2', rotation: 'rotate-1' },
-    { id: 3, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=3', rotation: '-rotate-1' },
-    { id: 4, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=4', rotation: 'rotate-2' },
-  ];
+  // Get user photos from profile
+  const [userPhotos, setUserPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Load user photos on component mount
+  useEffect(() => {
+    const loadUserPhotos = async () => {
+      try {
+        const response = await fetch('/api/user-profile');
+        if (response.ok) {
+          const profile = await response.json();
+          setUserPhotos(profile.galleryImages || []);
+        }
+      } catch (error) {
+        console.error('Failed to load user photos:', error);
+      }
+    };
+
+    loadUserPhotos();
+  }, []);
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || uploading) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch('/api/upload-photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUserPhotos(prev => [...prev, result.url]);
+      } else {
+        console.error('Failed to upload photo');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
@@ -156,46 +197,44 @@ export default function Home() {
       {/* Main Content */}
       <div className="px-6 space-y-6 pt-6">
         
-        {/* 7-Day Engagement Tracker */}
+        {/* 7-Day Engagement Tracker - Cal AI Style */}
         <div className="flex justify-center">
-          <div className="flex gap-4">
-            {weeklyEngagement.map((day, index) => (
-              <motion.div
-                key={index}
-                className="flex flex-col items-center gap-2"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <motion.div
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                    day.hasEngagement 
-                      ? 'bg-pink-400 shadow-sm' 
-                      : 'border border-pink-300 bg-transparent'
-                  }`}
-                  animate={day.isToday ? {
-                    scale: [1, 1.2, 1],
-                    opacity: [1, 0.7, 1]
-                  } : {}}
-                  transition={day.isToday ? {
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 3
-                  } : {}}
-                />
-                <span className="text-xs text-gray-500 font-light">
-                  {day.day}
-                </span>
-              </motion.div>
-            ))}
+          <div className="bg-white rounded-lg shadow-sm p-3">
+            <div className="flex gap-3">
+              {weeklyEngagement.map((day, index) => (
+                <div key={index} className="flex flex-col items-center gap-1.5">
+                  <div 
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 ${
+                      day.hasEngagement 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {format(day.date, 'd')}
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {day.day}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Coming Up Section */}
-        {upcomingEvents.length > 0 && (
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="text-gray-800 font-medium text-lg">Coming Up</h2>
-            {upcomingEvents.map((event, index) => (
+            <button 
+              onClick={() => navigate('/calendar')}
+              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200"
+            >
+              <Plus className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+          
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event, index) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -214,9 +253,18 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </motion.div>
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <Card className="bg-white rounded-xl shadow-md border-0">
+              <CardContent className="flex items-center justify-center p-8">
+                <div className="text-center text-gray-500">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No upcoming events</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Calendar */}
         <motion.div
@@ -234,27 +282,47 @@ export default function Home() {
           transition={{ delay: 0.4 }}
           className="pb-24"
         >
-          <div className="flex items-center gap-3 justify-center">
-            {/* Add Photo Button */}
-            <button className="w-20 h-20 bg-white rounded-lg shadow-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-pink-300 hover:bg-pink-50 transition-all duration-200">
-              <Plus className="h-6 w-6 text-gray-400" />
-            </button>
-            
-            {/* Photo Grid */}
-            {userPhotos.map((photo, index) => (
-              <motion.div
-                key={photo.id}
-                className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${photo.rotation} ${index > 0 ? '-ml-2' : ''}`}
-                style={{
-                  backgroundImage: `url(${photo.url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  zIndex: userPhotos.length - index
-                }}
-                whileHover={{ scale: 1.05, zIndex: 10 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              />
-            ))}
+          <div className="flex items-center justify-center">
+            <div className="flex items-center">
+              {/* Add Photo Button */}
+              <label className="relative cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <div className="w-20 h-20 bg-white rounded-lg shadow-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-pink-300 hover:bg-pink-50 transition-all duration-200 z-10 relative">
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-400"></div>
+                  ) : (
+                    <Plus className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
+              </label>
+              
+              {/* Photo Grid */}
+              {userPhotos.map((photoUrl, index) => {
+                const rotations = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-1', '-rotate-2'];
+                const rotation = rotations[index % rotations.length];
+                
+                return (
+                  <motion.div
+                    key={index}
+                    className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${rotation} -ml-3`}
+                    style={{
+                      backgroundImage: `url(${photoUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      zIndex: 20 + index
+                    }}
+                    whileHover={{ scale: 1.05, zIndex: 50 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  />
+                );
+              })}
+            </div>
           </div>
         </motion.div>
       </div>
