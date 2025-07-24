@@ -1,0 +1,114 @@
+Please redesign the /app screen for Runway AI with the following clear specifications. This must feel premium, clean, useful, and elegant — not childish, not gamified, and not cluttered. The result should look similar in tone and cleanliness to Cal AI, with its elegant spacing, smooth interactions, and real-world utility.
+
+🔝 1. Top Welcome Banner
+Replace the magenta block with a clean, elegant top banner using either a soft blush-pink gradient or light glassmorphism (backdrop-blur, bg-white/10, etc.).
+
+Layout:
+
+Left side: Welcome back, okandy (use light sans-serif font) — with no emojis or childish effects.
+
+Right side: Display a circular avatar (placeholder for now) — clean, no gradient bubble or ‘OK’ badge.
+
+Padding should be generous but balanced.
+
+No hover states or dropdowns needed — keep it static and elegant.
+
+🔘 2. 7-Day Engagement Tracker
+Directly under the top banner, place seven horizontally aligned small circular indicators — styled exactly like Cal AI’s micro nutrient rings:
+
+Each circle represents one day of the week (M, T, W…).
+
+Filled circle = user opened and interacted with the app on that day.
+
+Unfilled = no usage.
+
+Below each circle, place the respective day abbreviation ("M", "T", etc.) in light text.
+
+Use a soft animation to pulse the current day’s circle on page load.
+
+No streak counter, no score, no overdesign — just this tracker.
+
+📅 3. Coming Up Section (Events Only)
+Show a single clean card titled “Coming Up”.
+
+Each card contains:
+
+Icon (e.g., 📸 for photoshoot)
+
+Title: “Photoshoot”
+
+Date: “Monday, July 28”
+
+DO NOT include any CTA like “Practice Now” or buttons.
+
+The card should use a clean bg-white, rounded-xl, and shadow-md.
+
+Font should remain consistent with overall design language.
+
+🗓 4. Calendar Redesign
+Replace the current block calendar with a compact and modern weekly calendar:
+
+Layout:
+
+Horizontally scrollable row of 7 pills (e.g., <Sun> <Mon> <Tue>)
+
+Each pill contains the date number and small colored dot if there’s an event.
+
+Selected day is highlighted with a soft pink halo (ring-2 ring-pink-400)
+
+No grid, no bold borders — keep everything light, breathable, and modern.
+
+If horizontal scroll implementation is not feasible, use a minimal full-month calendar:
+
+Remove hard borders and lines
+
+Add clean spacing between weeks
+
+Highlight selected day with soft glow, not solid color
+
+Add only minimal icons (📸, 🎤, 👗) where relevant
+
+🖼 5. Photo Upload Cluster
+At the bottom of the screen, directly above the navigation bar, add a cluster of user-uploaded photos:
+
+Display these as small overlapping rounded square photo cards (about 80x80px)
+
+Photos should have soft drop shadows and slight random rotation for personality
+
+Show 3–5 photos in a cluster
+
+Far-left of the cluster, place a + button to upload more photos (styled identically to the cards, but with a + icon)
+
+No text or actions on the photos — just visual, emotional memory cues
+
+🧼 Design Guidelines
+Spacing: Use generous vertical padding between sections (~24px).
+
+Typography: Elegant sans-serif fonts; weight contrast but no display fonts or serifs.
+
+Colors: Stick to blush-pink, soft whites, and light gray accents.
+
+Shadows: Use subtle depth (shadow-md or shadow-lg) on all cards — not overdone.
+
+Animations: Minimal — only where functional (e.g., gentle pulse on current-day dot or button hover).
+
+🚫 Do NOT Include:
+Any form of “Queen Mode” or gamified language
+
+Fake metrics like “Stage Readiness” or scores
+
+Practice Now buttons or routine suggestions
+
+“Today’s Pick” or AI coaching suggestions
+
+Emoji overload or childish styling
+
+✅ End Result Should Feel:
+Sophisticated, like a daily companion app from Apple or Glossier
+
+Emotional but real, not motivationally fake
+
+Minimal, with room to breathe
+
+Useful, with every element grounded in actual utility
+

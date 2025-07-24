@@ -1,102 +1,119 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Calendar, Star, User, ChevronLeft, ChevronRight, Plus, Camera, Mic, Shirt, Crown, Sparkles, Play } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Camera, Mic, Shirt, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from 'date-fns';
 import { useLocation } from 'wouter';
 import { useCalendarEvents } from '@/hooks/use-calendar';
 import UserMenu from '@/components/UserMenu';
-import runwayLogo from "@assets/runwayailogo_1753229923969.png";
 
-// Event type to color mapping
+// Event type to color mapping - subtle dots for calendar
 const EVENT_TYPE_COLORS: Record<string, string> = {
-  pageant: "bg-pink-500",
-  interview: "bg-blue-500", 
-  fitting: "bg-purple-500",
-  routine: "bg-orange-500",
-  photo: "bg-green-500",
-  meeting: "bg-gray-500",
-  deadline: "bg-red-500",
-  personal: "bg-indigo-500"
+  pageant: "bg-pink-400",
+  interview: "bg-blue-400", 
+  fitting: "bg-purple-400",
+  routine: "bg-orange-400",
+  photo: "bg-green-400",
+  meeting: "bg-gray-400",
+  deadline: "bg-red-400",
+  personal: "bg-indigo-400"
 };
 
-function MiniCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(22); // July 22 is highlighted in mockup
+// Get engagement data for the week (mock data)
+const getWeeklyEngagement = () => {
+  const today = new Date();
+  const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+  
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(startOfCurrentWeek, i);
+    const dayInitial = format(date, 'E').charAt(0); // M, T, W, T, F, S, S
+    const isToday = isSameDay(date, today);
+    const hasEngagement = Math.random() > 0.3; // Mock engagement data
+    
+    return {
+      day: dayInitial,
+      date,
+      isToday,
+      hasEngagement
+    };
+  });
+};
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
+function WeeklyCalendar() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { events } = useCalendarEvents();
+  
+  const today = new Date();
+  const startOfCurrentWeek = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfCurrentWeek, i));
 
   return (
-    <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-3xl border-0">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft className="h-5 w-5 text-gray-600" />
+    <div className="bg-white rounded-xl shadow-md p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-gray-800 font-medium">
+          {format(selectedDate, 'MMMM yyyy')}
+        </h3>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
           </button>
-          <h3 className="font-bold text-gray-800 text-lg">
-            {format(currentDate, 'MMMM yyyy')}
-          </h3>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronRight className="h-5 w-5 text-gray-600" />
+          <button 
+            onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+          >
+            <ChevronRight className="h-4 w-4 text-gray-600" />
           </button>
         </div>
-        
-        <div className="grid grid-cols-7 gap-2 mb-3">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day: Date, index: number) => {
-            const dayNumber = format(day, 'd');
-            const isSelected = parseInt(dayNumber) === selectedDate;
-            const isCurrentMonth = isSameMonth(day, currentDate);
-            
-            return (
-              <button
-                key={index}
-                onClick={() => setSelectedDate(parseInt(dayNumber))}
-                className={`
-                  aspect-square text-sm rounded-full transition-all duration-200 font-medium relative
-                  ${isSelected 
-                    ? 'bg-pink-500 text-white font-bold shadow-lg scale-110 shadow-pink-500/30' 
-                    : isCurrentMonth 
-                      ? 'text-gray-700 hover:bg-pink-100 hover:scale-105 hover:ring-2 hover:ring-pink-300/50' 
-                      : 'text-gray-300'
-                  }
-                `}
-              >
-                {dayNumber}
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {weekDays.map((day, index) => {
+          const hasEvent = events.some(event => isSameDay(event.date, day));
+          const isToday = isSameDay(day, today);
+          const isSelected = isSameDay(day, selectedDate);
+          
+          return (
+            <button
+              key={index}
+              onClick={() => setSelectedDate(day)}
+              className={`
+                flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-lg transition-all duration-200
+                ${isSelected 
+                  ? 'ring-2 ring-pink-400 bg-pink-50' 
+                  : 'hover:bg-gray-50'
+                }
+              `}
+            >
+              <span className="text-xs text-gray-500 font-medium uppercase">
+                {format(day, 'EEE')}
+              </span>
+              <div className="relative">
+                <span className={`text-sm font-medium ${isToday ? 'text-pink-600' : 'text-gray-700'}`}>
+                  {format(day, 'd')}
+                </span>
+                {hasEvent && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 export default function Home() {
   const { user } = useAuth();
-  const [, navigate] = useLocation();
   const { events, isLoading } = useCalendarEvents();
-  const displayName = user?.email?.split('@')[0] || 'guest_user';
+  const displayName = user?.email?.split('@')[0] || 'okandy';
+  const weeklyEngagement = getWeeklyEngagement();
 
   // Get upcoming events (next 3 events from today)
   const today = new Date();
@@ -107,203 +124,138 @@ export default function Home() {
     .map(event => ({
       id: event.id,
       title: event.title,
-      date: event.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
-      type: event.type.charAt(0).toUpperCase() + event.type.slice(1),
-      color: EVENT_TYPE_COLORS[event.type] || EVENT_TYPE_COLORS.personal
+      date: event.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+      type: event.type,
+      icon: event.title.toLowerCase().includes('photo') ? '📸' :
+            event.title.toLowerCase().includes('interview') ? '🎤' :
+            event.title.toLowerCase().includes('fitting') || event.title.toLowerCase().includes('dress') ? '👗' : '📅'
     }));
+
+  // Mock photo data
+  const userPhotos = [
+    { id: 1, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=1', rotation: '-rotate-2' },
+    { id: 2, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=2', rotation: 'rotate-1' },
+    { id: 3, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=3', rotation: '-rotate-1' },
+    { id: 4, url: 'https://via.placeholder.com/80x80/FFB6C1/FFFFFF?text=4', rotation: 'rotate-2' },
+  ];
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 pt-12 bg-white/10 backdrop-blur-sm border-b border-white/20 shadow-lg relative">
-        <div className="flex items-center gap-3">
-          <img src={runwayLogo} alt="Runway AI" className="h-8 w-8" />
-          <div>
-            <h1 className="text-gray-800 text-lg font-medium">
-              Welcome back, {displayName} ✨
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-                <Crown className="h-4 w-4" />
-                Queen Mode: ON
-              </div>
-            </div>
+      {/* Top Welcome Banner */}
+      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+        <div className="flex items-center justify-between px-6 py-6">
+          <h1 className="text-gray-800 text-lg font-light">
+            Welcome back, {displayName}
+          </h1>
+          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+            <User className="h-5 w-5 text-gray-600" />
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <motion.div
-            animate={{ 
-              rotate: [0, 15, -15, 0],
-              scale: [1, 1.1, 1, 1]
-            }}
-            transition={{ 
-              duration: 2,
-              repeat: Infinity,
-              repeatDelay: 3
-            }}
-          >
-            <Sparkles className="h-6 w-6 text-pink-600" />
-          </motion.div>
-          {user ? (
-            <UserMenu />
-          ) : (
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <User className="h-6 w-6 text-gray-600" />
-            </div>
-          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-6 space-y-8">
-        {/* Hero Headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-8"
-        >
-          <p className="text-lg text-gray-600 uppercase tracking-wider font-light mb-2">
-            Ready to
-          </p>
-          <h2 className="text-5xl font-bold text-gray-900 mb-2 leading-tight font-serif">
-            OWN THE RUNWAY
-          </h2>
-          <p className="text-2xl text-pink-600 italic font-light">
-            {displayName}?
-          </p>
-        </motion.div>
-
-        {/* Upcoming Events */}
-        <div className="space-y-4">
-          <h3 className="text-gray-800 font-bold text-xl">Coming Up</h3>
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event, index) => (
+      <div className="px-6 space-y-6 pt-6">
+        
+        {/* 7-Day Engagement Tracker */}
+        <div className="flex justify-center">
+          <div className="flex gap-4">
+            {weeklyEngagement.map((day, index) => (
               <motion.div
-                key={event.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                key={index}
+                className="flex flex-col items-center gap-2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl border-0 hover:scale-[1.02] ring-1 ring-pink-300/20">
-                  <CardContent className="flex items-center justify-between p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-12 h-12 bg-pink-100 rounded-full">
-                        {event.title.toLowerCase().includes('photo') ? (
-                          <Camera className="h-6 w-6 text-pink-600" />
-                        ) : event.title.toLowerCase().includes('interview') ? (
-                          <Mic className="h-6 w-6 text-pink-600" />
-                        ) : event.title.toLowerCase().includes('fitting') || event.title.toLowerCase().includes('dress') ? (
-                          <Shirt className="h-6 w-6 text-pink-600" />
-                        ) : (
-                          <Calendar className="h-6 w-6 text-pink-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-800 text-lg">{event.title}</p>
-                        <p className="text-gray-600 font-medium">{event.date}</p>
-                      </div>
+                <motion.div
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                    day.hasEngagement 
+                      ? 'bg-pink-400 shadow-sm' 
+                      : 'border border-pink-300 bg-transparent'
+                  }`}
+                  animate={day.isToday ? {
+                    scale: [1, 1.2, 1],
+                    opacity: [1, 0.7, 1]
+                  } : {}}
+                  transition={day.isToday ? {
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3
+                  } : {}}
+                />
+                <span className="text-xs text-gray-500 font-light">
+                  {day.day}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Coming Up Section */}
+        {upcomingEvents.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-gray-800 font-medium text-lg">Coming Up</h2>
+            {upcomingEvents.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="bg-white rounded-xl shadow-md border-0">
+                  <CardContent className="flex items-center gap-4 p-4">
+                    <div className="text-2xl">
+                      {event.icon}
                     </div>
-                    <Button className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-pink-500/25">
-                      Practice Now →
-                    </Button>
+                    <div>
+                      <p className="font-medium text-gray-800">{event.title}</p>
+                      <p className="text-sm text-gray-600">{event.date}</p>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
-            ))
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8"
-            >
-              <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-3xl border-0">
-                <CardContent className="p-8">
-                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">No upcoming events scheduled</p>
-                  <Button 
-                    onClick={() => navigate('/calendar')}
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Event
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Mini Calendar */}
+        {/* Calendar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <WeeklyCalendar />
+        </motion.div>
+
+        {/* Photo Upload Cluster */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+          className="pb-24"
         >
-          <MiniCalendar />
-        </motion.div>
-
-        {/* Daily Practice Pick */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card className="bg-white/80 backdrop-blur-sm shadow-xl rounded-3xl border-0 ring-1 ring-pink-300/20 hover:scale-[1.02] transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <Play className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-gray-800 font-bold text-lg">Today's Practice Pick</h3>
-                    <p className="text-gray-600 font-medium">Turn & Pose – Precision Drill (Level 2)</p>
-                  </div>
-                </div>
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-purple-500/25">
-                    Start Practice →
-                  </Button>
-                </motion.div>
-              </div>
-              {/* Shimmer effect */}
-              <div className="mt-4 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full opacity-60 animate-pulse"></div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Achievement Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6 }}
-          className="flex items-center justify-center pb-8"
-        >
-          <Card className="bg-gradient-to-r from-purple-500 to-pink-500 shadow-xl rounded-3xl border-0 hover:scale-105 transition-all duration-300">
-            <CardContent className="flex items-center gap-4 p-6">
-              <motion.div 
-                className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
+          <div className="flex items-center gap-3 justify-center">
+            {/* Add Photo Button */}
+            <button className="w-20 h-20 bg-white rounded-lg shadow-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-pink-300 hover:bg-pink-50 transition-all duration-200">
+              <Plus className="h-6 w-6 text-gray-400" />
+            </button>
+            
+            {/* Photo Grid */}
+            {userPhotos.map((photo, index) => (
+              <motion.div
+                key={photo.id}
+                className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${photo.rotation} ${index > 0 ? '-ml-2' : ''}`}
+                style={{
+                  backgroundImage: `url(${photo.url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  zIndex: userPhotos.length - index
                 }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatDelay: 3
-                }}
-              >
-                <span className="text-3xl">🔥</span>
-              </motion.div>
-              <div>
-                <p className="text-white font-bold text-lg">Day 3 in a row</p>
-                <p className="text-white/90 font-medium">Keep owning that catwalk! ⚡</p>
-              </div>
-            </CardContent>
-          </Card>
+                whileHover={{ scale: 1.05, zIndex: 10 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
+            ))}
+          </div>
         </motion.div>
       </div>
     </div>
