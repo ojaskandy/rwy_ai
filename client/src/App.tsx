@@ -21,10 +21,11 @@ import GlobalDock from "@/components/GlobalDock";
 // RUNWAY AI WELCOME PAGE
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Health from "@/pages/Health";
 
 function Router() {
   const [location] = useLocation();
-  const shouldShowDock = !location.includes('/privacy');
+  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health');
 
   return (
     <>
@@ -37,6 +38,9 @@ function Router() {
 
         {/* Privacy Policy - accessible without login */}
         <Route path="/privacy" component={PrivacyPolicy} />
+
+        {/* Health Monitor - accessible without login but password protected */}
+        <Route path="/health" component={Health} />
 
         {/* All protected routes require authentication */}
         <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />

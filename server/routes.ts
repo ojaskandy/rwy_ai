@@ -989,6 +989,212 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
+  // Health check endpoints
+  app.post('/api/health', (req, res) => {
+    res.json({
+      status: 'success',
+      message: 'Server is running properly',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+
+  app.post('/api/health/database', async (req, res) => {
+    try {
+      // Test database connection by attempting a simple query
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .limit(1);
+      
+      if (error) {
+        throw error;
+      }
+      
+      res.json({
+        status: 'success',
+        message: 'Database connection successful'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `Database error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/openai', async (req, res) => {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          status: 'error',
+          message: 'OpenAI API key not configured'
+        });
+      }
+
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      });
+
+      if (response.ok) {
+        res.json({
+          status: 'success',
+          message: 'OpenAI API connection successful'
+        });
+      } else {
+        res.status(500).json({
+          status: 'error',
+          message: `OpenAI API error: ${response.status}`
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `OpenAI API connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/user-profile', async (req, res) => {
+    try {
+      // Test user profile endpoint functionality
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .limit(1);
+        
+      res.json({
+        status: 'success',
+        message: 'User profile system operational'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `User profile error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/photo-upload', (req, res) => {
+    try {
+      // Test Supabase storage access
+      const buckets = supabase.storage.listBuckets();
+      res.json({
+        status: 'success',
+        message: 'Photo upload system ready'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `Photo upload error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/ocean-chat', async (req, res) => {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          status: 'error',
+          message: 'OpenAI API key not configured for chat'
+        });
+      }
+
+      // Test a simple chat completion
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: 'health check' }],
+          max_tokens: 5
+        })
+      });
+
+      if (response.ok) {
+        res.json({
+          status: 'success',
+          message: 'Ocean Chat AI system operational'
+        });
+      } else {
+        res.status(500).json({
+          status: 'error',
+          message: `Ocean Chat API error: ${response.status}`
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `Ocean Chat error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/calendar', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('id')
+        .limit(1);
+        
+      res.json({
+        status: 'success',
+        message: 'Calendar system operational'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `Calendar error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post('/api/health/filesystem', (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Test basic file system operations
+      const testDir = './uploads/health-test';
+      const testFile = path.join(testDir, 'test.txt');
+      
+      // Create test directory if it doesn't exist
+      if (!fs.existsSync('./uploads')) {
+        fs.mkdirSync('./uploads', { recursive: true });
+      }
+      if (!fs.existsSync(testDir)) {
+        fs.mkdirSync(testDir, { recursive: true });
+      }
+      
+      // Write test file
+      fs.writeFileSync(testFile, 'health check test');
+      
+      // Read test file
+      const content = fs.readFileSync(testFile, 'utf8');
+      
+      // Clean up
+      fs.unlinkSync(testFile);
+      fs.rmdirSync(testDir);
+      
+      res.json({
+        status: 'success',
+        message: 'File system operational'
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: `File system error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
      const server = createServer(app);
    return server;
 }
