@@ -645,7 +645,15 @@ Return only the JSON object, no additional text.`
         return res.status(400).json({ error: 'Message is required' });
       }
 
-      const apiKey = process.env.OPENAI_API_KEY || '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';
+      const apiKey = process.env.OPENAI_API_KEY;
+      
+      if (!apiKey) {
+        console.error('Ocean Chat - No OpenAI API key configured');
+        return res.status(500).json({ 
+          error: 'Chat service not configured. Please contact support.',
+          details: 'Missing OpenAI API key'
+        });
+      }
 
       // Build conversation context
       const messages = [
