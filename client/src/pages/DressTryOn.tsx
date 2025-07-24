@@ -44,6 +44,7 @@ export default function DressTryOn() {
   const [error, setError] = useState<string | null>(null);
   const [qualityMode, setQualityMode] = useState<'performance' | 'balanced' | 'quality'>('balanced');
   const [showResult, setShowResult] = useState(false);
+  const [showMagicAnimation, setShowMagicAnimation] = useState(false);
   
   const personImageRef = useRef<HTMLInputElement>(null);
   const garmentImageRef = useRef<HTMLInputElement>(null);
@@ -117,6 +118,17 @@ export default function DressTryOn() {
     const personImg = userImageUrl.trim() || userImage || '';
     const garmentImg = garmentImageUrl.trim() || garmentImage || '';
     return { personImage: personImg, garmentImage: garmentImg };
+  };
+
+  // Handle magic button click with cool animation
+  const handleSeeTheMagic = async () => {
+    setShowMagicAnimation(true);
+    
+    // Wait for magic animation to complete
+    setTimeout(async () => {
+      setShowMagicAnimation(false);
+      await handleTryOn();
+    }, 3000);
   };
 
   // Handle try-on with FashnAI integration (keeping all backend logic)
@@ -200,6 +212,7 @@ export default function DressTryOn() {
     setTryOnResult(null);
     setError(null);
     setShowResult(false);
+    setShowMagicAnimation(false);
   };
 
   if (showResult) {
@@ -330,15 +343,56 @@ export default function DressTryOn() {
     );
   }
 
+  // Magic Animation Overlay
+  if (showMagicAnimation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFC5D3' }}>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="text-center"
+        >
+          <motion.div
+            animate={{ 
+              rotate: 360,
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ 
+              rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+              scale: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className="mb-6"
+          >
+            <Sparkles className="w-20 h-20 mx-auto text-pink-600" />
+          </motion.div>
+          <motion.h2
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-3xl font-bold text-gray-800 mb-2"
+          >
+            Creating Magic...
+          </motion.h2>
+          <motion.p
+            animate={{ opacity: [0.3, 0.8, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-gray-600"
+          >
+            Transforming your look ✨
+          </motion.p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen p-3" style={{ backgroundColor: '#FFC5D3' }}>
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen p-4" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-2xl font-bold text-gray-800 mb-2"
+            className="text-3xl font-bold text-gray-800 mb-2"
           >
             Virtual Dress Try-On
           </motion.h1>
@@ -346,35 +400,37 @@ export default function DressTryOn() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-gray-600 text-sm"
+            className="text-gray-600"
           >
             Upload your photo and a dress to see how you'll look
           </motion.p>
         </div>
 
-        {/* Upload Areas */}
-        <div className="space-y-4 mb-6">
-          {/* Your Photo */}
+        {/* Tilted Cards Container */}
+        <div className="relative min-h-[400px] mb-8">
+          {/* Your Photo Card - Always visible, tilted left */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, rotate: -8, x: -50 }}
+            animate={{ opacity: 1, rotate: -8, x: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="absolute top-0 left-0 w-72 z-10"
+            style={{ transformOrigin: 'center bottom' }}
           >
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+            <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800">Your Photo</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Upload Picture of Yourself</h3>
                 </div>
 
                 <div 
                   onClick={() => !userImage && personImageRef.current?.click()}
-                  className={`aspect-[4/5] border-2 border-dashed rounded-xl flex items-center justify-center overflow-hidden transition-all duration-200 ${
+                  className={`aspect-[3/4] border-3 border-dashed rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
                     userImage 
-                      ? 'border-pink-300 bg-pink-50' 
-                      : 'border-pink-300 bg-pink-50/50 hover:bg-pink-50 cursor-pointer'
+                      ? 'border-pink-400 bg-pink-50' 
+                      : 'border-pink-400 bg-pink-50/70 hover:bg-pink-100 cursor-pointer hover:scale-105'
                   }`}
                 >
                   {userImage ? (
@@ -382,7 +438,7 @@ export default function DressTryOn() {
                       <img
                         src={userImage}
                         alt="Your photo"
-                        className="w-full h-full object-cover rounded-lg"
+                        className="w-full h-full object-cover rounded-xl"
                       />
                       <Button
                         onClick={(e) => {
@@ -393,38 +449,38 @@ export default function DressTryOn() {
                         }}
                         size="sm"
                         variant="outline"
-                        className="absolute top-1 right-1 bg-white/90 hover:bg-white border-0 shadow-md w-8 h-8 p-0"
+                        className="absolute top-2 right-2 bg-white/90 hover:bg-white border-0 shadow-lg w-8 h-8 p-0"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-4 h-4" />
                       </Button>
                     </div>
                   ) : (
                     <div className="text-center text-pink-600">
-                      <Upload className="w-8 h-8 mx-auto mb-2" />
-                      <p className="font-medium text-sm mb-1">Upload your photo</p>
-                      <p className="text-xs text-pink-500">Click to browse</p>
+                      <Upload className="w-12 h-12 mx-auto mb-3" />
+                      <p className="font-bold text-lg mb-1">Click to Upload</p>
+                      <p className="text-sm text-pink-500">Your beautiful photo</p>
                     </div>
                   )}
                 </div>
 
                 {!userImage && (
-                  <div className="mt-3 space-y-2">
-                    <div className="text-center text-gray-500 text-xs">or</div>
+                  <div className="mt-4 space-y-2">
+                    <div className="text-center text-gray-500 text-sm">or paste URL</div>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="Paste image URL"
                         value={userImageUrl}
                         onChange={(e) => handlePersonImageUrl(e.target.value)}
-                        className="flex-1 px-2 py-1 border border-pink-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white/50"
+                        className="flex-1 px-3 py-2 border border-pink-200 rounded-xl text-sm focus:outline-none focus:ring-3 focus:ring-pink-300 bg-white/70"
                       />
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handlePersonImageUrl(userImageUrl)}
-                        className="border-pink-200 text-pink-600 hover:bg-pink-50 px-2"
+                        className="border-pink-200 text-pink-600 hover:bg-pink-50 px-3"
                       >
-                        <Link className="w-3 h-3" />
+                        <Link className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -441,111 +497,127 @@ export default function DressTryOn() {
             </Card>
           </motion.div>
 
-          {/* Dress/Garment */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <Shirt className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800">Dress/Garment</h3>
-                </div>
-
-                <div 
-                  onClick={() => !garmentImage && garmentImageRef.current?.click()}
-                  className={`aspect-[4/5] border-2 border-dashed rounded-xl flex items-center justify-center overflow-hidden transition-all duration-200 ${
-                    garmentImage 
-                      ? 'border-purple-300 bg-purple-50' 
-                      : 'border-purple-300 bg-purple-50/50 hover:bg-purple-50 cursor-pointer'
-                  }`}
-                >
-                  {garmentImage ? (
-                    <div className="relative w-full h-full">
-                      <img
-                        src={garmentImage}
-                        alt="Dress/Garment"
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setGarmentImage(null);
-                          setGarmentImageFile(null);
-                          setGarmentImageUrl('');
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="absolute top-1 right-1 bg-white/90 hover:bg-white border-0 shadow-md w-8 h-8 p-0"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
+          {/* Dress Card - Shows after user uploads photo, tilted right, overlapping */}
+          <AnimatePresence>
+            {userImage && (
+              <motion.div
+                initial={{ opacity: 0, rotate: 8, x: 50, y: 20 }}
+                animate={{ opacity: 1, rotate: 8, x: 20, y: 60 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                className="absolute top-0 right-0 w-72 z-20"
+                style={{ transformOrigin: 'center bottom' }}
+              >
+                <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                        <Shirt className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-800">Choose Your Dress</h3>
                     </div>
-                  ) : (
-                    <div className="text-center text-purple-600">
-                      <Upload className="w-8 h-8 mx-auto mb-2" />
-                      <p className="font-medium text-sm mb-1">Upload dress image</p>
-                      <p className="text-xs text-purple-500">Click to browse</p>
-                    </div>
-                  )}
-                </div>
 
-                {!garmentImage && (
-                  <div className="mt-3 space-y-2">
-                    <div className="text-center text-gray-500 text-xs">or</div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Paste dress image URL"
-                        value={garmentImageUrl}
-                        onChange={(e) => handleGarmentImageUrl(e.target.value)}
-                        className="flex-1 px-2 py-1 border border-purple-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/50"
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleGarmentImageUrl(garmentImageUrl)}
-                        className="border-purple-200 text-purple-600 hover:bg-purple-50 px-2"
-                      >
-                        <Link className="w-3 h-3" />
-                      </Button>
+                    <div 
+                      onClick={() => !garmentImage && garmentImageRef.current?.click()}
+                      className={`aspect-[3/4] border-3 border-dashed rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                        garmentImage 
+                          ? 'border-purple-400 bg-purple-50' 
+                          : 'border-purple-400 bg-purple-50/70 hover:bg-purple-100 cursor-pointer hover:scale-105'
+                      }`}
+                    >
+                      {garmentImage ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={garmentImage}
+                            alt="Dress/Garment"
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGarmentImage(null);
+                              setGarmentImageFile(null);
+                              setGarmentImageUrl('');
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="absolute top-2 right-2 bg-white/90 hover:bg-white border-0 shadow-lg w-8 h-8 p-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-purple-600">
+                          <Upload className="w-12 h-12 mx-auto mb-3" />
+                          <p className="font-bold text-lg mb-1">Upload Dress</p>
+                          <p className="text-sm text-purple-500">Your dream outfit</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
 
-                <input
-                  ref={garmentImageRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleGarmentImageUpload}
-                  className="hidden"
-                />
-              </CardContent>
-            </Card>
-          </motion.div>
+                    {!garmentImage && (
+                      <div className="mt-4 space-y-2">
+                        <div className="text-center text-gray-500 text-sm">or paste URL</div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Paste dress image URL"
+                            value={garmentImageUrl}
+                            onChange={(e) => handleGarmentImageUrl(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-purple-200 rounded-xl text-sm focus:outline-none focus:ring-3 focus:ring-purple-300 bg-white/70"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleGarmentImageUrl(garmentImageUrl)}
+                            className="border-purple-200 text-purple-600 hover:bg-purple-50 px-3"
+                          >
+                            <Link className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <input
+                      ref={garmentImageRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleGarmentImageUpload}
+                      className="hidden"
+                    />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* See How You Look Button */}
+        {/* See the Magic Button */}
         <AnimatePresence>
           {canTryOn && (
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              initial={{ opacity: 0, y: 30, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="text-center mb-4"
+              exit={{ opacity: 0, y: 30, scale: 0.8 }}
+              transition={{ type: "spring", damping: 15, stiffness: 300 }}
+              className="text-center mb-6"
             >
               <Button
-                onClick={handleTryOn}
+                onClick={handleSeeTheMagic}
                 disabled={isProcessing}
-                className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold text-base px-8 py-4 rounded-xl shadow-xl transition-all duration-200 transform hover:scale-105 border-0 w-full"
+                className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-xl px-12 py-6 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-110 border-0 relative overflow-hidden"
               >
-                <Sparkles className="w-5 h-5 mr-2" />
-                See How You Look
+                <motion.div
+                  animate={{ 
+                    background: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 z-0"
+                />
+                <span className="relative z-10 flex items-center">
+                  <Sparkles className="w-6 h-6 mr-3" />
+                  See the Magic
+                  <Sparkles className="w-6 h-6 ml-3" />
+                </span>
               </Button>
             </motion.div>
           )}
@@ -560,18 +632,18 @@ export default function DressTryOn() {
               exit={{ opacity: 0, y: -20 }}
               className="mb-4"
             >
-              <Card className="bg-red-50 border-red-200">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertCircle className="w-4 h-4" />
-                    <p className="text-xs flex-1">{error}</p>
+              <Card className="bg-red-50 border-red-200 rounded-2xl">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 text-red-700">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="text-sm flex-1 font-medium">{error}</p>
                     <Button
                       onClick={() => setError(null)}
                       size="sm"
                       variant="ghost"
-                      className="text-red-700 hover:bg-red-100 p-1"
+                      className="text-red-700 hover:bg-red-100 p-2"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
