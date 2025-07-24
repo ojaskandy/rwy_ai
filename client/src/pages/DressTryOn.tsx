@@ -247,16 +247,75 @@ export default function DressTryOn() {
               <div className="aspect-[3/4] max-w-xs mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
                 {tryOnResult?.output && tryOnResult.output.length > 0 && tryOnResult.status === 'completed' ? (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-full h-full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full relative overflow-hidden"
                   >
-                    <img
+                    {/* White Light Reveal Effect */}
+                    <motion.div
+                      initial={{ 
+                        background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 30%, rgba(255,255,255,0) 70%)',
+                        scale: 0,
+                        opacity: 1
+                      }}
+                      animate={{ 
+                        scale: [0, 3, 4],
+                        opacity: [1, 0.8, 0]
+                      }}
+                      transition={{ 
+                        duration: 0.8,
+                        ease: "easeOut"
+                      }}
+                      className="absolute inset-0 z-20 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 30%, rgba(255,255,255,0) 70%)'
+                      }}
+                    />
+                    
+                    {/* Result Image */}
+                    <motion.img
                       src={tryOnResult.output[0]}
                       alt="Virtual try-on result"
+                      initial={{ scale: 1.1, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
                       className="w-full h-full object-cover"
                     />
+                    
+                    {/* Sparkle Effects */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0, 1, 0] }}
+                      transition={{ duration: 1.2, delay: 0.3 }}
+                      className="absolute inset-0 pointer-events-none"
+                    >
+                      {[...Array(6)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ 
+                            opacity: 0,
+                            scale: 0,
+                            x: Math.random() * 200,
+                            y: Math.random() * 200
+                          }}
+                          animate={{ 
+                            opacity: [0, 1, 0],
+                            scale: [0, 1, 0],
+                            rotate: 360
+                          }}
+                          transition={{ 
+                            duration: 1,
+                            delay: 0.4 + i * 0.1,
+                            ease: "easeOut"
+                          }}
+                          className="absolute w-3 h-3 bg-white rounded-full shadow-lg"
+                          style={{
+                            boxShadow: '0 0 10px rgba(255,255,255,0.8)'
+                          }}
+                        />
+                      ))}
+                    </motion.div>
                   </motion.div>
                 ) : isProcessing ? (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
@@ -407,7 +466,7 @@ export default function DressTryOn() {
         </div>
 
         {/* Tilted Cards Container */}
-        <div className="relative min-h-[400px] mb-8">
+        <div className="relative min-h-[500px] mb-12 pb-8">
           {/* Your Photo Card - Always visible, tilted left */}
           <motion.div
             initial={{ opacity: 0, rotate: -8, x: -50 }}
@@ -599,7 +658,7 @@ export default function DressTryOn() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.8 }}
               transition={{ type: "spring", damping: 15, stiffness: 300 }}
-              className="text-center mb-6"
+              className="text-center mb-8 mt-4"
             >
               <Button
                 onClick={handleSeeTheMagic}
