@@ -42,12 +42,12 @@ export default function PreloadedVideoSelector({ onVideoSelect, onCancel }: Prel
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+    <div className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-pink-200 shadow-lg">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Select Reference Video</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Select Reference Video</h2>
         <button
           onClick={onCancel}
-          className="text-gray-400 hover:text-white text-2xl"
+          className="text-gray-500 hover:text-pink-600 text-2xl"
         >
           ✕
         </button>
@@ -59,10 +59,10 @@ export default function PreloadedVideoSelector({ onVideoSelect, onCancel }: Prel
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap ${
+            className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap transition-colors ${
               selectedCategory === category
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-pink-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-pink-100 hover:text-pink-700'
             }`}
           >
             {category.replace('-', ' ')}

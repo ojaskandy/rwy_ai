@@ -19,6 +19,7 @@ import { useCalendarEvents } from '@/hooks/use-calendar';
 import runwayLogo from '/images/shifu_coacht.png';
 import OceanWaves from '@/components/OceanWaves';
 import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 // Event type to color mapping - subtle dots for calendar
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -177,11 +178,23 @@ export default function Home() {
 
     setUploading(true);
     try {
+      // Get the auth token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        console.error('No auth token available');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('photo', file);
 
       const response = await fetch('/api/upload-photo', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         body: formData,
       });
 
@@ -191,10 +204,13 @@ export default function Home() {
         const newPhotos = [...userPhotos, result.url];
         setUserPhotos(newPhotos);
         
-        // Save updated photos to backend
+        // Save updated photos to backend (also needs auth)
         await fetch('/api/save-user-photos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
           body: JSON.stringify({ photos: newPhotos })
         });
       } else {

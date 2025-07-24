@@ -2759,22 +2759,24 @@ export default function CameraView({
 
               {mediaLoaded && !isTracking && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/70">
-                  <div className="text-center p-3 backdrop-blur-sm bg-black/80 rounded-lg border border-red-900/30">
-                    <span className="material-icons text-4xl text-red-500 mb-2">sports_martial_arts</span>
-                    <p className="text-white font-medium">Start tracking to begin pose analysis</p>
+                  <div className="text-center p-4 backdrop-blur-sm bg-white/90 rounded-xl border border-pink-200 shadow-lg">
+                    <div className="text-pink-500 mb-3">
+                      <span className="material-icons text-4xl">play_circle</span>
+                    </div>
+                    <p className="text-gray-800 font-medium">Start tracking to begin pose analysis</p>
                   </div>
                 </div>
               )}
 
               {isTracking && !testResults.isRunning && (
-                <div className="absolute top-2 right-2 bg-gradient-to-r from-red-800 to-red-700 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
+                <div className="absolute top-2 right-2 bg-gradient-to-r from-pink-500 to-pink-400 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
                   <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse mr-1.5"></span>
                   Tracking Active
                 </div>
               )}
 
               {testResults.isRunning && (
-                <div className="absolute top-2 right-2 bg-gradient-to-r from-red-900 to-red-600 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
+                <div className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-green-400 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
                   <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse mr-1.5"></span>
                   Test in progress
                 </div>
@@ -2930,11 +2932,11 @@ export default function CameraView({
             )}
 
             {isSplitView && showMediaSelector && (
-              <div className="bg-black/90 border border-red-900/40 relative md:w-1/2 w-full flex flex-col items-center justify-center p-4">
+              <div className="bg-white/95 border border-pink-200 relative md:w-1/2 w-full flex flex-col items-center justify-center p-4 rounded-xl">
                 <div className="w-full max-w-md">
                   <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-red-500 mb-2">Select Reference Media</h3>
-                    <p className="text-red-100 text-sm">Choose a pre-loaded martial arts form or upload your own media</p>
+                    <h3 className="text-xl font-bold text-pink-600 mb-2">Select Reference Media</h3>
+                    <p className="text-gray-600 text-sm">Choose a pre-loaded training routine or upload your own media</p>
                   </div>
 
                   <div className="space-y-4">
@@ -2966,7 +2968,7 @@ export default function CameraView({
                       };
                       input.click();
                     }}
-                      className="w-full h-16 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-lg shadow-lg"
+                      className="w-full h-16 bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white font-semibold text-lg flex items-center justify-center gap-3 rounded-xl shadow-lg"
                   >
                       <span className="material-icons text-2xl">file_upload</span>
                     Upload Video
@@ -2975,14 +2977,14 @@ export default function CameraView({
                     {/* Cancel Button */}
                   <button
                     onClick={() => setShowMediaSelector(false)}
-                      className="w-full border-red-900/30 bg-transparent text-gray-300 hover:bg-red-900/20 hover:text-white p-3 rounded-lg flex items-center justify-center shadow-lg border"
+                      className="w-full border-pink-200 bg-transparent text-gray-600 hover:bg-pink-50 hover:text-pink-600 p-3 rounded-xl flex items-center justify-center shadow-lg border"
                   >
                     <span className="material-icons mr-2">close</span>
                     Cancel
                   </button>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-red-900/30">
+                  <div className="mt-6 pt-4 border-t border-pink-100">
                     <div className="text-xs text-gray-500 text-center space-y-1">
                       <p>Upload supports: MP4, WEBM, OGG</p>
                     </div>
@@ -2997,7 +2999,7 @@ export default function CameraView({
           {!isSplitView && (
             <button
               onClick={toggleSplitView}
-              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gradient-to-r from-red-700 to-red-600 text-white p-2 rounded-full shadow-lg hover:from-red-800 hover:to-red-700 z-20"
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gradient-to-r from-pink-500 to-pink-400 text-white p-2 rounded-full shadow-lg hover:from-pink-600 hover:to-pink-500 z-20"
               title="Add reference media"
             >
               <span className="material-icons">add</span>

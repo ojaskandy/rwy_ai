@@ -98,30 +98,30 @@ export default function MediaUploader({ onImageUpload, onVideoUpload, onCancel }
   };
 
   return (
-    <div className="p-6 bg-gray-900 rounded-lg max-w-md w-full border border-red-900/30 shadow-lg">
+    <div className="p-6 bg-white rounded-xl max-w-md w-full border border-pink-200 shadow-lg">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-serif bg-gradient-to-r from-red-500 to-red-600 text-transparent bg-clip-text">
+        <h3 className="text-xl font-serif bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
           Upload Media
         </h3>
         <button 
           onClick={onCancel}
-          className="text-gray-400 hover:text-white"
+          className="text-gray-500 hover:text-pink-600"
         >
           <span className="material-icons">close</span>
         </button>
       </div>
       
       <div 
-        className={`upload-zone p-8 mb-4 flex flex-col items-center justify-center bg-gray-800/50 border border-dashed border-red-900/50 rounded-lg ${isDragging ? 'bg-red-900/20 border-red-600' : ''}`}
+        className={`upload-zone p-8 mb-4 flex flex-col items-center justify-center bg-pink-50 border border-dashed border-pink-300 rounded-lg ${isDragging ? 'bg-pink-100 border-pink-500' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <span className="material-icons text-4xl text-red-500 mb-3">
+        <span className="material-icons text-4xl text-pink-500 mb-3">
           {loading ? "hourglass_top" : "cloud_upload"}
         </span>
         
-        <p className="text-center text-gray-300 mb-3">
+        <p className="text-center text-gray-700 mb-3">
           {loading 
             ? "Processing your file..." 
             : "Drag & drop your image or video here"}
@@ -134,7 +134,7 @@ export default function MediaUploader({ onImageUpload, onVideoUpload, onCancel }
         {!loading && (
           <Button 
             onClick={handleBrowseClick}
-            className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700"
+            className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white"
           >
             Browse Files
           </Button>
@@ -151,27 +151,13 @@ export default function MediaUploader({ onImageUpload, onVideoUpload, onCancel }
         />
       </div>
       
-      {error && (
-        <Alert variant="destructive" className="mb-4 bg-red-950 border border-red-700 text-red-300">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="grid grid-cols-2 gap-3">
+      <div className="text-center">
         <Button 
           variant="outline" 
           onClick={onCancel}
-          className="border-red-900/30 bg-gray-900 text-gray-300 hover:bg-gray-800"
+          className="border-pink-200 text-gray-600 hover:bg-pink-50 hover:text-pink-600"
         >
           Cancel
-        </Button>
-        
-        <Button
-          className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700"
-          onClick={handleBrowseClick}
-          disabled={loading}
-        >
-          {loading ? "Processing..." : "Select File"}
         </Button>
       </div>
     </div>

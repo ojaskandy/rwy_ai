@@ -217,9 +217,9 @@ export default function Routine() {
   }, [stream]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white">
       {/* Header */}
-      <div className="w-full bg-white/90 backdrop-blur-sm border-0 shadow-lg h-16 px-4 flex items-center justify-between">
+      <div className="w-full bg-white/95 backdrop-blur-sm shadow-sm h-14 px-4 flex items-center justify-between border-b border-pink-100">
         <Link href="/">
           <Button variant="ghost" className="text-gray-800 hover:text-pink-600 hover:bg-pink-50">
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -243,30 +243,93 @@ export default function Routine() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-4">
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center min-h-[400px]">
+          <div className="flex justify-center items-center min-h-[300px]">
             <LoadingState progress={loadingProgress} />
           </div>
         )}
 
         {/* Permission Dialog */}
         {hasPermission === false && !isLoading && (
-          <div className="flex justify-center items-center min-h-[400px]">
+          <div className="flex justify-center items-center min-h-[300px]">
             <PermissionDialog 
               onRequestPermission={handlePermissionRequest}
             />
           </div>
         )}
 
-        {/* Camera View */}
+        {/* Camera View + Settings Panel */}
         {(hasPermission || sourceType !== 'camera') && !isLoading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
+            className="space-y-4"
           >
+            {/* Camera Options - Moved to top for easy access */}
+            {sourceType === 'camera' && hasPermission && !isLoading && (
+              <div className="bg-white/90 backdrop-blur-sm shadow-md rounded-xl p-4 border border-pink-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-gray-800 text-sm font-semibold flex items-center">
+                    <span className="material-icons text-pink-500 mr-2 text-sm">tune</span>
+                    Camera Options
+                  </h3>
+                  
+                  <div className="flex items-center space-x-3 text-xs">
+                    <label className="flex items-center text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={showSkeleton}
+                        onChange={(e) => setShowSkeleton(e.target.checked)}
+                        className="mr-1 accent-pink-500"
+                      />
+                      Skeleton
+                    </label>
+                    
+                    <label className="flex items-center text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={showPoints}
+                        onChange={(e) => setShowPoints(e.target.checked)}
+                        className="mr-1 accent-pink-500"
+                      />
+                      Points
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-600">Skeleton Color</label>
+                    <select
+                      value={skeletonColorChoice}
+                      onChange={(e) => setSkeletonColorChoice(e.target.value as any)}
+                      className="w-full bg-white border border-pink-200 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:border-pink-400 focus:ring-pink-400"
+                    >
+                      <option value="red">Red</option>
+                      <option value="blue">Blue</option>
+                      <option value="green">Green</option>
+                      <option value="purple">Purple</option>
+                      <option value="orange">Orange</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-600">Camera View</label>
+                    <button
+                      onClick={() => setCameraFacing(cameraFacing === 'user' ? 'environment' : 'user')}
+                      className="w-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      {cameraFacing === 'user' ? 'Front Camera' : 'Back Camera'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Camera View */}
             <CameraView
               stream={stream}
               isTracking={isTracking}
@@ -294,76 +357,23 @@ export default function Routine() {
               onRecordClick={handleRecordClick}
               customBackground={selectedBackground}
             />
-
-            {/* Mobile-optimized Camera Settings Panel */}
-            {sourceType === 'camera' && hasPermission && !isLoading && (
-              <div className="mt-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl p-4">
-                <h3 className="text-gray-800 text-sm font-semibold mb-3">Camera Options</h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-700">Skeleton Color</label>
-                    <select
-                      value={skeletonColorChoice}
-                      onChange={(e) => setSkeletonColorChoice(e.target.value as any)}
-                      className="w-full bg-white border border-pink-200 rounded px-2 py-1 text-sm text-gray-800"
-                    >
-                      <option value="red">Red</option>
-                      <option value="blue">Blue</option>
-                      <option value="green">Green</option>
-                      <option value="purple">Purple</option>
-                      <option value="orange">Orange</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-700">Camera</label>
-                    <button
-                      onClick={() => setCameraFacing(cameraFacing === 'user' ? 'environment' : 'user')}
-                      className="w-full bg-pink-500 hover:bg-pink-600 text-white px-2 py-1 rounded text-sm"
-                    >
-                      {cameraFacing === 'user' ? 'Front' : 'Back'}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="mt-3 flex items-center space-x-4">
-                  <label className="flex items-center text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={showSkeleton}
-                      onChange={(e) => setShowSkeleton(e.target.checked)}
-                      className="mr-2"
-                    />
-                    Show Skeleton
-                  </label>
-                  
-                  <label className="flex items-center text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={showPoints}
-                      onChange={(e) => setShowPoints(e.target.checked)}
-                      className="mr-2"
-                    />
-                    Show Points
-                  </label>
-                </div>
-              </div>
-            )}
           </motion.div>
         )}
 
         {/* Error State */}
         {trackingStatus === 'error' && !isLoading && (
-          <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-            <div className="bg-red-900/30 border border-red-600 rounded-lg p-6 max-w-md">
-              <h3 className="text-red-400 text-lg font-semibold mb-2">Camera Error</h3>
-              <p className="text-gray-300 mb-4">
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md">
+              <div className="text-red-500 mb-3">
+                <span className="material-icons text-3xl">error_outline</span>
+              </div>
+              <h3 className="text-red-700 text-lg font-semibold mb-2">Camera Error</h3>
+              <p className="text-red-600 mb-4 text-sm">
                 Failed to access camera or load AI models. Please check your permissions and try again.
               </p>
               <Button
                 onClick={handlePermissionRequest}
-                className="bg-red-700 hover:bg-red-600 text-white"
+                className="bg-red-500 hover:bg-red-600 text-white"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Try Again

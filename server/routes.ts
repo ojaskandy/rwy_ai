@@ -769,34 +769,68 @@ RULES:
     }
   });
 
-  // In-memory storage for user photos (for development)
-  let userPhotos: string[] = [];
-
-  // Photo upload and profile routes
+  // Photo profile routes with Supabase
   app.get("/api/user-profile", async (req, res) => {
     try {
+      const user = await getAuthenticatedUser(req);
+      
+      // Get user's gallery images from database
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('gallery_images')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Database error:', error);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
       res.json({
-        userId: 1,
-        galleryImages: userPhotos
+        userId: user.id,
+        galleryImages: profile?.gallery_images || []
       });
     } catch (error) {
       console.error('Get profile error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   });
 
   app.post("/api/save-user-photos", async (req, res) => {
     try {
+      const user = await getAuthenticatedUser(req);
       const { photos } = req.body;
-      if (Array.isArray(photos)) {
-        userPhotos = photos;
-        res.json({ success: true });
-      } else {
-        res.status(400).json({ error: 'Invalid photos data' });
+      
+      if (!Array.isArray(photos)) {
+        return res.status(400).json({ error: 'Invalid photos data' });
       }
+
+      // Upsert user profile with gallery images
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          gallery_images: photos,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({ error: 'Failed to save photos' });
+      }
+
+      res.json({ success: true });
     } catch (error) {
       console.error('Save photos error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   });
 
@@ -819,15 +853,37 @@ RULES:
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      // Create a unique mock photo URL for development
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 1000);
-      const photoUrl = `https://picsum.photos/200/200?random=${timestamp}${random}`;
+      const user = await getAuthenticatedUser(req);
       
-      res.json({ url: photoUrl });
+      // Create unique filename
+      const timestamp = Date.now();
+      const fileExtension = req.file.originalname.split('.').pop();
+      const fileName = `${user.id}/${timestamp}.${fileExtension}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('user-photos')
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('user-photos')
+        .getPublicUrl(fileName);
+
+      res.json({ url: publicUrl });
     } catch (error) {
       console.error('Photo upload error:', error);
-      if (error.code === 'LIMIT_FILE_SIZE') {
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+             } else if ((error as any).code === 'LIMIT_FILE_SIZE') {
         res.status(413).json({ error: 'File too large. Maximum size is 5MB.' });
       } else {
         res.status(500).json({ error: 'Internal server error' });
