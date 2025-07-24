@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
-import runwayAILogo from '@assets/rwyailogo_1753298739746.png';
+import runwayAILogo from '@assets/rwyailogotransparent_1753321576297.png';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -153,7 +153,7 @@ const Auth = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="flex justify-center mb-6"
           >
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl border-4 border-white/30 p-2">
+            <div className="w-28 h-28 flex items-center justify-center">
               <img 
                 src={runwayAILogo} 
                 alt="Runway AI Logo" 
@@ -198,7 +198,11 @@ const Auth = () => {
                     ? 'text-white shadow-lg'
                     : 'text-pink-600 hover:text-pink-700'
                 }`}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ 
+                  scale: 0.98,
+                  boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.1)',
+                  background: 'rgba(255,255,255,0.2)'
+                }}
               >
                 {!isSignUp && (
                   <motion.div
@@ -221,7 +225,11 @@ const Auth = () => {
                     ? 'text-white shadow-lg'
                     : 'text-pink-600 hover:text-pink-700'
                 }`}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ 
+                  scale: 0.98,
+                  boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.1)',
+                  background: 'rgba(255,255,255,0.2)'
+                }}
               >
                 {isSignUp && (
                   <motion.div
@@ -381,11 +389,19 @@ const Auth = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-14 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold text-lg rounded-xl shadow-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+              <motion.div
+                whileTap={{ 
+                  scale: 0.98,
+                  boxShadow: 'inset 0 6px 12px rgba(0,0,0,0.15)',
+                  background: 'rgba(255,255,255,0.1)'
+                }}
+                className="w-full"
               >
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold text-lg rounded-xl shadow-xl transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 backdrop-blur-sm"
+                >
                 {loading ? (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -408,11 +424,12 @@ const Auth = () => {
                       ? '✨ Send Reset Link' 
                       : isSignUp 
                         ? '👑 Join the Runway' 
-                        : '💕 Enter the Runway'
+                        : 'Enter the Runway'
                     }
                   </span>
                 )}
-              </Button>
+                </Button>
+              </motion.div>
             </motion.div>
 
             {/* Forgot Password Link */}
