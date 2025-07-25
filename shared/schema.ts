@@ -351,3 +351,50 @@ export const insertPoseReferenceSchema = createInsertSchema(poseReferences).pick
 
 export type InsertPoseReference = z.infer<typeof insertPoseReferenceSchema>;
 export type PoseReference = typeof poseReferences.$inferSelect;
+
+// Board functionality tables for Pinterest-like features
+export const boardImages = pgTable("board_images", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  url: text("url").notNull(), // Supabase Storage URL
+  title: text("title"),
+  description: text("description"),
+  category: text("category").notNull(), // 'dress', 'shoes', 'nails', 'inspiration', 'personal'
+  tags: jsonb("tags").$type<string[]>().default([]),
+  width: integer("width"), // Image dimensions for masonry layout
+  height: integer("height"),
+  likeCount: integer("like_count").default(0),
+  saveCount: integer("save_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const boardLikes = pgTable("board_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  imageId: integer("image_id").references(() => boardImages.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const boardSaves = pgTable("board_saves", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  imageId: integer("image_id").references(() => boardImages.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Board API schemas
+export const boardImageSchema = z.object({
+  url: z.string().url(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(),
+  category: z.enum(['dress', 'shoes', 'nails', 'inspiration', 'personal']),
+  tags: z.array(z.string().min(1).max(50)).max(20).default([]),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional()
+});
+
+export type BoardImage = typeof boardImages.$inferSelect;
+export type BoardImageInsert = typeof boardImages.$inferInsert;
+export type BoardLike = typeof boardLikes.$inferSelect;
+export type BoardSave = typeof boardSaves.$inferSelect;

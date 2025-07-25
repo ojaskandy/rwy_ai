@@ -15,6 +15,7 @@ import { ThemeProvider } from "./hooks/use-theme";
 import DressTryOn from "@/pages/DressTryOn";
 import InterviewCoach from "@/pages/InterviewCoach";
 import PageantCalendar from "@/pages/PageantCalendar";
+import Board from "@/pages/Board";
 // LIVE ROUTINE FEATURE
 import Routine from "@/pages/Routine";
 import GlobalDock from "@/components/GlobalDock";
@@ -49,6 +50,7 @@ function Router() {
         <Route path="/dress-tryon" component={() => <ProtectedRoute><DressTryOn /></ProtectedRoute>} />
         <Route path="/interview-coach" component={() => <ProtectedRoute><InterviewCoach /></ProtectedRoute>} />
         <Route path="/calendar" component={() => <ProtectedRoute><PageantCalendar /></ProtectedRoute>} />
+        <Route path="/board" component={() => <ProtectedRoute><Board /></ProtectedRoute>} />
         <Route path="/routine" component={() => <ProtectedRoute><Routine /></ProtectedRoute>} />
 
         {/* Redirect legacy routes to main app (also protected) */}

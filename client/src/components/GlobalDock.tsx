@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Shirt, Video, MessageSquare, Calendar } from 'lucide-react';
+import { Home, Shirt, Video, MessageSquare, Calendar, Images } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,12 @@ export default function GlobalDock() {
       label: 'Dress',
       path: '/dress-tryon',
       isActive: location === '/dress-tryon'
+    },
+    {
+      icon: Images,
+      label: 'Board',
+      path: '/board',
+      isActive: location === '/board'
     },
     {
       icon: Video,

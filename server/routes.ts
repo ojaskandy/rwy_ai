@@ -1197,6 +1197,463 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
+  // ============================================================================
+  // BOARD API ENDPOINTS - Pinterest-style image sharing
+  // ============================================================================
+
+  // Board image upload endpoint - uploads to public-board bucket
+  const boardPhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+      }
+    }
+  });
+
+  app.post("/api/board/upload", boardPhotoUpload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const user = await getAuthenticatedUser(req);
+      
+      // Create unique filename for public-board bucket
+      const timestamp = Date.now();
+      const fileExtension = req.file.originalname.split('.').pop();
+      const fileName = `${user.id}/${timestamp}.${fileExtension}`;
+
+      // Upload to public-board Supabase Storage bucket
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('public-board')
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Board upload error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload image to board' });
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('public-board')
+        .getPublicUrl(fileName);
+
+      res.json({ url: publicUrl });
+    } catch (error) {
+      console.error('Board photo upload error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else if ((error as any).code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({ error: 'File too large. Maximum size is 10MB.' });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Get all board images with user info, like/save status
+  app.get("/api/board/images", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      
+      // Get all board images with user information and current user's like/save status
+      const { data: images, error } = await supabase
+        .from('board_images')
+        .select(`
+          *,
+          board_likes!left(user_id),
+          board_saves!left(user_id)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Get board images error:', error);
+        return res.status(500).json({ error: 'Failed to fetch board images' });
+      }
+
+      // Get user info for each image from auth.users
+      const userIds = Array.from(new Set(images?.map(img => img.user_id) || []));
+      const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
+      
+      if (usersError) {
+        console.error('Get users error:', usersError);
+        return res.status(500).json({ error: 'Failed to fetch user information' });
+      }
+
+      // Create user lookup map
+      const userMap = new Map();
+      users.users.forEach(u => {
+        userMap.set(u.id, {
+          id: u.id,
+          username: u.user_metadata?.username || u.email?.split('@')[0] || 'Anonymous',
+          fullName: u.user_metadata?.full_name || null,
+          picture: u.user_metadata?.picture || u.user_metadata?.avatar_url || null
+        });
+      });
+
+      // Format response with user info and like/save status
+      const formattedImages = images?.map(img => ({
+        id: img.id.toString(),
+        url: img.url,
+        title: img.title,
+        description: img.description,
+        category: img.category,
+        tags: img.tags || [],
+        width: img.width,
+        height: img.height,
+        likeCount: img.like_count || 0,
+        saveCount: img.save_count || 0,
+        createdAt: img.created_at,
+        user: userMap.get(img.user_id) || {
+          id: img.user_id,
+          username: 'Anonymous',
+          fullName: null,
+          picture: null
+        },
+        isLiked: img.board_likes?.some((like: any) => like.user_id === user.id) || false,
+        isSaved: img.board_saves?.some((save: any) => save.user_id === user.id) || false
+      })) || [];
+
+      res.json({ images: formattedImages });
+    } catch (error) {
+      console.error('Get board images error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Create new board image entry
+  app.post("/api/board/images", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { url, title, description, category, tags, width, height } = req.body;
+
+      if (!url || !category) {
+        return res.status(400).json({ error: 'URL and category are required' });
+      }
+
+      // Validate category
+      const validCategories = ['dress', 'shoes', 'nails', 'inspiration', 'personal'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: 'Invalid category' });
+      }
+
+      const { data: newImage, error } = await supabase
+        .from('board_images')
+        .insert({
+          user_id: user.id,
+          url,
+          title: title || null,
+          description: description || null,
+          category,
+          tags: tags || [],
+          width: width || null,
+          height: height || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Create board image error:', error);
+        return res.status(500).json({ error: 'Failed to create board image' });
+      }
+
+      res.status(201).json(newImage);
+    } catch (error) {
+      console.error('Create board image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Delete board image (owner only)
+  app.delete("/api/board/images/:id", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { id } = req.params;
+
+      // Check if user owns the image
+      const { data: image, error: fetchError } = await supabase
+        .from('board_images')
+        .select('user_id, url')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !image) {
+        return res.status(404).json({ error: 'Image not found' });
+      }
+
+      if (image.user_id !== user.id) {
+        return res.status(403).json({ error: 'Not authorized to delete this image' });
+      }
+
+      // Delete from database (cascades to likes/saves)
+      const { error: deleteError } = await supabase
+        .from('board_images')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) {
+        console.error('Delete board image error:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete board image' });
+      }
+
+      // Extract filename and delete from storage
+      try {
+        const urlParts = image.url.split('/');
+        const fileName = urlParts.slice(-2).join('/'); // Gets "userId/timestamp.ext"
+        
+        await supabase.storage
+          .from('public-board')
+          .remove([fileName]);
+      } catch (storageError) {
+        console.error('Storage delete error:', storageError);
+        // Continue even if storage delete fails
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete board image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Like an image
+  app.post("/api/board/images/:id/like", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { id } = req.params;
+
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('board_likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('image_id', id)
+        .single();
+
+      if (existingLike) {
+        return res.status(400).json({ error: 'Already liked this image' });
+      }
+
+      // Add like
+      const { error: likeError } = await supabase
+        .from('board_likes')
+        .insert({
+          user_id: user.id,
+          image_id: parseInt(id)
+        });
+
+      if (likeError) {
+        console.error('Like image error:', likeError);
+        return res.status(500).json({ error: 'Failed to like image' });
+      }
+
+      // Update like count
+      const { data: currentImage } = await supabase
+        .from('board_images')
+        .select('like_count')
+        .eq('id', id)
+        .single();
+      
+      const { error: updateError } = await supabase
+        .from('board_images')
+        .update({ 
+          like_count: (currentImage?.like_count || 0) + 1
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Update like count error:', updateError);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Like image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Unlike an image
+  app.delete("/api/board/images/:id/like", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { id } = req.params;
+
+      // Remove like
+      const { error: unlikeError } = await supabase
+        .from('board_likes')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('image_id', id);
+
+      if (unlikeError) {
+        console.error('Unlike image error:', unlikeError);
+        return res.status(500).json({ error: 'Failed to unlike image' });
+      }
+
+      // Update like count (don't go below 0)
+      const { data: currentImage } = await supabase
+        .from('board_images')
+        .select('like_count')
+        .eq('id', id)
+        .single();
+      
+      const { error: updateError } = await supabase
+        .from('board_images')
+        .update({ 
+          like_count: Math.max((currentImage?.like_count || 0) - 1, 0)
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Update like count error:', updateError);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Unlike image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Save an image to personal collection
+  app.post("/api/board/images/:id/save", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { id } = req.params;
+
+      // Check if already saved
+      const { data: existingSave } = await supabase
+        .from('board_saves')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('image_id', id)
+        .single();
+
+      if (existingSave) {
+        return res.status(400).json({ error: 'Already saved this image' });
+      }
+
+      // Add save
+      const { error: saveError } = await supabase
+        .from('board_saves')
+        .insert({
+          user_id: user.id,
+          image_id: parseInt(id)
+        });
+
+      if (saveError) {
+        console.error('Save image error:', saveError);
+        return res.status(500).json({ error: 'Failed to save image' });
+      }
+
+      // Update save count
+      const { data: currentImage } = await supabase
+        .from('board_images')
+        .select('save_count')
+        .eq('id', id)
+        .single();
+      
+      const { error: updateError } = await supabase
+        .from('board_images')
+        .update({ 
+          save_count: (currentImage?.save_count || 0) + 1
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Update save count error:', updateError);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Save image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Remove image from personal collection
+  app.delete("/api/board/images/:id/save", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { id } = req.params;
+
+      // Remove save
+      const { error: unsaveError } = await supabase
+        .from('board_saves')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('image_id', id);
+
+      if (unsaveError) {
+        console.error('Unsave image error:', unsaveError);
+        return res.status(500).json({ error: 'Failed to unsave image' });
+      }
+
+      // Update save count (don't go below 0)
+      const { data: currentImage } = await supabase
+        .from('board_images')
+        .select('save_count')
+        .eq('id', id)
+        .single();
+      
+      const { error: updateError } = await supabase
+        .from('board_images')
+        .update({ 
+          save_count: Math.max((currentImage?.save_count || 0) - 1, 0)
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Update save count error:', updateError);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Unsave image error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // ============================================================================
+  // END BOARD API ENDPOINTS
+  // ============================================================================
+
   app.delete("/api/delete-account", async (req, res) => {
     try {
       const user = await getAuthenticatedUser(req);

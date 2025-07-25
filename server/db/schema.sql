@@ -79,3 +79,45 @@ INSERT INTO martial_arts_videos (name, description, category, difficulty, durati
 ('Taegeuk 1 - Il Jang', 'First taekwondo poomsae with basic stances and blocks', 'taekwondo', 'beginner', 150, 'https://www.youtube.com/watch?v=WvnQmtjBmo8', 'https://img.youtube.com/vi/WvnQmtjBmo8/maxresdefault.jpg'),
 ('Taegeuk 2 - Ee Jang', 'Second taekwondo poomsae with advancing techniques', 'taekwondo', 'beginner', 165, 'https://www.youtube.com/watch?v=u_-gfpYK5NQ', 'https://img.youtube.com/vi/u_-gfpYK5NQ/maxresdefault.jpg'),
 ('Taegeuk 3 - Sam Jang', 'Third taekwondo poomsae with kicking combinations', 'taekwondo', 'intermediate', 180, 'https://www.youtube.com/watch?v=FggbmUaZlkA', 'https://img.youtube.com/vi/FggbmUaZlkA/maxresdefault.jpg'); 
+
+-- Board functionality for Pinterest-like features
+CREATE TABLE IF NOT EXISTS board_images (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    url TEXT NOT NULL,
+    title TEXT,
+    description TEXT,
+    category TEXT NOT NULL CHECK (category IN ('dress', 'shoes', 'nails', 'inspiration', 'personal')),
+    tags JSONB DEFAULT '[]',
+    width INTEGER,
+    height INTEGER,
+    like_count INTEGER DEFAULT 0,
+    save_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS board_likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    image_id INTEGER REFERENCES board_images(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, image_id)
+);
+
+CREATE TABLE IF NOT EXISTS board_saves (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    image_id INTEGER REFERENCES board_images(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, image_id)
+);
+
+-- Indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_board_images_user_id ON board_images(user_id);
+CREATE INDEX IF NOT EXISTS idx_board_images_category ON board_images(category);
+CREATE INDEX IF NOT EXISTS idx_board_images_created_at ON board_images(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_board_likes_user_id ON board_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_board_likes_image_id ON board_likes(image_id);
+CREATE INDEX IF NOT EXISTS idx_board_saves_user_id ON board_saves(user_id);
+CREATE INDEX IF NOT EXISTS idx_board_saves_image_id ON board_saves(image_id); 
