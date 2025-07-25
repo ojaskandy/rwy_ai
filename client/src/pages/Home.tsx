@@ -148,23 +148,45 @@ export default function Home() {
   // Get user photos from profile
   const [userPhotos, setUserPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
 
-  // Load user photos on component mount
+  // Load user photos when user is authenticated
   useEffect(() => {
     const loadUserPhotos = async () => {
+      if (!user) return; // Don't load if user is not authenticated
+      
+      setLoadingPhotos(true);
       try {
-        const response = await fetch('/api/user-profile');
+        // Get auth token for the request
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token;
+
+        if (!authToken) {
+          console.error('No auth token available for loading photos');
+          return;
+        }
+
+        const response = await fetch('/api/user-profile', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
         if (response.ok) {
           const profile = await response.json();
           setUserPhotos(profile.galleryImages || []);
+        } else {
+          console.error('Failed to load user photos:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Failed to load user photos:', error);
+      } finally {
+        setLoadingPhotos(false);
       }
     };
 
     loadUserPhotos();
-  }, []);
+  }, [user]); // Depend on user authentication state
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -173,6 +195,14 @@ export default function Home() {
     // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       console.error('File too large. Maximum size is 5MB.');
+      alert('File too large. Please select an image smaller than 5MB.');
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+      console.error('User not authenticated');
+      alert('Please log in to upload photos.');
       return;
     }
 
@@ -184,6 +214,7 @@ export default function Home() {
 
       if (!authToken) {
         console.error('No auth token available');
+        alert('Authentication error. Please try logging in again.');
         return;
       }
 
@@ -205,7 +236,7 @@ export default function Home() {
         setUserPhotos(newPhotos);
         
         // Save updated photos to backend (also needs auth)
-        await fetch('/api/save-user-photos', {
+        const saveResponse = await fetch('/api/save-user-photos', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -213,12 +244,21 @@ export default function Home() {
           },
           body: JSON.stringify({ photos: newPhotos })
         });
+
+        if (!saveResponse.ok) {
+          console.error('Failed to save photos to profile');
+          // Revert the local state if saving failed
+          setUserPhotos(userPhotos);
+          alert('Photo uploaded but failed to save to your profile. Please try again.');
+        }
       } else {
         const errorData = await response.json();
         console.error('Failed to upload photo:', errorData.error || 'Unknown error');
+        alert(`Failed to upload photo: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Upload error:', error);
+      alert('An error occurred while uploading the photo. Please try again.');
     } finally {
       setUploading(false);
       // Clear the input so the same file can be uploaded again
@@ -348,25 +388,31 @@ export default function Home() {
               </label>
               
               {/* Photo Grid */}
-              {userPhotos.map((photoUrl, index) => {
-                const rotations = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-1', '-rotate-2'];
-                const rotation = rotations[index % rotations.length];
-                
-                return (
-                  <motion.div
-                    key={index}
-                    className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${rotation} -ml-3`}
-                    style={{
-                      backgroundImage: `url(${photoUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      zIndex: 20 + index
-                    }}
-                    whileHover={{ scale: 1.05, zIndex: 50 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  />
-                );
-              })}
+              {loadingPhotos ? (
+                <div className="w-20 h-20 bg-gray-100 rounded-lg shadow-md -ml-3 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                </div>
+              ) : (
+                userPhotos.map((photoUrl, index) => {
+                  const rotations = ['-rotate-3', 'rotate-2', '-rotate-1', 'rotate-1', '-rotate-2'];
+                  const rotation = rotations[index % rotations.length];
+                  
+                  return (
+                    <motion.div
+                      key={index}
+                      className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${rotation} -ml-3`}
+                      style={{
+                        backgroundImage: `url(${photoUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        zIndex: 20 + index
+                      }}
+                      whileHover={{ scale: 1.05, zIndex: 50 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    />
+                  );
+                })
+              )}
             </div>
           </div>
         </motion.div>
