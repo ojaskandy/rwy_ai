@@ -113,37 +113,37 @@ const UserMenu: React.FC = () => {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-lg" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
+            <p className="text-sm font-medium leading-none text-gray-900">
               {user.user_metadata?.full_name || 'User'}
             </p>
-            <p className="text-xs leading-none text-muted-foreground">
+            <p className="text-xs leading-none text-gray-600">
               {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
+          <User className="mr-2 h-4 w-4 text-gray-600" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Settings className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
+          <Settings className="mr-2 h-4 w-4 text-gray-600" />
           <span>Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Key className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
+          <Key className="mr-2 h-4 w-4 text-gray-600" />
           <span>Change Password</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Shield className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
+          <Shield className="mr-2 h-4 w-4 text-gray-600" />
           <span>Privacy & Security</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          className="cursor-pointer text-red-600 focus:text-red-600"
+          className="cursor-pointer text-red-600 hover:bg-red-50 focus:text-red-600"
           onClick={() => setShowDeleteDialog(true)}
         >
           <Trash2 className="mr-2 h-4 w-4" />
@@ -151,14 +151,14 @@ const UserMenu: React.FC = () => {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          className="cursor-pointer"
+          className="cursor-pointer text-gray-900 hover:bg-gray-50"
           onClick={handleSignOut}
           disabled={signingOut}
         >
           {signingOut ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-gray-600" />
           ) : (
-            <LogOut className="mr-2 h-4 w-4" />
+            <LogOut className="mr-2 h-4 w-4 text-gray-600" />
           )}
           <span>{signingOut ? 'Signing out...' : 'Sign out'}</span>
         </DropdownMenuItem>
@@ -167,15 +167,15 @@ const UserMenu: React.FC = () => {
 
     {/* Account Deletion Confirmation Dialog */}
     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="max-w-md bg-white border border-gray-200 shadow-xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-red-600">Delete Account</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-4">
+          <AlertDialogDescription className="space-y-4 text-gray-900">
             <p>
               <strong>This action cannot be undone.</strong> This will permanently delete your account and remove all your data from our servers.
             </p>
             <p>All of the following will be permanently deleted:</p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
               <li>Your profile and account information</li>
               <li>All your uploaded photos</li>
               <li>Your calendar events and schedules</li>
@@ -186,25 +186,25 @@ const UserMenu: React.FC = () => {
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="delete-password">Enter your password to confirm:</Label>
+            <Label htmlFor="delete-password" className="text-gray-900 font-medium">Enter your password to confirm:</Label>
             <Input
               id="delete-password"
               type="password"
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
               placeholder="Your current password"
-              className="mt-1"
+              className="mt-1 bg-white border-gray-300 text-gray-900"
             />
           </div>
           
           <div>
-            <Label htmlFor="delete-confirm">Type "DELETE" to confirm:</Label>
+            <Label htmlFor="delete-confirm" className="text-gray-900 font-medium">Type "DELETE" to confirm:</Label>
             <Input
               id="delete-confirm"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder="Type DELETE here"
-              className="mt-1"
+              className="mt-1 bg-white border-gray-300 text-gray-900"
             />
           </div>
         </div>
