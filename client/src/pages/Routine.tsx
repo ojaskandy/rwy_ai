@@ -47,17 +47,17 @@ interface SummaryModalProps {
 function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-xl font-semibold text-gray-900">
             Practice Session Summary
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600">
             Here's your comprehensive performance feedback
           </DialogDescription>
         </DialogHeader>
         
-        <div className="mt-4">
+        <div className="mt-4 flex-1 overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="flex space-x-2">
@@ -68,7 +68,7 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
               <span className="text-gray-600 ml-3">Analyzing your complete routine...</span>
             </div>
           ) : (
-            <div className="bg-pink-50 rounded-lg p-6">
+            <div className="bg-pink-50 rounded-lg p-6 h-full overflow-y-auto">
               <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
                 {feedback || "Great session! Keep practicing to build your confidence and perfect your technique."}
               </p>

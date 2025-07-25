@@ -147,6 +147,14 @@ For each response, provide:
 2. ONE specific, harsh coaching tip targeting the biggest weakness in this response
 3. NO overall tips - just individual response feedback
 
+CRITICAL FORMATTING RULES:
+- Use ONLY plain text in all response fields
+- NO bold text (**text**), NO italics (*text*), NO headers (### text)
+- NO markdown formatting of any kind
+- Write in natural, conversational language
+- Structure feedback as flowing paragraphs, not bullet points
+- Be direct and clear without special formatting
+
 Format as JSON:
 {
   "answers": [
