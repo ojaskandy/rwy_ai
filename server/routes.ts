@@ -1036,18 +1036,31 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(400).json({ error: 'Invalid photos data' });
       }
 
-      // Upsert user profile with gallery images
-      const { error } = await supabase
+      // First, try to update existing profile
+      const { data: updateData, error: updateError } = await supabase
         .from('user_profiles')
-        .upsert({
-          user_id: user.id,
+        .update({
           gallery_images: photos,
           updated_at: new Date().toISOString()
-        });
+        })
+        .eq('user_id', user.id)
+        .select();
 
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({ error: 'Failed to save photos' });
+      // If no rows were updated (user profile doesn't exist), insert new one
+      if (updateError || !updateData || updateData.length === 0) {
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            gallery_images: photos,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('Database insert error:', insertError);
+          return res.status(500).json({ error: 'Failed to save photos' });
+        }
       }
 
       res.json({ success: true });
@@ -1063,7 +1076,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
 
   const photoUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 }, // Increased to 10MB
     fileFilter: (req, file, cb) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (allowedTypes.includes(file.mimetype)) {
@@ -1111,7 +1124,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       if (error instanceof Error && error.message.includes("token")) {
         res.status(401).json({ error: error.message });
              } else if ((error as any).code === 'LIMIT_FILE_SIZE') {
-        res.status(413).json({ error: 'File too large. Maximum size is 5MB.' });
+        res.status(413).json({ error: 'File too large. Maximum size is 10MB.' });
       } else {
         res.status(500).json({ error: 'Internal server error' });
       }

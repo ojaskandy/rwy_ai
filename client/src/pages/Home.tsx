@@ -192,10 +192,10 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file || uploading) return;
 
-    // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      console.error('File too large. Maximum size is 5MB.');
-      alert('File too large. Please select an image smaller than 5MB.');
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      console.error('File too large. Maximum size is 10MB.');
+      alert('File too large. Please select an image smaller than 10MB.');
       return;
     }
 
