@@ -431,11 +431,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
-        ? "Expert pageant coach. Give detailed analysis and improvement tips."
+        ? `You are an expert pageant coach providing comprehensive routine analysis. Structure your feedback clearly without using any bold text, headers, or markdown formatting. Write in flowing, natural paragraphs that are easy to read. Focus on being specific, actionable, and encouraging while maintaining professional coaching standards.`
         : "Pageant coach. Max 10 words. One tip only.";
 
       const userPrompt = isSequenceSummary
-        ? "Analyze this complete routine. Give comprehensive feedback."
+        ? `Analyze this complete pageant routine and provide structured feedback. Return your response as valid JSON with this exact structure:
+
+{
+  "overview": "Overall impression and performance summary in 2-3 sentences",
+  "sceneAnalysis": [
+    {
+      "scene": "Opening/Beginning",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    },
+    {
+      "scene": "Middle Section",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    },
+    {
+      "scene": "Closing/Finale",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    }
+  ],
+  "nextSteps": [
+    "Specific actionable step 1",
+    "Specific actionable step 2",
+    "Specific actionable step 3",
+    "Specific actionable step 4"
+  ]
+}
+
+Be specific, constructive, and supportive. Focus on posture, movement quality, transitions, stage presence, and technical execution. Use plain language without formatting.`
         : "Quick tip for this pose?";
 
       // Prepare image content for OpenAI
@@ -471,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ]
             }
           ],
-          max_tokens: isSequenceSummary ? 150 : 20,
+          max_tokens: isSequenceSummary ? 800 : 20,
           temperature: 0.7
         })
       });
@@ -483,22 +512,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const feedback = data.choices?.[0]?.message?.content || 'Great work! Keep practicing your form and confidence.';
+      let feedback = data.choices?.[0]?.message?.content || 'Great work! Keep practicing your form and confidence.';
+
+      // Parse JSON response for sequence summaries
+      let parsedFeedback = null;
+      if (isSequenceSummary) {
+        try {
+          // Clean response if it has markdown code blocks
+          let cleanResponse = feedback.trim();
+          if (cleanResponse.startsWith('```json')) {
+            cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          parsedFeedback = JSON.parse(cleanResponse);
+        } catch (parseError) {
+          console.error('Failed to parse structured feedback, falling back to plain text');
+          // Keep the original feedback as fallback
+        }
+      }
 
       console.log('Pageant Coaching - AI Response:', {
         feedback: feedback.substring(0, 100) + '...',
-        tokens: data.usage?.total_tokens || 0
+        tokens: data.usage?.total_tokens || 0,
+        structured: !!parsedFeedback
       });
 
       res.json({ 
         success: true, 
-        feedback,
+        feedback: parsedFeedback || feedback,
         isSequenceSummary,
         timestamp: new Date().toISOString()
       });
 
     } catch (error) {
       console.error('Pageant coaching error:', error);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Routine Chat endpoint - Chat about specific routine feedback
+  app.post('/api/routine-chat', async (req, res) => {
+    try {
+      const { message, previousFeedback } = req.body;
+      console.log('Routine Chat - Received:', {
+        message: message?.substring(0, 50) + '...',
+        hasPreviousFeedback: !!previousFeedback,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('No OpenAI API key found');
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
+
+      // Prepare the system prompt for routine discussion
+      const systemPrompt = `You are an expert pageant coach helping to discuss and clarify feedback about a specific routine performance. Be helpful, encouraging, and provide specific actionable advice. Keep responses conversational but professional.`;
+
+      // Include previous feedback context if available
+      const contextMessage = previousFeedback 
+        ? `Previous routine feedback: ${typeof previousFeedback === 'object' ? JSON.stringify(previousFeedback) : previousFeedback}\n\nUser question: ${message}`
+        : `User question about their pageant routine: ${message}`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: contextMessage
+            }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
+        return res.status(500).json({ error: 'Failed to get AI response' });
+      }
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || 'I\'m here to help! Could you be more specific about what you\'d like to know about your routine?';
+
+      console.log('Routine Chat - Response sent:', {
+        reply: reply.substring(0, 50) + '...',
+        tokens: data.usage?.total_tokens || 0
+      });
+
+      res.json({ 
+        success: true, 
+        reply,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Routine chat error:', error);
       res.status(500).json({ 
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'

@@ -19,7 +19,13 @@ export default defineConfig({
   server: {
     host: true, // Enable network access
     port: 5001,
-    open: false
+    open: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
+    }
   },
   resolve: {
     alias: {

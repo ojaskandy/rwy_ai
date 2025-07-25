@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play, Square, Camera } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -40,49 +41,311 @@ function CameraPermissionOverlay({ onRequestPermission }: CameraPermissionOverla
 interface SummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feedback: string;
+  feedback: any;
   isLoading: boolean;
 }
 
+interface ChatMessage {
+  id: string;
+  message: string;
+  reply: string;
+  timestamp: Date;
+}
+
 function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps) {
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+
+    const messageText = chatInput.trim();
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const response = await fetch('/api/routine-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: messageText,
+          previousFeedback: feedback 
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        message: messageText,
+        reply: data.reply,
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, newMessage]);
+    } catch (error) {
+      console.error('Chat error:', error);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const renderStructuredFeedback = (feedbackData: any) => {
+    if (typeof feedbackData === 'string') {
+      return (
+        <div className="prose prose-lg max-w-none">
+          <p className="text-black leading-relaxed font-medium">{feedbackData}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        {/* Overview Section */}
+        {feedbackData.overview && (
+          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <h3 className="text-lg font-semibold text-black mb-3">📋 Overview</h3>
+            <p className="text-black leading-relaxed font-medium">{feedbackData.overview}</p>
+          </div>
+        )}
+
+        {/* Scene by Scene Analysis */}
+        {feedbackData.sceneAnalysis && (
+          <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+            <h3 className="text-lg font-semibold text-black mb-4">🎭 Scene-by-Scene Analysis</h3>
+            <div className="space-y-6">
+              {feedbackData.sceneAnalysis.map((scene: any, index: number) => (
+                <div key={index} className="bg-white rounded-lg p-5 border border-purple-100">
+                  <h4 className="font-medium text-black mb-3">{scene.scene}</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="text-sm font-medium text-black mb-2">✅ Strengths</h5>
+                      <ul className="space-y-1">
+                        {scene.strengths?.map((strength: string, i: number) => (
+                          <li key={i} className="text-sm text-black font-medium flex items-start">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium text-black mb-2">💡 Areas to Improve</h5>
+                      <ul className="space-y-1">
+                        {scene.improvements?.map((improvement: string, i: number) => (
+                          <li key={i} className="text-sm text-black font-medium flex items-start">
+                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                            {improvement}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Next Steps */}
+        {feedbackData.nextSteps && (
+          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+            <h3 className="text-lg font-semibold text-black mb-4">🎯 Next Steps</h3>
+            <div className="space-y-3">
+              {feedbackData.nextSteps.map((step: string, index: number) => (
+                <div key={index} className="flex items-start">
+                  <span className="bg-green-500 text-white text-sm font-medium rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                    {index + 1}
+                  </span>
+                  <p className="text-black leading-relaxed font-medium">{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="text-xl font-semibold text-gray-900">
+      <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col bg-white md:bg-pink-50/80 backdrop-blur-sm">
+        <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-200">
+          <DialogTitle className="text-xl md:text-2xl font-semibold text-gray-900">
             Practice Session Summary
           </DialogTitle>
-          <DialogDescription className="text-gray-600">
-            Here's your comprehensive performance feedback
+          <DialogDescription className="text-gray-600 mt-2 text-sm md:text-base">
+            Comprehensive performance analysis and improvement guidance
           </DialogDescription>
         </DialogHeader>
         
-        <div className="mt-4 flex-1 overflow-hidden">
+        {/* Mobile Feedback Layout */}
+        <div className="flex-1 overflow-hidden mt-6 md:hidden">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="flex space-x-2">
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="flex space-x-2 mb-4">
+                <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
-              <span className="text-gray-600 ml-3">Analyzing your complete routine...</span>
+              <span className="text-gray-600 text-lg">Analyzing your complete routine...</span>
+              <span className="text-gray-500 text-sm mt-2">This may take a few moments</span>
             </div>
           ) : (
-            <div className="bg-pink-50 rounded-lg p-6 h-full overflow-y-auto">
-              <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                {feedback || "Great session! Keep practicing to build your confidence and perfect your technique."}
-              </p>
-            </div>
+            <div className="h-full force-scrollbar bg-white rounded-xl p-4" style={{ overflow: 'auto', minHeight: '400px', maxHeight: 'calc(80vh - 200px)' }}>
+              <style>{`
+                .force-scrollbar {
+                  overflow-y: scroll !important;
+                  scrollbar-width: auto !important;
+                  scrollbar-color: #94a3b8 #e2e8f0 !important;
+                }
+                .force-scrollbar::-webkit-scrollbar {
+                  width: 16px !important;
+                  display: block !important;
+                }
+                .force-scrollbar::-webkit-scrollbar-track {
+                  background: #e2e8f0 !important;
+                  border-radius: 8px !important;
+                  border: 1px solid #cbd5e1 !important;
+                }
+                .force-scrollbar::-webkit-scrollbar-thumb {
+                  background: #94a3b8 !important;
+                  border-radius: 8px !important;
+                  border: 2px solid #e2e8f0 !important;
+                  min-height: 20px !important;
+                }
+                .force-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #64748b !important;
+                }
+                .force-scrollbar::-webkit-scrollbar-corner {
+                  background: #e2e8f0 !important;
+                }
+              `}</style>
+                              {renderStructuredFeedback(feedback || {
+                  overview: "Great session! Keep practicing to build your confidence and perfect your technique.",
+                  nextSteps: ["Focus on maintaining consistent posture", "Work on smooth transitions between movements"]
+                })}
+                
+                {/* Force scrollable content */}
+                <div className="h-32"></div>
+                </div>
           )}
         </div>
 
-        <div className="flex justify-end mt-6">
-          <Button 
-            onClick={onClose}
-            className="bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500"
-          >
-            Done
-          </Button>
+        {/* Desktop Layout */}
+        <div className="hidden md:flex flex-1 flex-col overflow-hidden mt-6">
+          {/* Feedback Section */}
+          <div className="flex-1 overflow-hidden">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="flex space-x-2 mb-4">
+                  <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span className="text-gray-600 text-lg">Analyzing your complete routine...</span>
+                <span className="text-gray-500 text-sm mt-2">This may take a few moments</span>
+              </div>
+            ) : (
+              <div className="h-full force-scrollbar bg-white rounded-xl p-6" style={{ overflow: 'auto', minHeight: '500px', maxHeight: 'calc(80vh - 200px)' }}>
+                <style>{`
+                  .force-scrollbar {
+                    overflow-y: scroll !important;
+                    scrollbar-width: auto !important;
+                    scrollbar-color: #94a3b8 #e2e8f0 !important;
+                  }
+                  .force-scrollbar::-webkit-scrollbar {
+                    width: 16px !important;
+                    display: block !important;
+                  }
+                  .force-scrollbar::-webkit-scrollbar-track {
+                    background: #e2e8f0 !important;
+                    border-radius: 8px !important;
+                    border: 1px solid #cbd5e1 !important;
+                  }
+                  .force-scrollbar::-webkit-scrollbar-thumb {
+                    background: #94a3b8 !important;
+                    border-radius: 8px !important;
+                    border: 2px solid #e2e8f0 !important;
+                    min-height: 20px !important;
+                  }
+                  .force-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #64748b !important;
+                  }
+                  .force-scrollbar::-webkit-scrollbar-corner {
+                    background: #e2e8f0 !important;
+                  }
+                `}</style>
+                {renderStructuredFeedback(feedback || {
+                  overview: "Great session! Keep practicing to build your confidence and perfect your technique.",
+                  nextSteps: ["Focus on maintaining consistent posture", "Work on smooth transitions between movements"]
+                })}
+                
+                {/* Force scrollable content */}
+                <div className="h-32"></div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Query Section */}
+        <div className="pt-4 mt-4 border-t border-gray-200 flex-shrink-0">
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">💬 Ask a Question</h4>
+            <div className="relative">
+              <Input
+                placeholder="Ask a quick question about your routine..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                disabled={chatLoading}
+                className="w-full pr-12 py-3 rounded-full border-2 border-gray-300 bg-white focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-300 placeholder-gray-600 text-black font-medium text-base"
+              />
+              <Button
+                onClick={sendChatMessage}
+                disabled={!chatInput.trim() || chatLoading}
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white rounded-full w-8 h-8 p-0"
+              >
+                {chatLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Display Last Chat Response */}
+          {chatMessages.length > 0 && (
+            <div className="mb-4 p-5 bg-white rounded-lg border-2 border-pink-200 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-black mb-2">Coach AI</p>
+                  <p className="text-black leading-relaxed font-medium text-base">
+                    {chatMessages[chatMessages.length - 1].reply}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button 
+              onClick={onClose}
+              className="bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500 px-6 md:px-8 py-2 md:py-3 text-base md:text-lg font-medium"
+            >
+              Done
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
