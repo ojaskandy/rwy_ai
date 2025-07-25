@@ -605,12 +605,7 @@ export default function InterviewCoach() {
                           <p className="text-xs text-blue-600">Practice one question at a time</p>
                         </div>
                       </div>
-                      <ul className="text-xs text-gray-600 space-y-1">
-                        <li>✓ Get feedback after EACH question</li>
-                        <li>✓ Choose to continue or stop anytime</li>
-                        <li>✓ Immediate coaching tips</li>
-                        <li>✓ Perfect for skill building</li>
-                      </ul>
+
                     </div>
 
                     {/* Rounds Mode Card */}
@@ -631,12 +626,7 @@ export default function InterviewCoach() {
                           <p className="text-xs text-purple-600">Full interview simulation</p>
                         </div>
                       </div>
-                      <ul className="text-xs text-gray-600 space-y-1">
-                        <li>✓ Answer ALL questions first</li>
-                        <li>✓ Comprehensive feedback at the end</li>
-                        <li>✓ Simulates real pageant interviews</li>
-                        <li>✓ Overall performance analysis</li>
-                      </ul>
+
                     </div>
                   </div>
 
