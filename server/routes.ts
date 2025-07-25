@@ -1131,6 +1131,141 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
+  app.delete("/api/delete-photo", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { photoUrl } = req.body;
+
+      if (!photoUrl) {
+        return res.status(400).json({ error: 'Photo URL is required' });
+      }
+
+      // Extract the file path from the URL
+      // URL format: https://project.supabase.co/storage/v1/object/public/user-photos/userId/timestamp.ext
+      const urlParts = photoUrl.split('/');
+      const fileName = urlParts.slice(-2).join('/'); // Gets "userId/timestamp.ext"
+
+      // Delete from Supabase Storage
+      const { error: storageError } = await supabase.storage
+        .from('user-photos')
+        .remove([fileName]);
+
+      if (storageError) {
+        console.error('Storage delete error:', storageError);
+        return res.status(500).json({ error: 'Failed to delete image from storage' });
+      }
+
+      // Get current user profile
+      const { data: profile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('gallery_images')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Profile fetch error:', fetchError);
+        return res.status(500).json({ error: 'Failed to fetch user profile' });
+      }
+
+      // Remove the photo URL from gallery_images array
+      const updatedGalleryImages = (profile?.gallery_images || []).filter(
+        (url: string) => url !== photoUrl
+      );
+
+      // Update user profile
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          gallery_images: updatedGalleryImages,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update user profile' });
+      }
+
+      res.json({ success: true, message: 'Photo deleted successfully' });
+    } catch (error) {
+      console.error('Delete photo error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  app.delete("/api/delete-account", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required for account deletion' });
+      }
+
+      // Verify password by attempting to sign in with current credentials
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: password
+      });
+
+      if (authError) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+
+      // Delete user's gallery images from storage
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('gallery_images')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.gallery_images && profile.gallery_images.length > 0) {
+        // Extract file paths from URLs and delete from storage
+        const filePaths = profile.gallery_images.map((url: string) => {
+          const urlParts = url.split('/');
+          return urlParts.slice(-2).join('/'); // Gets "userId/timestamp.ext"
+        });
+
+        await supabase.storage
+          .from('user-photos')
+          .remove(filePaths);
+      }
+
+      // Delete user profile data
+      await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Delete calendar events
+      await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Delete user account from auth
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+
+      if (deleteError) {
+        console.error('Failed to delete user account:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete account' });
+      }
+
+      res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (error) {
+      console.error('Delete account error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
   // Health check endpoints
   app.post('/api/health', (req, res) => {
     res.json({

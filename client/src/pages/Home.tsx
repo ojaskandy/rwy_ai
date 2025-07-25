@@ -12,7 +12,8 @@ import {
   Star,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCalendarEvents } from '@/hooks/use-calendar';
@@ -266,6 +267,50 @@ export default function Home() {
     }
   };
 
+  const handlePhotoDelete = async (photoUrl: string) => {
+    if (!user) {
+      alert('Please log in to delete photos.');
+      return;
+    }
+
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this photo?')) {
+      return;
+    }
+
+    try {
+      // Get the auth token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        alert('Authentication error. Please try logging in again.');
+        return;
+      }
+
+      const response = await fetch('/api/delete-photo', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ photoUrl }),
+      });
+
+      if (response.ok) {
+        // Remove the photo from local state
+        setUserPhotos(userPhotos.filter(url => url !== photoUrl));
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to delete photo:', errorData.error || 'Unknown error');
+        alert(`Failed to delete photo: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('An error occurred while deleting the photo. Please try again.');
+    }
+  };
+
   return (
     <div className="h-screen overflow-hidden" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Top Welcome Banner */}
@@ -274,9 +319,7 @@ export default function Home() {
           <h1 className="text-gray-800 text-lg font-light">
             Welcome back, {displayName}
           </h1>
-          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-            <User className="h-5 w-5 text-gray-600" />
-          </div>
+          <UserMenu />
         </div>
       </div>
 
@@ -400,7 +443,7 @@ export default function Home() {
                   return (
                     <motion.div
                       key={index}
-                      className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${rotation} -ml-3`}
+                      className={`w-20 h-20 bg-gray-200 rounded-lg shadow-md ${rotation} -ml-3 relative group cursor-pointer`}
                       style={{
                         backgroundImage: `url(${photoUrl})`,
                         backgroundSize: 'cover',
@@ -409,7 +452,19 @@ export default function Home() {
                       }}
                       whileHover={{ scale: 1.05, zIndex: 50 }}
                       transition={{ type: "spring", stiffness: 300 }}
-                    />
+                    >
+                      {/* Delete button overlay */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePhotoDelete(photoUrl);
+                        }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                        title="Delete photo"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </motion.div>
                   );
                 })
               )}
