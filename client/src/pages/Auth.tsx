@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { Eye, EyeOff, Mail, Lock, Loader2, User, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import runwayAILogo from '@assets/rwyailogotransparent_1753321576297.png';
 
@@ -18,6 +19,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [forgotPassword, setForgotPassword] = useState(false);
+  const [agreedToPolicy, setAgreedToPolicy] = useState(false);
 
   const { signUp, signIn, resetPassword, user } = useAuth();
   const [, setLocation] = useLocation();
@@ -58,6 +60,12 @@ const Auth = () => {
 
     if (isSignUp && password !== confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match' });
+      setLoading(false);
+      return;
+    }
+
+    if (isSignUp && !agreedToPolicy) {
+      setMessage({ type: 'error', text: 'Please agree to our Privacy Policy to continue' });
       setLoading(false);
       return;
     }
@@ -120,6 +128,7 @@ const Auth = () => {
     setConfirmPassword('');
     setMessage(null);
     setForgotPassword(false);
+    setAgreedToPolicy(false);
   };
 
   const toggleMode = (newMode: boolean) => {
@@ -359,6 +368,41 @@ const Auth = () => {
               )}
             </AnimatePresence>
 
+            {/* Privacy Policy Agreement */}
+            <AnimatePresence>
+              {!forgotPassword && isSignUp && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-start space-x-3 p-4 bg-pink-50/50 rounded-xl border border-pink-200">
+                    <Checkbox
+                      id="privacy-agreement"
+                      checked={agreedToPolicy}
+                      onCheckedChange={(checked) => setAgreedToPolicy(checked as boolean)}
+                      className="mt-1 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                      required={isSignUp}
+                    />
+                    <label 
+                      htmlFor="privacy-agreement" 
+                      className="text-sm text-pink-800 leading-relaxed cursor-pointer"
+                    >
+                      I agree to the{' '}
+                      <Link href="/privacy">
+                        <a className="text-pink-600 hover:text-pink-700 font-semibold underline" target="_blank">
+                          Privacy Policy
+                        </a>
+                      </Link>
+                      {' '}and understand how my data will be collected and used. <span className="text-pink-600">*</span>
+                    </label>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Error/Success Message */}
             <AnimatePresence>
               {message && (
@@ -471,9 +515,13 @@ const Auth = () => {
               >
                 <p className="text-xs text-pink-600 text-center mt-8 leading-relaxed">
                   By joining the runway, you agree to our{' '}
-                  <a href="#" className="text-pink-700 hover:text-pink-800 font-semibold underline">Terms of Service</a>
+                  <Link href="/privacy">
+                    <a className="text-pink-700 hover:text-pink-800 font-semibold underline" target="_blank">Terms of Service</a>
+                  </Link>
                   {' '}and{' '}
-                  <a href="#" className="text-pink-700 hover:text-pink-800 font-semibold underline">Privacy Policy</a>
+                  <Link href="/privacy">
+                    <a className="text-pink-700 hover:text-pink-800 font-semibold underline" target="_blank">Privacy Policy</a>
+                  </Link>
                 </p>
               </motion.div>
             )}
