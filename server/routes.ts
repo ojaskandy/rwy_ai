@@ -1198,6 +1198,190 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   });
 
   // ============================================================================
+  // USER ACTIVITY TRACKING & STREAK SYSTEM
+  // ============================================================================
+
+  // Get user's weekly activity and current streak
+  app.get("/api/user-activity", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      
+      // Get the current week's activity (last 7 days)
+      const today = new Date();
+      const oneWeekAgo = new Date(today);
+      oneWeekAgo.setDate(today.getDate() - 6); // Get last 7 days including today
+      
+      // Fetch user activity from the last 7 days
+      const { data: activities, error } = await supabase
+        .from('shifu_logs')
+        .select('date, session_started, completed, current_streak')
+        .eq('user_id', user.id)
+        .gte('date', oneWeekAgo.toISOString().split('T')[0])
+        .lte('date', today.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Activity fetch error:', error);
+        return res.status(500).json({ error: 'Failed to fetch activity data' });
+      }
+
+      // Get current streak (latest entry)
+      const { data: latestActivity, error: streakError } = await supabase
+        .from('shifu_logs')
+        .select('current_streak')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(1);
+
+      if (streakError) {
+        console.error('Streak fetch error:', streakError);
+      }
+
+      const currentStreak = latestActivity?.[0]?.current_streak || 0;
+
+      // Create activity map for easy lookup
+      const activityMap = new Map();
+      activities?.forEach(activity => {
+        const dateKey = activity.date.split('T')[0];
+        activityMap.set(dateKey, {
+          hasActivity: activity.session_started || activity.completed,
+          completed: activity.completed
+        });
+      });
+
+      // Generate week data
+      const weekData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0];
+        const activity = activityMap.get(dateKey) || { hasActivity: false, completed: false };
+        
+        weekData.push({
+          date: dateKey,
+          dayNumber: date.getDate(),
+          dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+          isToday: dateKey === today.toISOString().split('T')[0],
+          hasActivity: activity.hasActivity,
+          completed: activity.completed
+        });
+      }
+
+      res.json({
+        currentStreak,
+        weeklyActivity: weekData,
+        totalActiveDays: activities?.filter(a => a.session_started || a.completed).length || 0
+      });
+    } catch (error) {
+      console.error('Get user activity error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // Record daily activity (login/session start)
+  app.post("/api/user-activity", async (req, res) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { activityType = 'login' } = req.body; // 'login', 'session', 'goal_completed'
+      
+      const today = new Date();
+      const todayKey = today.toISOString().split('T')[0];
+      
+      // Check if user already has activity logged for today
+      const { data: existingActivity, error: fetchError } = await supabase
+        .from('shifu_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', todayKey)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Fetch activity error:', fetchError);
+        return res.status(500).json({ error: 'Failed to fetch existing activity' });
+      }
+
+      // Calculate new streak
+      let newStreak = 1;
+      
+      if (!existingActivity) {
+        // Check yesterday's activity to maintain streak
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayKey = yesterday.toISOString().split('T')[0];
+        
+        const { data: yesterdayActivity, error: yesterdayError } = await supabase
+          .from('shifu_logs')
+          .select('current_streak, session_started, completed')
+          .eq('user_id', user.id)
+          .eq('date', yesterdayKey)
+          .single();
+
+        if (!yesterdayError && yesterdayActivity && (yesterdayActivity.session_started || yesterdayActivity.completed)) {
+          newStreak = (yesterdayActivity.current_streak || 0) + 1;
+        }
+      } else {
+        // Use existing streak if already logged today
+        newStreak = existingActivity.current_streak || 1;
+      }
+
+      if (existingActivity) {
+        // Update existing activity
+        const { error: updateError } = await supabase
+          .from('shifu_logs')
+          .update({
+            session_started: true,
+            completed: activityType === 'goal_completed' ? true : existingActivity.completed,
+            current_streak: newStreak,
+            created_at: new Date().toISOString()
+          })
+          .eq('id', existingActivity.id);
+
+        if (updateError) {
+          console.error('Update activity error:', updateError);
+          return res.status(500).json({ error: 'Failed to update activity' });
+        }
+      } else {
+        // Create new activity record
+        const { error: insertError } = await supabase
+          .from('shifu_logs')
+          .insert({
+            user_id: user.id,
+            date: todayKey,
+            daily_goal: 'Practice and improve',
+            goal_category: 'general',
+            session_started: true,
+            completed: activityType === 'goal_completed',
+            current_streak: newStreak,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('Insert activity error:', insertError);
+          return res.status(500).json({ error: 'Failed to record activity' });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        currentStreak: newStreak,
+        activityType,
+        message: 'Activity recorded successfully'
+      });
+    } catch (error) {
+      console.error('Record activity error:', error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  });
+
+  // ============================================================================
   // BOARD API ENDPOINTS - Pinterest-style image sharing
   // ============================================================================
 

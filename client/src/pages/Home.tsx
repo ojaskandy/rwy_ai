@@ -34,24 +34,48 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   personal: "bg-indigo-400"
 };
 
-// Get engagement data for the week (mock data)
-const getWeeklyEngagement = () => {
-  const today = new Date();
-  const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
-  
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(startOfCurrentWeek, i);
-    const dayInitial = format(date, 'E').charAt(0); // M, T, W, T, F, S, S
-    const isToday = isSameDay(date, today);
-    const hasEngagement = Math.random() > 0.3; // Mock engagement data
-    
-    return {
-      day: dayInitial,
-      date,
-      isToday,
-      hasEngagement
-    };
-  });
+// User Activity API functions
+const fetchUserActivity = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return null;
+
+    const response = await fetch('/api/user-activity', {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch user activity:', error);
+    return null;
+  }
+};
+
+const recordUserActivity = async (activityType = 'login') => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return false;
+
+    const response = await fetch('/api/user-activity', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ activityType })
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to record user activity:', error);
+    return false;
+  }
 };
 
 function WeeklyCalendar() {
@@ -128,7 +152,20 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { events, isLoading, deleteEvent, isDeleting } = useCalendarEvents();
   const displayName = user?.email?.split('@')[0] || 'okandy';
-  const weeklyEngagement = getWeeklyEngagement();
+  
+  // User activity and streak state
+  const [userActivity, setUserActivity] = useState<{
+    currentStreak: number;
+    weeklyActivity: Array<{
+      date: string;
+      dayNumber: number;
+      dayName: string;
+      isToday: boolean;
+      hasActivity: boolean;
+      completed: boolean;
+    }>;
+    totalActiveDays: number;
+  } | null>(null);
 
   // Get upcoming events (next 3 events from today)
   const today = new Date();
@@ -157,13 +194,7 @@ export default function Home() {
             event.type === 'routine' ? '💃' : '📅'
     }));
 
-  // Debug logging to help troubleshoot
-  console.log('Calendar Events Debug:', {
-    totalEvents: events.length,
-    events: events,
-    upcomingEvents: upcomingEvents,
-    today: today
-  });
+
 
   // Get user photos from profile
   const [userPhotos, setUserPhotos] = useState<string[]>([]);
@@ -208,6 +239,38 @@ export default function Home() {
 
     loadUserPhotos();
   }, [user]); // Depend on user authentication state
+
+  // Load user activity and streak data
+  useEffect(() => {
+    const loadUserActivity = async () => {
+      if (!user) return;
+      
+      const activityData = await fetchUserActivity();
+      if (activityData) {
+        setUserActivity(activityData);
+      }
+    };
+
+    loadUserActivity();
+  }, [user]);
+
+  // Record user login activity
+  useEffect(() => {
+    const recordLoginActivity = async () => {
+      if (!user) return;
+      
+      // Record that user logged in today
+      await recordUserActivity('login');
+      
+      // Refresh activity data to get updated streak
+      const activityData = await fetchUserActivity();
+      if (activityData) {
+        setUserActivity(activityData);
+      }
+    };
+
+    recordLoginActivity();
+  }, [user]); // Only run when user logs in
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -363,25 +426,49 @@ export default function Home() {
       {/* Main Content */}
       <div className="px-6 space-y-4 pt-6 h-full overflow-hidden flex flex-col">
         
-        {/* 7-Day Engagement Tracker - Cal AI Style */}
+        {/* Crown Streak Tracker - Duolingo Style */}
         <div className="px-4 flex-shrink-0">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-600 font-medium">Daily Streak</span>
+              {userActivity && userActivity.currentStreak > 0 && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded-full">
+                  <span className="text-yellow-600 text-sm">👑</span>
+                  <span className="text-xs font-bold text-yellow-700">{userActivity.currentStreak}</span>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex justify-between items-center">
-            {weeklyEngagement.map((day, index) => (
-              <div key={index} className="flex flex-col items-center gap-1.5">
+            {userActivity?.weeklyActivity.map((day, index) => (
+              <div key={day.date} className="flex flex-col items-center gap-1.5">
                 <div 
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 ${
-                    day.hasEngagement 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-100 text-gray-400'
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm transition-all duration-200 ${
+                    day.hasActivity 
+                      ? day.completed 
+                        ? 'bg-yellow-500 text-white shadow-lg' 
+                        : 'bg-yellow-300 text-yellow-800 shadow-md'
+                      : day.isToday 
+                        ? 'bg-pink-100 text-pink-400 border-2 border-pink-300'
+                        : 'bg-gray-100 text-gray-400'
                   }`}
+                  title={day.hasActivity ? (day.completed ? 'Goal completed!' : 'Active day') : 'No activity'}
                 >
-                  {format(day.date, 'd')}
+                  {day.hasActivity ? '👑' : day.dayNumber}
                 </div>
                 <span className="text-xs text-gray-500 font-medium">
-                  {day.day}
+                  {day.dayName}
                 </span>
               </div>
-            ))}
+            )) || (
+              // Fallback loading state
+              Array.from({ length: 7 }, (_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse"></div>
+                  <span className="text-xs text-gray-400">-</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
