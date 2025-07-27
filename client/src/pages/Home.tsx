@@ -126,30 +126,50 @@ function WeeklyCalendar() {
 export default function Home() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const { events, isLoading } = useCalendarEvents();
+  const { events, isLoading, deleteEvent, isDeleting } = useCalendarEvents();
   const displayName = user?.email?.split('@')[0] || 'okandy';
   const weeklyEngagement = getWeeklyEngagement();
 
   // Get upcoming events (next 3 events from today)
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+  
   const upcomingEvents = events
-    .filter(event => event.date >= today)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .filter(event => {
+      const eventDate = new Date(event.date);
+      eventDate.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+      return eventDate >= today;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3)
     .map(event => ({
       id: event.id,
       title: event.title,
-      date: event.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+      date: new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
       type: event.type,
+      time: event.time,
+      location: event.location,
       icon: event.title.toLowerCase().includes('photo') ? '📸' :
             event.title.toLowerCase().includes('interview') ? '🎤' :
-            event.title.toLowerCase().includes('fitting') || event.title.toLowerCase().includes('dress') ? '👗' : '📅'
+            event.title.toLowerCase().includes('fitting') || event.title.toLowerCase().includes('dress') ? '👗' :
+            event.type === 'personal' ? '👤' :
+            event.type === 'pageant' ? '👑' :
+            event.type === 'routine' ? '💃' : '📅'
     }));
+
+  // Debug logging to help troubleshoot
+  console.log('Calendar Events Debug:', {
+    totalEvents: events.length,
+    events: events,
+    upcomingEvents: upcomingEvents,
+    today: today
+  });
 
   // Get user photos from profile
   const [userPhotos, setUserPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
 
   // Load user photos when user is authenticated
   useEffect(() => {
@@ -311,6 +331,23 @@ export default function Home() {
     }
   };
 
+  const handleEventDelete = async (eventId: number, eventTitle: string) => {
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${eventTitle}"?`)) {
+      return;
+    }
+
+    setDeletingEventId(eventId);
+    try {
+      await deleteEvent(eventId);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setDeletingEventId(null);
+    }
+  };
+
   return (
     <div className="h-screen overflow-hidden" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Top Welcome Banner */}
@@ -368,14 +405,36 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="bg-white rounded-xl shadow-md border-0">
-                  <CardContent className="flex items-center gap-4 p-4">
-                    <div className="text-2xl">
-                      {event.icon}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{event.title}</p>
-                      <p className="text-sm text-gray-600">{event.date}</p>
+                <Card className="bg-white rounded-xl shadow-md border-0 hover:shadow-lg transition-shadow duration-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-2xl">
+                          {event.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">{event.title}</p>
+                          <p className="text-sm text-gray-600">{event.date}</p>
+                          {event.time && (
+                            <p className="text-xs text-gray-500">{event.time}</p>
+                          )}
+                          {event.location && (
+                            <p className="text-xs text-gray-500">📍 {event.location}</p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleEventDelete(event.id, event.title)}
+                        disabled={deletingEventId === event.id}
+                        className="text-gray-400 hover:text-red-500 transition-colors duration-200 p-2 rounded-full hover:bg-red-50"
+                        title="Delete event"
+                      >
+                        {deletingEventId === event.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                        ) : (
+                          <X className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </CardContent>
                 </Card>
