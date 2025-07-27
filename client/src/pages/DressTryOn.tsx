@@ -31,6 +31,53 @@ interface TryOnOptions {
   return_base64?: boolean;
 }
 
+const MAX_IMAGE_SIZE = 1024; // Max width/height in pixels
+const JPEG_QUALITY = 0.8; // 80% quality for good balance of size/quality
+
+/**
+ * Compress image to reduce payload size for mobile uploads
+ */
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // Calculate new dimensions while maintaining aspect ratio
+      let { width, height } = img;
+      
+      if (width > height) {
+        if (width > MAX_IMAGE_SIZE) {
+          height = (height * MAX_IMAGE_SIZE) / width;
+          width = MAX_IMAGE_SIZE;
+        }
+      } else {
+        if (height > MAX_IMAGE_SIZE) {
+          width = (width * MAX_IMAGE_SIZE) / height;
+          height = MAX_IMAGE_SIZE;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // Convert to base64 with compression
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+      resolve(compressedDataUrl);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image'));
+    
+    // Create object URL to load the image
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+  });
+};
+
 export default function DressTryOn() {
   const [, navigate] = useLocation();
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -59,37 +106,36 @@ export default function DressTryOn() {
     });
   };
 
-  // Handle person image upload (keeping backend logic)
-  const handlePersonImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'user' | 'garment') => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const base64 = await fileToBase64(file);
-        setUserImage(base64);
-        setUserImageFile(file);
-        setUserImageUrl('');
-        setError(null);
-      } catch (error) {
-        console.error('Failed to convert file to base64:', error);
-        setError('Failed to process image. Please try again.');
-      }
-    }
-  };
+    if (!file) return;
 
-  // Handle garment image upload (keeping backend logic)
-  const handleGarmentImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const base64 = await fileToBase64(file);
-        setGarmentImage(base64);
-        setGarmentImageFile(file);
+    try {
+      // Compress image before uploading (especially important for mobile)
+      const compressedDataUrl = await compressImage(file);
+      
+      if (type === 'user') {
+        setUserImage(compressedDataUrl);
+        setUserImageUrl('');
+      } else {
+        setGarmentImage(compressedDataUrl);
         setGarmentImageUrl('');
-        setError(null);
-      } catch (error) {
-        console.error('Failed to convert file to base64:', error);
-        setError('Failed to process image. Please try again.');
       }
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      // Fallback to original method if compression fails
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (type === 'user') {
+          setUserImage(result);
+          setUserImageUrl('');
+        } else {
+          setGarmentImage(result);
+          setGarmentImageUrl('');
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -549,7 +595,7 @@ export default function DressTryOn() {
                   ref={personImageRef}
                   type="file"
                   accept="image/*"
-                  onChange={handlePersonImageUpload}
+                  onChange={(e) => handleImageUpload(e, 'user')}
                   className="hidden"
                 />
               </CardContent>
@@ -640,7 +686,7 @@ export default function DressTryOn() {
                       ref={garmentImageRef}
                       type="file"
                       accept="image/*"
-                      onChange={handleGarmentImageUpload}
+                      onChange={(e) => handleImageUpload(e, 'garment')}
                       className="hidden"
                     />
                   </CardContent>

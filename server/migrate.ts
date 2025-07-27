@@ -103,6 +103,30 @@ async function runMigrations() {
     `);
     console.log("Created shifu_says_custom_poses table");
 
+    // Create shifu_logs table for daily goals and streak tracking
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS shifu_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) NOT NULL,
+        date TIMESTAMP NOT NULL,
+        daily_goal TEXT NOT NULL,
+        goal_category VARCHAR(50) NOT NULL,
+        target_accuracy INTEGER,
+        completed BOOLEAN DEFAULT FALSE,
+        actual_accuracy INTEGER,
+        session_started BOOLEAN DEFAULT FALSE,
+        current_streak INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Created shifu_logs table");
+
+    // Create index for shifu_logs performance
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_shifu_logs_user_date ON shifu_logs(user_id, date)
+    `);
+    console.log("Created shifu_logs index");
+
     // Create indexes for custom poses
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_custom_poses_user ON shifu_says_custom_poses(user_id)
