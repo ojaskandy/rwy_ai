@@ -199,6 +199,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to view early access signups - requires authentication
+  app.get("/api/admin/early-access", async (req, res) => {
+    try {
+      // Check if user is authenticated (you can add admin role check here)
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const signups = await storage.listEarlyAccessSignups();
+      res.json({ 
+        count: signups.length,
+        signups: signups.map(signup => ({
+          id: signup.id,
+          fullName: signup.fullName,
+          email: signup.email,
+          referralSource: signup.referralSource,
+          newsletterOptIn: signup.newsletterOptIn,
+          createdAt: signup.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error("Admin early access list error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Recording endpoints - simplified for guest usage
   app.get("/api/recordings", async (req, res) => {
     try {

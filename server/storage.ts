@@ -140,9 +140,18 @@ export class SupabaseStorage implements IStorage {
   }
   
   async saveEarlyAccess(data: InsertEarlyAccess): Promise<EarlyAccessSignup> {
+    // Transform camelCase to snake_case for database
+    const dbData = {
+      full_name: data.fullName,
+      email: data.email,
+      referral_source: data.referralSource,
+      experience_level: data.experienceLevel,
+      newsletter_opt_in: data.newsletterOptIn
+    };
+    
     const { data: result, error } = await supabase
       .from('early_access_signups')
-      .insert(data)
+      .insert(dbData)
       .select()
       .single();
     

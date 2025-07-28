@@ -1,8 +1,105 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Interactive Runway AI Landing Animations */
+@keyframes message-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes message-push-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-120px);
+  }
+}
+
+@keyframes title-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes frame-float-right {
+  0% {
+    transform: translateX(-100px) translateY(0px) rotate(-5deg);
+  }
+  100% {
+    transform: translateX(calc(100vw + 100px)) translateY(0px) rotate(-5deg);
+  }
+}
+
+@keyframes frame-float-left {
+  0% {
+    transform: translateX(calc(100vw + 100px)) translateY(0px) rotate(5deg);
+  }
+  100% {
+    transform: translateX(-100px) translateY(0px) rotate(5deg);
+  }
+}
+
+.animate-message-slide-up {
+  animation: message-slide-up 0.8s ease-out forwards;
+}
+
+.animate-message-push-up {
+  animation: message-push-up 0.5s ease-out forwards;
+}
+
+.animate-title-fade-in {
+  animation: title-fade-in 1s ease-out forwards;
+}
+
+.animate-frame-float-right {
+  animation: frame-float-right 12s linear infinite;
+}
+
+.animate-frame-float-left {
+  animation: frame-float-left 10s linear infinite;
+}
+
+/* Custom animations for Early page photo frames */
+@keyframes slide-left {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 30s linear infinite;
+}
+
+.animate-slide-right {
+  animation: slide-right 25s linear infinite;
+}
 
 /* Enhanced text rendering for crisp display on all devices */
 * {

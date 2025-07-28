@@ -23,10 +23,12 @@ import GlobalDock from "@/components/GlobalDock";
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Health from "@/pages/Health";
+import Early from "@/pages/Early";
+import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
 
 function Router() {
   const [location] = useLocation();
-  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health');
+  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early');
 
   return (
     <>
@@ -43,6 +45,9 @@ function Router() {
         {/* Health Monitor - accessible without login but password protected */}
         <Route path="/health" component={Health} />
 
+        {/* Early access waitlist - accessible without login */}
+        <Route path="/early" component={Early} />
+
         {/* All protected routes require authentication */}
         <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/app" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
@@ -52,6 +57,7 @@ function Router() {
         <Route path="/calendar" component={() => <ProtectedRoute><PageantCalendar /></ProtectedRoute>} />
         <Route path="/board" component={() => <ProtectedRoute><Board /></ProtectedRoute>} />
         <Route path="/routine" component={() => <ProtectedRoute><Routine /></ProtectedRoute>} />
+        <Route path="/admin/early-access" component={() => <ProtectedRoute><EarlyAccessAdmin /></ProtectedRoute>} />
 
         {/* Redirect legacy routes to main app (also protected) */}
         <Route path="/practice" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
