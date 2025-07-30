@@ -751,7 +751,18 @@ export default function Board() {
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border-0">
           {selectedImage && (
-            <div className="grid md:grid-cols-2 gap-8 p-2">
+            <div className="relative">
+              {/* Close Button - Top Right */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-4 right-4 z-10 rounded-full bg-white/80 hover:bg-white shadow-lg"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              
+              <div className="grid md:grid-cols-2 gap-8 p-2">
               {/* Image */}
               <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4">
                 <img
@@ -897,6 +908,7 @@ export default function Board() {
 
 
               </div>
+            </div>
             </div>
           )}
         </DialogContent>
