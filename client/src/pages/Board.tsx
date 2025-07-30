@@ -716,15 +716,15 @@ export default function Board() {
 
       {/* Image Detail Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white">
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border-0">
           {selectedImage && (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8 p-2">
               {/* Image */}
-              <div className="relative">
+              <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4">
                 <img
                   src={selectedImage.url}
                   alt={selectedImage.title || 'Board image'}
-                  className="w-full h-auto rounded-xl max-h-[70vh] object-contain"
+                  className="w-full h-auto rounded-xl max-h-[75vh] object-contain shadow-lg"
                 />
               </div>
 
@@ -747,7 +747,7 @@ export default function Board() {
 
 
                 {/* Actions */}
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -756,15 +756,17 @@ export default function Board() {
                       variant={selectedImage.isLiked ? 'default' : 'outline'}
                       onClick={() => handleLike(selectedImage.id, selectedImage.isLiked || false)}
                       className={cn(
-                        "rounded-xl",
-                        selectedImage.isLiked && 'bg-red-500 hover:bg-red-600 text-white'
+                        "rounded-xl border-2",
+                        selectedImage.isLiked 
+                          ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' 
+                          : 'border-red-200 hover:border-red-300 text-red-600 hover:bg-red-50'
                       )}
                     >
                       <Heart className={cn(
                         "h-4 w-4 mr-2",
                         selectedImage.isLiked && "fill-current"
                       )} />
-                      {selectedImage.likeCount} Likes
+                      {selectedImage.likeCount}
                     </Button>
                   </motion.div>
                   <motion.div
@@ -775,8 +777,10 @@ export default function Board() {
                       variant={selectedImage.isSaved ? 'default' : 'outline'}
                       onClick={() => handleSave(selectedImage.id, selectedImage.isSaved || false)}
                       className={cn(
-                        "rounded-xl",
-                        selectedImage.isSaved && 'bg-pink-500 hover:bg-pink-600 text-white'
+                        "rounded-xl border-2",
+                        selectedImage.isSaved 
+                          ? 'bg-pink-500 hover:bg-pink-600 text-white border-pink-500' 
+                          : 'border-pink-200 hover:border-pink-300 text-pink-600 hover:bg-pink-50'
                       )}
                     >
                       <Bookmark className={cn(
@@ -784,6 +788,44 @@ export default function Board() {
                         selectedImage.isSaved && "fill-current"
                       )} />
                       {selectedImage.isSaved ? 'Saved' : 'Save'}
+                    </Button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: selectedImage.title || 'Check out this image',
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                        }
+                      }}
+                      className="rounded-xl border-2 border-blue-200 hover:border-blue-300 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share
+                    </Button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const searchQuery = encodeURIComponent(selectedImage.title || 'fashion inspiration');
+                        window.open(`https://www.google.com/search?q=${searchQuery}&tbm=isch`, '_blank');
+                      }}
+                      className="rounded-xl border-2 border-green-200 hover:border-green-300 text-green-600 hover:bg-green-50"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Search with Google
                     </Button>
                   </motion.div>
                 </div>
@@ -817,15 +859,10 @@ export default function Board() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-pink-500">{selectedImage.likeCount}</p>
-                    <p className="text-sm text-gray-500">Likes</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-pink-500">{selectedImage.saveCount}</p>
-                    <p className="text-sm text-gray-500">Saves</p>
-                  </div>
+                <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-100">
+                  <Heart className="h-5 w-5 text-red-500 fill-current" />
+                  <span className="text-lg font-bold text-gray-900">{selectedImage.likeCount}</span>
+                  <span className="text-sm text-gray-600">likes</span>
                 </div>
               </div>
             </div>
