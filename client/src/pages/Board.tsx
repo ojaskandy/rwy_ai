@@ -749,17 +749,7 @@ export default function Board() {
 
       {/* Image Detail Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border-0 relative">
-          {/* Top-right X button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedImage(null)}
-            className="absolute top-4 right-4 z-50 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200"
-          >
-            <X className="h-5 w-5 text-gray-700" />
-          </Button>
-          
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border-0">
           {selectedImage && (
             <div className="grid md:grid-cols-2 gap-8 p-2">
               {/* Image */}
@@ -777,6 +767,14 @@ export default function Board() {
                   <h2 className="text-xl font-bold text-gray-900">
                     {selectedImage.title || 'Untitled'}
                   </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedImage(null)}
+                    className="rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
 
 
