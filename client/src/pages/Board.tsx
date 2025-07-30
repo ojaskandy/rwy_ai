@@ -648,7 +648,9 @@ export default function Board() {
                       onClick={() => setUploadCategory(category.value as BoardImage['category'])}
                       className={cn(
                         "justify-start w-full rounded-xl",
-                        uploadCategory === category.value && 'bg-pink-500 hover:bg-pink-600 text-white'
+                        uploadCategory === category.value 
+                          ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                          : 'text-gray-900 border-gray-300 hover:bg-gray-50'
                       )}
                     >
                       <span className="mr-2">{category.emoji}</span>
