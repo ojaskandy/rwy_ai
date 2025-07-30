@@ -156,6 +156,7 @@ export default function Board() {
       });
 
       if (response.ok) {
+        // Update images state
         setImages(prev => prev.map(img => 
           img.id === imageId 
             ? { 
@@ -165,6 +166,15 @@ export default function Board() {
               }
             : img
         ));
+
+        // Update selectedImage state if it's the same image
+        if (selectedImage && selectedImage.id === imageId) {
+          setSelectedImage({
+            ...selectedImage,
+            isLiked: !currentlyLiked,
+            likeCount: currentlyLiked ? selectedImage.likeCount - 1 : selectedImage.likeCount + 1
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
@@ -182,6 +192,7 @@ export default function Board() {
       });
 
       if (response.ok) {
+        // Update images state
         setImages(prev => prev.map(img => 
           img.id === imageId 
             ? { 
@@ -191,6 +202,15 @@ export default function Board() {
               }
             : img
         ));
+
+        // Update selectedImage state if it's the same image
+        if (selectedImage && selectedImage.id === imageId) {
+          setSelectedImage({
+            ...selectedImage,
+            isSaved: !currentlySaved,
+            saveCount: currentlySaved ? selectedImage.saveCount - 1 : selectedImage.saveCount + 1
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to toggle save:', error);
@@ -796,14 +816,18 @@ export default function Board() {
                   >
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: selectedImage.title || 'Check out this image',
-                            url: window.location.href
-                          });
-                        } else {
-                          navigator.clipboard.writeText(window.location.href);
+                      onClick={async () => {
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({
+                              title: selectedImage.title || 'Check out this image',
+                              url: window.location.href
+                            });
+                          } else {
+                            await navigator.clipboard.writeText(window.location.href);
+                          }
+                        } catch (error) {
+                          // User cancelled share or clipboard failed - ignore silently
                         }
                       }}
                       className="rounded-xl border-2 border-blue-200 hover:border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -819,8 +843,8 @@ export default function Board() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        const searchQuery = encodeURIComponent(selectedImage.title || 'fashion inspiration');
-                        window.open(`https://www.google.com/search?q=${searchQuery}&tbm=isch`, '_blank');
+                        const imageUrl = encodeURIComponent(selectedImage.url);
+                        window.open(`https://www.google.com/searchbyimage?image_url=${imageUrl}`, '_blank');
                       }}
                       className="rounded-xl border-2 border-green-200 hover:border-green-300 text-green-600 hover:bg-green-50"
                     >
@@ -858,12 +882,7 @@ export default function Board() {
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-100">
-                  <Heart className="h-5 w-5 text-red-500 fill-current" />
-                  <span className="text-lg font-bold text-gray-900">{selectedImage.likeCount}</span>
-                  <span className="text-sm text-gray-600">likes</span>
-                </div>
+
               </div>
             </div>
           )}
