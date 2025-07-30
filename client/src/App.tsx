@@ -25,6 +25,8 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
+import AuthCallback from "@/pages/AuthCallback";
+import ResetPassword from "@/pages/ResetPassword";
 
 function Router() {
   const [location] = useLocation();
@@ -33,8 +35,10 @@ function Router() {
   return (
     <>
       <Switch>
-        {/* Authentication page - accessible without login */}
+        {/* Authentication pages - accessible without login */}
         <Route path="/auth" component={Auth} />
+        <Route path="/auth/callback" component={AuthCallback} />
+        <Route path="/auth/reset-password" component={ResetPassword} />
 
         {/* Welcome page - accessible without login */}
         <Route path="/welcome" component={RunwayAIWelcome} />
