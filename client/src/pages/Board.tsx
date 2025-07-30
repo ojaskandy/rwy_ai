@@ -522,20 +522,7 @@ export default function Board() {
                           </h3>
                         )}
                         
-                        {/* User Info */}
-                        <div className="flex items-center gap-3 mb-3">
-                          <Avatar className="h-7 w-7">
-                            <AvatarImage src={image.user.picture} />
-                            <AvatarFallback className="text-xs bg-gray-100">
-                              {image.user.username.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-700 truncate">
-                              {image.user.fullName || image.user.username}
-                            </p>
-                          </div>
-                        </div>
+
 
                         {/* Stats and Category */}
                         <div className="flex items-center justify-between">
@@ -587,9 +574,9 @@ export default function Board() {
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl bg-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-800">Add New Image</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-gray-900">Add New Image</DialogTitle>
           </DialogHeader>
           <div className="space-y-5">
             <div>
@@ -717,7 +704,7 @@ export default function Board() {
 
       {/* Image Detail Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white">
           {selectedImage && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Image */}
@@ -745,26 +732,7 @@ export default function Board() {
                   </Button>
                 </div>
 
-                {/* User Info */}
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={selectedImage.user.picture} />
-                    <AvatarFallback className="bg-gray-100">
-                      {selectedImage.user.username.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {selectedImage.user.fullName || selectedImage.user.username}
-                    </p>
-                    <p className="text-sm text-gray-500 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(selectedImage.createdAt)}
-                    </p>
-                  </div>
-                </div>
 
-                <Separator />
 
                 {/* Actions */}
                 <div className="flex gap-3">
