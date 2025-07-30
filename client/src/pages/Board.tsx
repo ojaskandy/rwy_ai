@@ -755,9 +755,9 @@ export default function Board() {
             variant="ghost"
             size="sm"
             onClick={() => setSelectedImage(null)}
-            className="absolute top-4 right-4 z-10 rounded-full bg-white/80 hover:bg-white shadow-lg border border-gray-200"
+            className="absolute top-4 right-4 z-50 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-gray-700" />
           </Button>
           
           {selectedImage && (
@@ -773,7 +773,7 @@ export default function Board() {
 
               {/* Details */}
               <div className="space-y-4 overflow-y-auto">
-                <div>
+                <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-900">
                     {selectedImage.title || 'Untitled'}
                   </h2>
