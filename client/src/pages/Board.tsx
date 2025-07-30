@@ -606,7 +606,20 @@ export default function Board() {
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent className="max-w-md rounded-2xl bg-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">Add New Image</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold text-gray-900">Add New Image</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowUploadDialog(false);
+                  resetUploadForm();
+                }}
+                className="rounded-full h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogHeader>
           <div className="space-y-5">
             <div>
