@@ -757,7 +757,7 @@ export default function Board() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-4 right-4 z-10 rounded-full bg-white/80 hover:bg-white shadow-lg"
+                className="absolute top-4 right-4 z-50 rounded-full bg-gray-900 hover:bg-gray-800 text-white shadow-xl border-2 border-white w-8 h-8 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
