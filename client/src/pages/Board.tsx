@@ -524,18 +524,8 @@ export default function Board() {
                         
 
 
-                        {/* Stats and Category */}
+                        {/* Category and Save Button */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Heart className="h-3 w-3" />
-                              {image.likeCount}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Bookmark className="h-3 w-3" />
-                              {image.saveCount}
-                            </span>
-                          </div>
                           <Badge 
                             className={cn(
                               categories.find(c => c.value === image.category)?.color,
@@ -545,6 +535,26 @@ export default function Board() {
                             {categories.find(c => c.value === image.category)?.emoji}
                             {categories.find(c => c.value === image.category)?.label}
                           </Badge>
+                          
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 rounded-full hover:bg-pink-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage(image);
+                              }}
+                            >
+                              <Bookmark className={cn(
+                                "h-4 w-4",
+                                image.isSaved ? "fill-pink-500 text-pink-500" : "text-gray-400"
+                              )} />
+                            </Button>
+                          </motion.div>
                         </div>
 
                         {/* Tags */}
