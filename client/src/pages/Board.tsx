@@ -611,8 +611,8 @@ export default function Board() {
                 >
                   <div className="text-center">
                     <Camera className="h-8 w-8 mx-auto mb-2 text-pink-400" />
-                    <p className="text-sm text-gray-600 font-medium">Click to upload image</p>
-                    <p className="text-xs text-gray-400">Max 10MB • PNG, JPG, WEBP</p>
+                    <p className="text-sm text-gray-900 font-medium">Click to upload image</p>
+                    <p className="text-xs text-gray-700">Max 10MB • PNG, JPG, WEBP</p>
                   </div>
                 </Button>
               )}
@@ -622,7 +622,7 @@ export default function Board() {
               placeholder="Title (optional)"
               value={uploadTitle}
               onChange={(e) => setUploadTitle(e.target.value)}
-              className="rounded-xl border-gray-200"
+              className="rounded-xl border-gray-200 text-gray-900 placeholder:text-gray-500"
             />
 
             <Textarea
@@ -630,11 +630,11 @@ export default function Board() {
               value={uploadDescription}
               onChange={(e) => setUploadDescription(e.target.value)}
               rows={3}
-              className="rounded-xl border-gray-200"
+              className="rounded-xl border-gray-200 text-gray-900 placeholder:text-gray-500"
             />
 
             <div>
-              <label className="text-sm font-medium mb-3 block text-gray-700">Category</label>
+              <label className="text-sm font-medium mb-3 block text-gray-900">Category</label>
               <div className="grid grid-cols-2 gap-3">
                 {categories.map(category => (
                   <motion.div
@@ -663,13 +663,13 @@ export default function Board() {
               placeholder="Tags (comma separated)"
               value={uploadTags}
               onChange={(e) => setUploadTags(e.target.value)}
-              className="rounded-xl border-gray-200"
+              className="rounded-xl border-gray-200 text-gray-900 placeholder:text-gray-500"
             />
 
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 rounded-xl"
+                className="flex-1 rounded-xl text-gray-900 border-gray-300"
                 onClick={() => {
                   setShowUploadDialog(false);
                   resetUploadForm();
