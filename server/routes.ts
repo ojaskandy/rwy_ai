@@ -1331,29 +1331,45 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: 'Failed to fetch existing activity' });
       }
 
-      // Calculate new streak
-      let newStreak = 1;
-      
-      if (!existingActivity) {
-        // Check yesterday's activity to maintain streak
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const yesterdayKey = yesterday.toISOString().split('T')[0];
-        
-        const { data: yesterdayActivity, error: yesterdayError } = await supabase
+      // Calculate new streak properly by checking consecutive days
+      const calculateCurrentStreak = async (userId: string, currentDate: Date) => {
+        // Get all user activities ordered by date descending
+        const { data: activities, error } = await supabase
           .from('shifu_logs')
-          .select('current_streak, session_started, completed')
-          .eq('user_id', user.id)
-          .eq('date', yesterdayKey)
-          .single();
+          .select('date, session_started, completed')
+          .eq('user_id', userId)
+          .order('date', { ascending: false });
 
-        if (!yesterdayError && yesterdayActivity && (yesterdayActivity.session_started || yesterdayActivity.completed)) {
-          newStreak = (yesterdayActivity.current_streak || 0) + 1;
+        if (error || !activities) {
+          return 1; // Default to 1 if we can't fetch data
         }
-      } else {
-        // Use existing streak if already logged today
-        newStreak = existingActivity.current_streak || 1;
-      }
+
+        let streak = 0;
+        const today = currentDate.toISOString().split('T')[0];
+        
+        // Check consecutive days starting from today
+        for (let i = 0; i < activities.length; i++) {
+          const activityDate = activities[i].date.split('T')[0];
+          const hasActivity = activities[i].session_started || activities[i].completed;
+          
+          if (!hasActivity) continue; // Skip days without activity
+          
+          // Calculate expected date for this position in the streak
+          const expectedDate = new Date(currentDate);
+          expectedDate.setDate(currentDate.getDate() - streak);
+          const expectedDateStr = expectedDate.toISOString().split('T')[0];
+          
+          if (activityDate === expectedDateStr) {
+            streak++;
+          } else {
+            break; // Break the streak if dates don't match consecutively
+          }
+        }
+
+        return Math.max(streak, 1); // Always return at least 1 if user has any activity today
+      };
+
+      const newStreak = await calculateCurrentStreak(user.id, today);
 
       if (existingActivity) {
         // Update existing activity
