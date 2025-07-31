@@ -82,7 +82,7 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#FFC5D3' }}>
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-600" />
           <h2 className="text-2xl font-bold mb-4 text-green-700">Password Updated!</h2>
@@ -99,7 +99,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#FFC5D3' }}>
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Reset Your Password</h2>
@@ -122,7 +122,7 @@ const ResetPassword = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="text-sm font-medium text-gray-900">
               New Password
             </label>
             <div className="relative">
@@ -132,7 +132,7 @@ const ResetPassword = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 text-gray-900 placeholder:text-gray-500 bg-white border-gray-300"
                 placeholder="Enter your new password"
                 required
               />
@@ -147,7 +147,7 @@ const ResetPassword = () => {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+            <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-900">
               Confirm New Password
             </label>
             <div className="relative">
@@ -157,7 +157,7 @@ const ResetPassword = () => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 text-gray-900 placeholder:text-gray-500 bg-white border-gray-300"
                 placeholder="Confirm your new password"
                 required
               />
@@ -174,7 +174,7 @@ const ResetPassword = () => {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-pink-500 hover:bg-pink-600 text-white"
           >
             {loading ? (
               <>
@@ -190,7 +190,7 @@ const ResetPassword = () => {
         <div className="mt-6 text-center">
           <button
             onClick={() => setLocation('/auth')}
-            className="text-blue-600 hover:text-blue-700 text-sm"
+            className="text-pink-600 hover:text-pink-700 text-sm font-semibold transition-colors"
           >
             Back to Sign In
           </button>
