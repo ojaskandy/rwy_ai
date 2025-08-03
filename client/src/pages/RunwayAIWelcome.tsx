@@ -477,7 +477,7 @@ export default function RunwayAIWelcome() {
                   loop
                   muted
                   playsInline
-                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-64 object-contain bg-gray-100 rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
@@ -504,7 +504,7 @@ export default function RunwayAIWelcome() {
                   loop
                   muted
                   playsInline
-                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-64 object-contain bg-gray-100 rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
@@ -531,7 +531,7 @@ export default function RunwayAIWelcome() {
                   loop
                   muted
                   playsInline
-                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-64 object-contain bg-gray-100 rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
@@ -555,7 +555,7 @@ export default function RunwayAIWelcome() {
                 <img 
                   src="/rwyai_feature_inspiration.png"
                   alt="Nails, dresses, inspiration" 
-                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-64 object-contain bg-gray-100 rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
