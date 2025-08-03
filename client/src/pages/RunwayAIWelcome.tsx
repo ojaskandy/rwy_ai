@@ -245,27 +245,43 @@ export default function RunwayAIWelcome() {
                     {/* Fade overlay at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-pink-500 via-red-500/80 to-transparent"></div>
                     
-                    {/* Prominent Get Started Button */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.6, duration: 0.5 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Link href="/app">
-                          <Button className="bg-black text-white hover:bg-gray-900 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-pink-400 hover:border-pink-300 transition-all duration-300 hover:shadow-pink-400/25 relative overflow-hidden group">
-                            {/* Pink highlight effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 via-pink-400/20 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <span className="relative z-10 group-hover:text-pink-100 transition-colors duration-300">
-                              Get Started
-                            </span>
-                            {/* Pink glow effect */}
-                            <div className="absolute inset-0 bg-pink-400/20 blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 -z-10"></div>
-                          </Button>
-                        </Link>
-                      </motion.div>
+                    {/* Prominent Get Started and Contact Us Buttons */}
+                    <div className="absolute inset-0 flex items-center justify-center pt-16">
+                      <div className="flex flex-col gap-4">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.6, duration: 0.5 }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Link href="/app">
+                            <Button className="bg-black text-white hover:bg-gray-900 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-pink-400 hover:border-pink-300 transition-all duration-300 hover:shadow-pink-400/25 relative overflow-hidden group">
+                              {/* Pink highlight effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 via-pink-400/20 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              <span className="relative z-10 group-hover:text-pink-100 transition-colors duration-300">
+                                Get Started
+                              </span>
+                              {/* Pink glow effect */}
+                              <div className="absolute inset-0 bg-pink-400/20 blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 -z-10"></div>
+                            </Button>
+                          </Link>
+                        </motion.div>
+                        
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.8, duration: 0.5 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <a href="mailto:arshia.x.kathpalia@gmail.com,ojaskandy@gmail.com?subject=Runway AI Inquiry">
+                            <Button className="bg-gray-700 text-white hover:bg-gray-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-xl border-2 border-gray-500 hover:border-gray-400 transition-all duration-300">
+                              Contact Us
+                            </Button>
+                          </a>
+                        </motion.div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -353,6 +369,119 @@ export default function RunwayAIWelcome() {
 
 
       </section>
+
+      {/* Features Section */}
+      <div id="features" className="py-20 px-6 bg-gradient-to-br from-pink-50/50 to-purple-50/50">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2 
+            className="text-5xl font-bold mb-16 text-center bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            What Makes Runway AI Special
+          </motion.h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Perfect your walk */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.02, rotateY: 5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
+            >
+              <div className="mb-6">
+                <img 
+                  src="/feature_walk.png"
+                  alt="Perfect your walk" 
+                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
+                Perfect your walk
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Get feedback on catwalks, analyze your posture and movements. Learn, practice, improve.
+              </p>
+            </motion.div>
+
+            {/* One word at a time */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.02, rotateY: -5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
+            >
+              <div className="mb-6">
+                <img 
+                  src="/feature_speech.png"
+                  alt="One word at a time" 
+                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
+                One word at a time
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Practice your responses to any pageant question, get instant judge-level feedback on what you said + how you said it.
+              </p>
+            </motion.div>
+
+            {/* Dress to impress */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.02, rotateY: 5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
+            >
+              <div className="mb-6">
+                <img 
+                  src="/feature_dress.png"
+                  alt="Dress to impress" 
+                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
+                Dress to impress
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Try on any dress. Find out what makes you shine on stage.
+              </p>
+            </motion.div>
+
+            {/* Nails, dresses, inspiration */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.02, rotateY: -5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
+            >
+              <div className="mb-6">
+                <img 
+                  src="/feature_inspiration.png"
+                  alt="Nails, dresses, inspiration" 
+                  className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-pink-600 transition-colors duration-300">
+                Nails, dresses, inspiration
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                An in-built Pinterest made just for everything pageant.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </div>
 
       {/* Why RunwayAI? Section */}
       <div id="why-runwayai" className="py-20 px-6">
