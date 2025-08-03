@@ -27,10 +27,10 @@ const onboardingSteps = [
     title: 'To win [end_goal], which of these needs the most work right now?',
     type: 'choice',
     options: [
-      'My Onstage Walk & Presence',
-      'My Interview & Q&A Skills',
-      'My Overall Prep & Scheduling',
-      'My Wardrobe & Styling'
+      'Onstage Walk & Presence',
+      'Interview & Q&A Skills',
+      'Overall Prep & Scheduling',
+      'Wardrobe & Styling'
     ],
     variable: 'focus_area'
   },
@@ -120,13 +120,13 @@ export default function Onboarding() {
   // Map focus area to corresponding feature
   const getMappedFeature = (focusArea?: string) => {
     switch (focusArea) {
-      case 'My Onstage Walk & Presence':
+      case 'Onstage Walk & Presence':
         return 'Live Routine Coach';
-      case 'My Interview & Q&A Skills':
+      case 'Interview & Q&A Skills':
         return 'Interview Simulator';
-      case 'My Wardrobe & Styling':
+      case 'Wardrobe & Styling':
         return 'Virtual Dress Try-On';
-      case 'My Overall Prep & Scheduling':
+      case 'Overall Prep & Scheduling':
         return 'Competition Calendar';
       default:
         return 'Personalized Training Tool';
@@ -247,38 +247,22 @@ export default function Onboarding() {
             <div className="bg-pink-50 rounded-2xl p-6 mb-8 border border-pink-200">
               <p className="text-lg text-gray-700">
                 <span className="font-semibold text-pink-600">Next step:</span> Master your {answers.focus_area?.toLowerCase() || 'pageant skills'} 
-                {getTimelineMessage(answers.timeline)} with AI-powered {getMappedFeature(answers.focus_area)}.
+                {getTimelineMessage(answers.timeline)} with our AI-powered {getMappedFeature(answers.focus_area)}.
               </p>
             </div>
 
-            {/* Pricing - Single Plan Focus */}
+            {/* Start Now Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Start Your Free Trial</h2>
-              
-              {/* Yearly Plan - Highlighted */}
-              <div className="relative bg-white rounded-3xl p-8 border-4 border-pink-500 shadow-xl max-w-md mx-auto mb-6">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-pink-500 text-white px-6 py-2 rounded-full text-sm font-semibold">Best Value</span>
-                </div>
+              <div className="bg-white rounded-3xl p-8 border-2 border-pink-300 shadow-xl max-w-md mx-auto">
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Annual Plan</h3>
-                  <div className="mb-2">
-                    <span className="text-3xl font-bold text-pink-600">$12</span>
-                    <span className="text-gray-500">/month</span>
-                  </div>
-                  <p className="text-sm text-gray-600">Billed yearly ($100) • Save 60%</p>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Start Training?</h2>
+                  <p className="text-gray-600">Begin your pageant journey with AI-powered coaching.</p>
                 </div>
-                <button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-4 rounded-2xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl mb-4">
-                  Start 7-Day Free Trial
-                </button>
-                <p className="text-xs text-gray-500">Then $100/year • Cancel anytime</p>
-              </div>
-
-              {/* Monthly Option */}
-              <div className="text-center">
-                <button className="text-gray-600 hover:text-gray-800 underline text-sm">
-                  Or try monthly for $30/month
-                </button>
+                <Link href="/app">
+                  <button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-4 rounded-2xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl">
+                    Start Now
+                  </button>
+                </Link>
               </div>
             </div>
 
