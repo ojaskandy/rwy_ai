@@ -74,6 +74,26 @@
   animation: frame-float-left 10s linear infinite;
 }
 
+/* Gradient Animation */
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+    background-size: 400% 400%;
+  }
+  50% {
+    background-position: 100% 50%;
+    background-size: 400% 400%;
+  }
+}
+
+.animate-gradient-xy {
+  animation: gradient-xy 6s ease infinite;
+}
+
+.animation-delay-2s {
+  animation-delay: 2s;
+}
+
 /* Custom animations for Early page photo frames */
 @keyframes slide-left {
   0% {

@@ -192,7 +192,7 @@ export default function RunwayAIWelcome() {
 
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen">
+      <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-50 min-h-screen">
         <div className="relative z-10 px-6 pt-32 pb-20 text-center flex flex-col items-center justify-center min-h-screen">
           
           {/* Pink Standout Box - Similar to Cursor */}
@@ -202,25 +202,33 @@ export default function RunwayAIWelcome() {
             transition={{ duration: 0.8 }}
             className="relative max-w-4xl mx-auto"
           >
-            {/* Main Pink Box */}
-            <div className="bg-gradient-to-br from-pink-500 via-pink-400 to-rose-500 rounded-3xl p-12 shadow-2xl border border-pink-300/20">
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight text-white"
-              >
-                The AI<br />Pageant Coach
-              </motion.h1>
+            {/* Main Animated Gradient Box */}
+            <div className="relative rounded-3xl p-12 shadow-2xl border border-white/40 overflow-hidden">
+              {/* Animated Background Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-orange-400 to-red-500 animate-gradient-xy"></div>
+              <div className="absolute inset-0 bg-gradient-to-tl from-blue-500 via-purple-400 to-pink-500 animate-gradient-xy opacity-70 animation-delay-2s"></div>
+              
+              {/* Content Container */}
+              <div className="relative z-10 backdrop-blur-sm">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-white"
+                >
+                  The AI<br />Pageant Coach
+                </motion.h1>
 
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto"
-              >
-                <strong>Unlock your potential</strong> with personalized AI coaching that adapts to your learning style and goals.
-              </motion.p>
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-xl md:text-2xl text-white/95 mb-8 max-w-2xl mx-auto space-y-2"
+                >
+                  <p className="font-semibold">Own the spotlight</p>
+                  <p className="font-semibold">Train with direction</p>
+                  <p className="font-semibold">Win with purpose</p>
+                </motion.div>
 
               {/* Favicon Image inside the box */}
               <motion.div
@@ -276,6 +284,7 @@ export default function RunwayAIWelcome() {
                   Inspiration
                 </Button>
               </motion.div>
+              </div>
             </div>
 
             {/* Glow effect behind the box */}
