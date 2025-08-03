@@ -204,8 +204,8 @@ export default function RunwayAIWelcome() {
           >
             {/* Main Static Gradient Box - Cursor Colors */}
             <div className="relative rounded-3xl p-16 shadow-2xl border border-white/40 overflow-hidden">
-              {/* Static Background Gradient - Cursor's brown to green */}
-              <div className="absolute inset-0 bg-gradient-to-b from-amber-800 via-orange-600 to-lime-400"></div>
+              {/* Beautiful Pink-Red-Blue Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-red-500 to-blue-600"></div>
               
               {/* Content Container */}
               <div className="relative z-10">
@@ -289,7 +289,7 @@ export default function RunwayAIWelcome() {
             </div>
 
             {/* Glow effect behind the box */}
-            <div className="absolute inset-0 bg-gradient-to-b from-amber-800/20 via-orange-600/20 to-lime-400/20 rounded-3xl blur-3xl -z-10 scale-110"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-red-500/20 to-blue-600/20 rounded-3xl blur-3xl -z-10 scale-110"></div>
           </motion.div>
 
         </div>
