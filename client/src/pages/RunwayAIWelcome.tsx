@@ -223,68 +223,29 @@ export default function RunwayAIWelcome() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-xl md:text-2xl text-white/95 mb-12 max-w-2xl mx-auto space-y-1 font-medium"
+                  className="text-xl md:text-2xl text-white/95 mb-8 max-w-2xl mx-auto space-y-1 font-medium"
                   style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
-                  <p>Own the spotlight</p>
-                  <p>Train with direction</p>
-                  <p>Win with purpose</p>
+                  <p>Own the spotlight, train with direction, win with Runway AI</p>
                 </motion.div>
 
-              {/* Favicon Image inside the box */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
-                className="mb-8"
-              >
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-xs mx-auto border border-white/20">
-                  <img 
-                    src={heroImage}
-                    alt="Runway AI Logo" 
-                    className="w-32 h-32 mx-auto rounded-full shadow-lg"
-                  />
-                </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-              >
-                <Button 
-                  variant="outline"
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 px-8 py-4 text-xl font-semibold rounded-lg backdrop-blur-sm"
-                  onClick={() => {
-                    const whySection = document.getElementById('why-runwayai');
-                    if (whySection) {
-                      whySection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
+                {/* Welcome Homepage Image with Fade */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="relative mt-8"
                 >
-                  Why RunwayAI?
-                </Button>
-                <Link href="/app">
-                  <Button 
-                    className="bg-white text-pink-600 hover:bg-gray-100 px-12 py-6 text-2xl font-bold rounded-lg shadow-lg"
-                  >
-                    Start Training
-                  </Button>
-                </Link>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 px-8 py-4 text-xl font-semibold rounded-lg backdrop-blur-sm"
-                  onClick={() => {
-                    const wordsSection = document.getElementById('inspirational-words');
-                    if (wordsSection) {
-                      wordsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                >
-                  Inspiration
-                </Button>
-              </motion.div>
+                  <div className="relative overflow-hidden rounded-2xl">
+                    <img 
+                      src="/rwyai_welcome_homepage.png"
+                      alt="Runway AI Welcome" 
+                      className="w-full h-auto max-h-96 object-cover object-top"
+                    />
+                    {/* Fade overlay at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-pink-500 via-red-500/80 to-transparent"></div>
+                  </div>
+                </motion.div>
               </div>
             </div>
 
