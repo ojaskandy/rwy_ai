@@ -471,9 +471,12 @@ export default function RunwayAIWelcome() {
               className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
             >
               <div className="mb-6">
-                <img 
-                  src="/feature_walk.png"
-                  alt="Perfect your walk" 
+                <video 
+                  src="/rwyai_walk.mov"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -495,9 +498,12 @@ export default function RunwayAIWelcome() {
               className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
             >
               <div className="mb-6">
-                <img 
-                  src="/feature_speech.png"
-                  alt="One word at a time" 
+                <video 
+                  src="/rwyai_qna.MOV"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -519,9 +525,12 @@ export default function RunwayAIWelcome() {
               className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-500 cursor-pointer group"
             >
               <div className="mb-6">
-                <img 
-                  src="/feature_dress.png"
-                  alt="Dress to impress" 
+                <video 
+                  src="/rwyai_dress.mov"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -544,7 +553,7 @@ export default function RunwayAIWelcome() {
             >
               <div className="mb-6">
                 <img 
-                  src="/feature_inspiration.png"
+                  src="/rwyai_feature_inspiration.png"
                   alt="Nails, dresses, inspiration" 
                   className="w-full h-48 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 />
