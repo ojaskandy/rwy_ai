@@ -193,28 +193,28 @@ export default function RunwayAIWelcome() {
 
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-50 min-h-screen">
-        <div className="relative z-10 px-6 pt-32 pb-20 text-center flex flex-col items-center justify-center min-h-screen">
+        <div className="relative z-10 px-4 pt-8 pb-16 text-center flex flex-col items-center justify-start min-h-screen">
           
-          {/* Pink Standout Box - Similar to Cursor */}
+          {/* Cursor-Inspired Gradient Box */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="relative max-w-4xl mx-auto"
+            className="relative w-full max-w-6xl mx-auto mt-8"
           >
-            {/* Main Animated Gradient Box */}
-            <div className="relative rounded-3xl p-12 shadow-2xl border border-white/40 overflow-hidden">
-              {/* Animated Background Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-orange-400 to-red-500 animate-gradient-xy"></div>
-              <div className="absolute inset-0 bg-gradient-to-tl from-blue-500 via-purple-400 to-pink-500 animate-gradient-xy opacity-70 animation-delay-2s"></div>
+            {/* Main Static Gradient Box - Cursor Colors */}
+            <div className="relative rounded-3xl p-16 shadow-2xl border border-white/40 overflow-hidden">
+              {/* Static Background Gradient - Cursor's brown to green */}
+              <div className="absolute inset-0 bg-gradient-to-b from-amber-800 via-orange-600 to-lime-400"></div>
               
               {/* Content Container */}
-              <div className="relative z-10 backdrop-blur-sm">
+              <div className="relative z-10">
                 <motion.h1 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-white"
+                  className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-8 leading-tight text-white tracking-tight"
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
                   The AI<br />Pageant Coach
                 </motion.h1>
@@ -223,11 +223,12 @@ export default function RunwayAIWelcome() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-xl md:text-2xl text-white/95 mb-8 max-w-2xl mx-auto space-y-2"
+                  className="text-xl md:text-2xl text-white/95 mb-12 max-w-2xl mx-auto space-y-1 font-medium"
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
-                  <p className="font-semibold">Own the spotlight</p>
-                  <p className="font-semibold">Train with direction</p>
-                  <p className="font-semibold">Win with purpose</p>
+                  <p>Own the spotlight</p>
+                  <p>Train with direction</p>
+                  <p>Win with purpose</p>
                 </motion.div>
 
               {/* Favicon Image inside the box */}
@@ -288,7 +289,7 @@ export default function RunwayAIWelcome() {
             </div>
 
             {/* Glow effect behind the box */}
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-pink-400/20 to-rose-500/20 rounded-3xl blur-3xl -z-10 scale-110"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-amber-800/20 via-orange-600/20 to-lime-400/20 rounded-3xl blur-3xl -z-10 scale-110"></div>
           </motion.div>
 
         </div>
