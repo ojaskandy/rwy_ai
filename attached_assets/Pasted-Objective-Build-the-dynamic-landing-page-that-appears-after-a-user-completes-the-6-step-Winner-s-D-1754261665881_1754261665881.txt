@@ -1,0 +1,150 @@
+Objective:
+Build the dynamic landing page that appears after a user completes the 6-step "Winner's Diagnosis" onboarding flow. This page's sole purpose is to convert the user by presenting a personalized plan and a compelling call-to-action to start a free trial.
+
+Trigger:
+This page loads immediately after the user answers the final onboarding question ("How are you getting that level of expertise?").
+
+Data Requirements:
+This page must have access to the variables collected during the onboarding flow:
+
+[end_goal]
+
+[timeline]
+
+[focus_area]
+
+[coach_status]
+
+Page Structure & Implementation Details:
+1. The Personalized Headline
+
+Component: H1 or equivalent large, bold heading.
+
+Content: "Your Game Plan for [end_goal] is Ready."
+
+Logic: Dynamically insert the [end_goal] variable.
+
+2. The Diagnostic Summary
+
+Component: A visually distinct section (e.g., a slightly off-white card or a bordered box) with a 3-column layout.
+
+Logic: Display the following key-value pairs using the stored variables.
+
+Column 1:
+
+Label: YOUR GOAL
+
+Value: [end_goal]
+
+Column 2:
+
+Label: YOUR TIMELINE
+
+Value: [timeline]
+
+Column 3:
+
+Label: PRIMARY FOCUS
+
+Value: [focus_area]
+
+3. The First Mission
+
+Component: A focused content block to direct user action.
+
+Headline: "Your First Mission: Master Your [focus_area]"
+
+Body Copy: "Based on your timeline, the single most impactful thing you can do right now is improve your [focus_area]. We'll start you with our AI-powered [Mapped Feature] to see immediate improvement."
+
+Logic: Implement a mapping function to insert the correct feature name based on the [focus_area] variable:
+
+If [focus_area] is "My Onstage Walk & Presence", [Mapped Feature] is "Live Routine Coach".
+
+If [focus_area] is "My Interview & Q&A Skills", [Mapped Feature] is "Interview Simulator".
+
+If [focus_area] is "My Wardrobe & Styling", [Mapped Feature] is "Virtual Dress Try-On".
+
+If [focus_area] is "My Overall Prep & Scheduling", [Mapped Feature] is "Competition Calendar".
+
+4. The Offer: "Choose Your Training Intensity"
+
+Component: A pricing table with two cards displayed side-by-side. The "Premium Plan" card must be visually highlighted (e.g., colored border, "Most Popular" badge).
+
+Card 1 (Primary Offer - Highlighted):
+
+Title: Premium Plan
+
+Price: $29.99/month
+
+Value Prop: "Everything you need to compete at the highest level."
+
+Feature List: Include key features, dynamically highlighting their #1 priority:
+
+"✅ AI [Mapped Feature]: Your priority training tool"
+
+"✅ Unlimited AI Walk Analysis"
+
+"✅ Unlimited Interview Practice"
+
+"✅ Virtual Dress Try-On"
+
+"✅ Personalized Prep Calendar"
+
+"✅ Access to All Creator Content"
+
+CTA Button:
+
+Text: "Start My 7-Day Free Trial"
+
+Action: On click, initiate the Stripe Checkout flow for the Premium Plan.
+
+Card 2 (Secondary Offer):
+
+Title: Elite Plan
+
+Price: $49.99/month
+
+Value Prop: "For contestants who need every possible edge."
+
+Feature List:
+
+"✅ Everything in Premium"
+
+"✅ 1-on-1 Session with an Expert Coach"
+
+"✅ Direct Feedback from Champions"
+
+CTA Button:
+
+Text: "Upgrade to Elite"
+
+Action: On click, initiate the Stripe Checkout flow for the Elite Plan.
+
+5. The Credibility Anchor
+
+Component: A section below the pricing cards featuring Arshia Kathpalia.
+
+Layout: High-quality image on the left, text on the right.
+
+Image: arshia_kathpalia_champion.jpg
+
+Text Content:
+
+Name/Title: "Arshia Kathpalia, Miss Teen India USA 2024"
+
+Quote (Blockquote): "I trained on these exact principles to win my crown. Runway AI gives you that same elite strategy, 24/7. This is the unfair advantage you've been looking for."
+
+6. Final CTA & Objection Handling
+
+Component: A final, centered CTA at the bottom of the page.
+
+CTA Button:
+
+Text: "Start My Free 7-Day Trial"
+
+Action: This should be a repeat of the primary offer's CTA, initiating the Stripe Checkout flow for the Premium Plan.
+
+Microcopy (below button): "Full access. Cancel anytime. No questions asked."
+
+
+
