@@ -21,6 +21,7 @@ import Routine from "@/pages/Routine";
 import GlobalDock from "@/components/GlobalDock";
 // RUNWAY AI WELCOME PAGE
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
+import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
@@ -30,7 +31,7 @@ import ResetPassword from "@/pages/ResetPassword";
 
 function Router() {
   const [location] = useLocation();
-  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome');
+  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome') && !location.includes('/onboarding');
 
   return (
     <>
@@ -42,6 +43,9 @@ function Router() {
 
         {/* Welcome page - accessible without login */}
         <Route path="/welcome" component={RunwayAIWelcome} />
+        
+        {/* Onboarding page - accessible without login */}
+        <Route path="/onboarding" component={Onboarding} />
 
         {/* Privacy Policy - accessible without login */}
         <Route path="/privacy" component={PrivacyPolicy} />
