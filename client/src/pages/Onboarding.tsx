@@ -6,33 +6,70 @@ import { Link } from 'wouter';
 const onboardingSteps = [
   {
     id: 1,
-    title: 'How long have you been participating in pageants?',
-    options: [
-      '0 (just starting out)',
-      'Less than 1 year',
-      '1-3 years', 
-      'More than 3 years'
-    ]
+    title: 'What is the exact title you are training to win?',
+    type: 'text',
+    placeholder: 'e.g., Miss Universe, Miss Teen USA, Miss California',
+    variable: 'end_goal'
   },
   {
     id: 2,
-    title: 'What is your main goal with Runway AI?',
+    title: 'How many pageants have you competed in?',
+    type: 'choice',
     options: [
-      'Perfect my catwalk technique',
-      'Improve my interview skills',
-      'Find the perfect outfits',
-      'Build overall confidence'
-    ]
+      'Zero, I\'m just starting out.',
+      '1-3, I\'m learning the ropes.',
+      '4+, I\'m a seasoned competitor.'
+    ],
+    variable: 'experience_level'
   },
   {
     id: 3,
-    title: 'Which areas do you want to focus on most?',
+    title: 'To win [end_goal], which of these needs the most work right now?',
+    type: 'choice',
     options: [
-      'Posture and movement',
-      'Speech and communication',
-      'Style and fashion',
-      'All of the above'
-    ]
+      'My Onstage Walk & Presence',
+      'My Interview & Q&A Skills',
+      'My Overall Prep & Scheduling',
+      'My Wardrobe & Styling'
+    ],
+    variable: 'focus_area'
+  },
+  {
+    id: 4,
+    title: 'When is your next competition?',
+    type: 'choice',
+    options: [
+      'Less than 1 month',
+      '1-3 months',
+      '3-6 months',
+      'I haven\'t scheduled one yet'
+    ],
+    variable: 'timeline'
+  },
+  {
+    id: 5,
+    title: 'Winning [end_goal] is a launchpad. What is the main thing the crown unlocks for you?',
+    type: 'choice',
+    options: [
+      'A platform for my social cause',
+      'A career in modeling or entertainment',
+      'Scholarships and academic opportunities',
+      'The confidence to take on any challenge'
+    ],
+    variable: 'motivation'
+  },
+  {
+    id: 6,
+    title: 'A single hour with a top-tier pageant coach can cost over $250. How are you getting that level of expertise?',
+    type: 'choice',
+    options: [
+      'I\'m currently working with a coach.',
+      'I\'m looking for the right coach.',
+      'I\'m learning from free sources (YouTube, etc.).',
+      'I\'m just using LLMs (ChatGPT, Gemini, etc)',
+      'I\'m not sure where to start.'
+    ],
+    variable: 'coach_status'
   }
 ];
 
@@ -44,19 +81,28 @@ const inspirationalTags = [
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [textInput, setTextInput] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleStepAnswer = (answer: string) => {
-    const newAnswers = [...answers];
-    newAnswers[currentStep] = answer;
+    const currentStepData = onboardingSteps[currentStep];
+    const newAnswers = { ...answers };
+    newAnswers[currentStepData.variable] = answer;
     setAnswers(newAnswers);
+    setTextInput('');
     
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Move to final inspiration step
       setCurrentStep(onboardingSteps.length);
+    }
+  };
+
+  const handleTextSubmit = () => {
+    if (textInput.trim()) {
+      handleStepAnswer(textInput.trim());
     }
   };
 
@@ -70,6 +116,15 @@ export default function Onboarding() {
 
   const currentStepData = onboardingSteps[currentStep];
   const progress = ((currentStep + 1) / (onboardingSteps.length + 1)) * 100;
+
+  // Replace placeholders in title with user's answers
+  const getProcessedTitle = (title: string) => {
+    let processedTitle = title;
+    if (answers.end_goal) {
+      processedTitle = processedTitle.replace('[end_goal]', answers.end_goal);
+    }
+    return processedTitle;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100 flex flex-col items-center justify-center px-6">
@@ -99,25 +154,59 @@ export default function Onboarding() {
             className="text-center"
           >
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-12 leading-tight">
-              {currentStepData.title}
+              {getProcessedTitle(currentStepData.title)}
             </h1>
             
-            <div className="space-y-4 max-w-lg mx-auto">
-              {currentStepData.options.map((option, index) => (
-                <motion.button
-                  key={option}
+            {currentStepData.type === 'text' ? (
+              /* Text Input */
+              <div className="max-w-lg mx-auto">
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  transition={{ duration: 0.5 }}
+                  className="mb-6"
+                >
+                  <input
+                    type="text"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    placeholder={currentStepData.placeholder}
+                    className="w-full bg-white text-gray-800 border border-gray-300 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 px-6 py-4 rounded-2xl text-lg font-medium transition-all duration-300 shadow-sm focus:shadow-md outline-none"
+                    onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
+                  />
+                </motion.div>
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleStepAnswer(option)}
-                  className="w-full bg-white text-gray-800 border border-gray-300 hover:border-pink-400 hover:bg-pink-50 px-6 py-4 rounded-2xl text-lg font-medium transition-all duration-300 shadow-sm hover:shadow-md"
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim()}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300"
                 >
-                  {option}
+                  Continue
                 </motion.button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              /* Multiple Choice */
+              <div className="space-y-4 max-w-lg mx-auto">
+                {currentStepData.options?.map((option, index) => (
+                  <motion.button
+                    key={option}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleStepAnswer(option)}
+                    className="w-full bg-white text-gray-800 border border-gray-300 hover:border-pink-400 hover:bg-pink-50 px-6 py-4 rounded-2xl text-lg font-medium transition-all duration-300 shadow-sm hover:shadow-md"
+                  >
+                    {option}
+                  </motion.button>
+                ))}
+              </div>
+            )}
           </motion.div>
         ) : (
           /* Final Inspiration Step */
