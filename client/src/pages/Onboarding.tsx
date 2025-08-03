@@ -230,114 +230,62 @@ export default function Onboarding() {
             )}
           </motion.div>
         ) : (
-          /* Conversion Landing Page */
+          /* Minimal Start Now Page */
           <motion.div
             key="conversion"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-2xl mx-auto relative"
           >
-            {/* Personalized Headline */}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8 leading-tight">
-              Your {answers.end_goal || 'Pageant'} Training Plan is Ready
-            </h1>
-            
-            {/* Timeline Message */}
-            <div className="bg-pink-50 rounded-2xl p-6 mb-8 border border-pink-200">
-              <p className="text-lg text-gray-700">
-                <span className="font-semibold text-pink-600">Next step:</span> Master your {answers.focus_area?.toLowerCase() || 'pageant skills'} 
-                {getTimelineMessage(answers.timeline)} with our AI-powered {getMappedFeature(answers.focus_area)}.
-              </p>
+            {/* Big Beautiful Start Now Button */}
+            <div className="mb-16">
+              <Link href="/app">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-pink-400 to-pink-600 hover:from-pink-500 hover:to-pink-700 text-white px-16 py-6 text-3xl font-bold rounded-3xl shadow-2xl transition-all duration-300 transform hover:shadow-3xl"
+                >
+                  Start Now
+                </motion.button>
+              </Link>
             </div>
 
-            {/* Start Now Section */}
-            <div className="mb-8">
-              <div className="bg-white rounded-3xl p-8 border-2 border-pink-300 shadow-xl max-w-md mx-auto">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Start Training?</h2>
-                  <p className="text-gray-600">Begin your pageant journey with AI-powered coaching.</p>
-                </div>
-                <Link href="/app">
-                  <button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-4 rounded-2xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl">
-                    Start Now
-                  </button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Champion Testimonial - Simplified */}
-            <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-              <div className="flex items-center gap-4 mb-4">
+            {/* Arshia's Message - Swoops in from side */}
+            <motion.div
+              initial={{ x: -200, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 1, duration: 0.8, type: "spring" }}
+              className="absolute -right-8 top-20 bg-white rounded-2xl p-6 shadow-xl border border-pink-200 max-w-xs"
+            >
+              <div className="flex items-center gap-3 mb-3">
                 <img 
                   src="/arshia_kathpalia_champion.jpg" 
-                  alt="Arshia" 
-                  className="w-16 h-16 rounded-full object-cover border-2 border-pink-300"
+                  alt="Arshia Kathpalia" 
+                  className="w-12 h-12 rounded-full object-cover border-2 border-pink-300"
                 />
                 <div className="text-left">
-                  <p className="font-semibold text-gray-800">Arshia Kathpalia</p>
-                  <p className="text-sm text-gray-600">Miss Teen India USA 2024</p>
+                  <p className="font-bold text-gray-800 text-sm">Arshia Kathpalia</p>
+                  <p className="text-xs text-gray-600">Miss Teen India USA 2024</p>
                 </div>
               </div>
-              <blockquote className="text-gray-700 italic">
+              <p className="text-gray-700 italic text-sm leading-relaxed">
                 "This is the unfair advantage you've been looking for."
-              </blockquote>
-            </div>
+              </p>
+            </motion.div>
 
-            {/* Chat Widget */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <p className="text-gray-700 font-medium">Want more details on how we can help?</p>
-              </div>
+            {/* Footer Links */}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-8 text-sm text-gray-500">
               <button 
-                onClick={() => setChatOpen(true)}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-all duration-300 border border-gray-300"
+                onClick={() => window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,ojaskandy@gmail.com?subject=Runway AI Contact'}
+                className="hover:text-pink-600 transition-colors"
               >
-                Ask about Runway AI features
+                Contact
               </button>
+              <Link href="/privacy" className="hover:text-pink-600 transition-colors">
+                Privacy Policy
+              </Link>
             </div>
-
-            {/* Simple Chat Modal */}
-            {chatOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                onClick={() => setChatOpen(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="bg-white rounded-3xl p-6 max-w-md w-full max-h-96 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-gray-800">Ask about Runway AI</h3>
-                    <button 
-                      onClick={() => setChatOpen(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    <button className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-xl text-sm transition-all">
-                      How does the AI walk analysis work?
-                    </button>
-                    <button className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-xl text-sm transition-all">
-                      What's included in interview practice?
-                    </button>
-                    <button className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-xl text-sm transition-all">
-                      Can I try the virtual dress feature?
-                    </button>
-                    <button className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-xl text-sm transition-all">
-                      How does the prep calendar work?
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
           </motion.div>
         )}
       </div>

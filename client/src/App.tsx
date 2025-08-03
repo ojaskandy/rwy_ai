@@ -23,6 +23,7 @@ import GlobalDock from "@/components/GlobalDock";
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Privacy from "@/pages/Privacy";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
@@ -48,7 +49,8 @@ function Router() {
         <Route path="/onboarding" component={Onboarding} />
 
         {/* Privacy Policy - accessible without login */}
-        <Route path="/privacy" component={PrivacyPolicy} />
+        <Route path="/privacy-policy" component={PrivacyPolicy} />
+        <Route path="/privacy" component={Privacy} />
 
         {/* Health Monitor - accessible without login but password protected */}
         <Route path="/health" component={Health} />
