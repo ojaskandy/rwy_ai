@@ -10,7 +10,8 @@ import shifuChatImage from "@assets/partnership_shifuchat.png";
 import snapFeedbackImage from "@assets/partnership_snapfeedback.png";
 import workoutsImage from "@assets/image_1746812138021.png";
 import liveRoutineImage from "@assets/partnership_slr.png";
-import heroImage from "../assets/hero-image.png";
+// import heroImage from "../assets/hero-image.png";
+const heroImage = "/rwyai_favicon.png";
 import journeyBackgroundImage from "../assets/journey-background.jpeg";
 
 const features = [
@@ -188,17 +189,7 @@ function InteractiveHelpChat() {
 export default function RunwayAIWelcome() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100">
-      {/* Navigation - Simplified */}
-      <div className="bg-white/80 backdrop-blur-sm py-4 px-6 flex justify-between items-center border-b border-pink-100">
-        <span className="text-2xl font-bold text-pink-600">RunwayAI</span>
-        <Link href="/app">
-          <Button 
-            className="bg-pink-600 text-white hover:bg-pink-700 px-6 py-3 text-lg font-semibold"
-          >
-            Start Training
-          </Button>
-        </Link>
-      </div>
+
 
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-purple-200/80 via-pink-200/80 to-blue-200/80">
