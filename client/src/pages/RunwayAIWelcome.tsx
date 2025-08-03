@@ -192,73 +192,96 @@ export default function RunwayAIWelcome() {
 
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-200/80 via-pink-200/80 to-blue-200/80">
-        <div className="relative z-10 px-6 pt-32 pb-20 text-center flex flex-col items-center">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-6 leading-tight text-gray-800"
-          >
-            The AI<br />Pageant Coach
-          </motion.h1>
-
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-gray-700 mb-8 max-w-2xl mx-auto"
-          >
-            <strong>Unlock your potential</strong> with personalized AI coaching that adapts to your learning style and goals.
-          </motion.p>
+      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen">
+        <div className="relative z-10 px-6 pt-32 pb-20 text-center flex flex-col items-center justify-center min-h-screen">
           
+          {/* Pink Standout Box - Similar to Cursor */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="relative max-w-4xl mx-auto"
           >
-            <Button 
-              variant="outline"
-              className="text-pink-600 hover:bg-pink-50 px-8 py-4 text-xl font-semibold rounded-lg border border-pink-300 hover:border-pink-400"
-              onClick={() => {
-                const whySection = document.getElementById('why-runwayai');
-                if (whySection) {
-                  whySection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            >
-              Why RunwayAI?
-            </Button>
-            <Link href="/app">
-              <Button 
-                className="bg-pink-600 text-white hover:bg-pink-700 px-12 py-6 text-3xl font-semibold rounded-lg"
+            {/* Main Pink Box */}
+            <div className="bg-gradient-to-br from-pink-500 via-pink-400 to-rose-500 rounded-3xl p-12 shadow-2xl border border-pink-300/20">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight text-white"
               >
-                                 Start Training
-              </Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              className="text-pink-600 hover:bg-pink-50 px-8 py-4 text-xl font-semibold rounded-lg border border-pink-300 hover:border-pink-400"
-              onClick={() => {
-                const wordsSection = document.getElementById('inspirational-words');
-                if (wordsSection) {
-                  wordsSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            >
-              Inspiration
-            </Button>
-          </motion.div>
-        </div>
+                The AI<br />Pageant Coach
+              </motion.h1>
 
-        <div className="relative z-10 px-6 pb-20">
-          <div className="max-w-4xl mx-auto">
-              <img 
-                src={heroImage}
-                alt="AI Pageant Coach" 
-                className="w-full h-auto rounded-lg shadow-2xl border-2 border-pink-200"
-              />
-          </div>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto"
+              >
+                <strong>Unlock your potential</strong> with personalized AI coaching that adapts to your learning style and goals.
+              </motion.p>
+
+              {/* Favicon Image inside the box */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mb-8"
+              >
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-xs mx-auto border border-white/20">
+                  <img 
+                    src={heroImage}
+                    alt="Runway AI Logo" 
+                    className="w-32 h-32 mx-auto rounded-full shadow-lg"
+                  />
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+              >
+                <Button 
+                  variant="outline"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 px-8 py-4 text-xl font-semibold rounded-lg backdrop-blur-sm"
+                  onClick={() => {
+                    const whySection = document.getElementById('why-runwayai');
+                    if (whySection) {
+                      whySection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                >
+                  Why RunwayAI?
+                </Button>
+                <Link href="/app">
+                  <Button 
+                    className="bg-white text-pink-600 hover:bg-gray-100 px-12 py-6 text-2xl font-bold rounded-lg shadow-lg"
+                  >
+                    Start Training
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 px-8 py-4 text-xl font-semibold rounded-lg backdrop-blur-sm"
+                  onClick={() => {
+                    const wordsSection = document.getElementById('inspirational-words');
+                    if (wordsSection) {
+                      wordsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                >
+                  Inspiration
+                </Button>
+              </motion.div>
+            </div>
+
+            {/* Glow effect behind the box */}
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-pink-400/20 to-rose-500/20 rounded-3xl blur-3xl -z-10 scale-110"></div>
+          </motion.div>
+
         </div>
       </div>
 
