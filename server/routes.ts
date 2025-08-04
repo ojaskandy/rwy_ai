@@ -2379,17 +2379,25 @@ Focus on being helpful while maintaining that expert confidence that comes from 
           
           // Find user by Stripe customer ID
           const { data: userData } = await supabase
-            .from('profiles')
-            .select('user_id')
+            .from('users')
+            .select('id')
             .eq('stripe_customer_id', subscription.customer)
             .single();
 
           if (userData) {
+            // Update user's payment status when subscription is active
+            if (subscription.status === 'active') {
+              await supabase
+                .from('users')
+                .update({ has_paid: true })
+                .eq('id', userData.id);
+            }
+
             // Update subscription status
             await supabase
               .from('subscriptions')
               .upsert([{
-                user_id: userData.user_id,
+                user_id: userData.id,
                 status: subscription.status === 'active' ? 'premium' : 'basic',
                 plan_type: subscription.items.data[0]?.price.id === STRIPE_PLANS.YEARLY ? 'yearly' : 'monthly',
                 stripe_subscription_id: subscription.id,
@@ -2408,12 +2416,18 @@ Focus on being helpful while maintaining that expert confidence that comes from 
           
           // Find user by Stripe customer ID
           const { data: userData } = await supabase
-            .from('profiles')
-            .select('user_id')
+            .from('users')
+            .select('id')
             .eq('stripe_customer_id', subscription.customer)
             .single();
 
           if (userData) {
+            // Update user's payment status
+            await supabase
+              .from('users')
+              .update({ has_paid: false })
+              .eq('id', userData.id);
+
             // Update subscription to basic
             await supabase
               .from('subscriptions')
@@ -2450,9 +2464,9 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       }
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('onboarding_completed, onboarding_data')
-        .eq('user_id', userId)
+        .from('users')
+        .select('has_completed_onboarding, has_paid, has_code_bypass')
+        .eq('id', userId)
         .single();
 
       if (error) {
@@ -2460,9 +2474,12 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: "Failed to check onboarding status" });
       }
 
+      // User has completed onboarding if they've filled out the form OR have paid OR have code bypass
+      const completed = data?.has_completed_onboarding || data?.has_paid || data?.has_code_bypass || false;
+
       res.json({ 
-        completed: data?.onboarding_completed || false,
-        data: data?.onboarding_data || null
+        completed: completed,
+        data: data || null
       });
     } catch (error) {
       console.error("Error checking onboarding status:", error);
@@ -2483,13 +2500,11 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       }
 
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .update({
-          onboarding_completed: true,
-          onboarding_data: answers,
-          updated_at: new Date().toISOString()
+          has_completed_onboarding: true
         })
-        .eq('user_id', userId);
+        .eq('id', userId);
 
       if (error) {
         console.error("Error completing onboarding:", error);

@@ -54,7 +54,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
 
 // Get user's current usage
 export async function getUserUsage(userId: string): Promise<UserUsage | null> {
-  const { data, error } = await supabase
+  const { data: initialData, error } = await supabase
     .from('user_usage')
     .select('*')
     .eq('user_id', userId)
@@ -65,7 +65,8 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
     return null;
   }
 
-  if (!data) {
+  let usageData = initialData;
+  if (!initialData) {
     // Create initial usage record
     const { data: newData, error: createError } = await supabase
       .from('user_usage')
@@ -77,18 +78,18 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
       console.error('Error creating usage record:', createError);
       return null;
     }
-    data = newData;
+    usageData = newData;
   }
 
   return {
-    boardSavesThisWeek: data.board_saves_this_week || 0,
-    routineMinutesThisWeek: data.routine_minutes_this_week || 0,
-    interviewQuestionsToday: data.interview_questions_today || 0,
-    dressTryOnsThisMonth: data.dress_tryons_this_month || 0,
-    boardSavesWeekStart: new Date(data.board_saves_week_start),
-    routineWeekStart: new Date(data.routine_week_start),
-    interviewQuestionsDate: new Date(data.interview_questions_date),
-    dressTryOnsMonthStart: new Date(data.dress_tryons_month_start),
+    boardSavesThisWeek: usageData.board_saves_this_week || 0,
+    routineMinutesThisWeek: usageData.routine_minutes_this_week || 0,
+    interviewQuestionsToday: usageData.interview_questions_today || 0,
+    dressTryOnsThisMonth: usageData.dress_tryons_this_month || 0,
+    boardSavesWeekStart: new Date(usageData.board_saves_week_start),
+    routineWeekStart: new Date(usageData.routine_week_start),
+    interviewQuestionsDate: new Date(usageData.interview_questions_date),
+    dressTryOnsMonthStart: new Date(usageData.dress_tryons_month_start),
   };
 }
 
@@ -240,10 +241,23 @@ export async function trackUsage(
       return false;
   }
 
+  // Get current value first, then increment
+  const { data: currentUsage, error: fetchError } = await supabase
+    .from('user_usage')
+    .select(updateField)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchError || !currentUsage) {
+    console.error('Error fetching current usage:', fetchError);
+    return false;
+  }
+
+  const currentValue = (currentUsage as any)[updateField] || 0;
   const { error } = await supabase
     .from('user_usage')
     .update({
-      [updateField]: supabase.raw(`${updateField} + ${amount}`),
+      [updateField]: currentValue + amount,
       last_updated: new Date().toISOString(),
     })
     .eq('user_id', userId);
@@ -382,6 +396,17 @@ export async function applyPremiumCode(userId: string, codeId: number): Promise<
       return false;
     }
 
+    // Update user's code bypass status
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ has_code_bypass: true })
+      .eq('id', userId);
+
+    if (userError) {
+      console.error('Error updating user code bypass:', userError);
+      return false;
+    }
+
     // Update user subscription
     const { error: subscriptionError } = await supabase
       .from('subscriptions')
@@ -399,14 +424,22 @@ export async function applyPremiumCode(userId: string, codeId: number): Promise<
     }
 
     // Increment code usage count
-    const { error: incrementError } = await supabase
+    const { data: codeData, error: fetchCodeError } = await supabase
       .from('premium_codes')
-      .update({ used_count: supabase.raw('used_count + 1') })
-      .eq('id', codeId);
+      .select('used_count')
+      .eq('id', codeId)
+      .single();
 
-    if (incrementError) {
-      console.error('Error incrementing code usage:', incrementError);
-      // Don't return false here as the main operations succeeded
+    if (!fetchCodeError && codeData) {
+      const { error: incrementError } = await supabase
+        .from('premium_codes')
+        .update({ used_count: (codeData.used_count || 0) + 1 })
+        .eq('id', codeId);
+
+      if (incrementError) {
+        console.error('Error incrementing code usage:', incrementError);
+        // Don't return false here as the main operations succeeded
+      }
     }
 
     return true;
@@ -420,6 +453,10 @@ export async function applyPremiumCode(userId: string, codeId: number): Promise<
 declare global {
   namespace Express {
     interface Request {
+      user?: {
+        id: string;
+        email?: string;
+      };
       usageInfo?: {
         action: 'board_save' | 'routine_minute' | 'interview_question' | 'dress_tryon';
         amount: number;
