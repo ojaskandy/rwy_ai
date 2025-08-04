@@ -208,11 +208,15 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Link href="/app">
-                  <Button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-4 text-lg font-semibold rounded-2xl transition-all duration-300">
-                    Start Free
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => {
+                    // For basic plan, just redirect to app
+                    window.location.href = '/app';
+                  }}
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white py-4 text-lg font-semibold rounded-2xl transition-all duration-300"
+                >
+                  Start Free
+                </Button>
               </div>
             </motion.div>
 

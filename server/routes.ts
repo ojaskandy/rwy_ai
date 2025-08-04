@@ -2458,41 +2458,69 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   // Onboarding completion routes
   app.get("/api/onboarding/status", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { data, error } = await supabase
+      const user = await getAuthenticatedUser(req);
+      
+      // First check if user exists in our users table
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('has_completed_onboarding, has_paid, has_code_bypass')
-        .eq('id', userId)
+        .eq('email', user.email)
         .single();
 
-      if (error) {
-        console.error("Error checking onboarding status:", error);
+      if (userError && userError.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error("Error checking user in database:", userError);
         return res.status(500).json({ error: "Failed to check onboarding status" });
       }
 
+      // If user doesn't exist in our users table, create them
+      if (!userData) {
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            email: user.email,
+            username: user.email?.split('@')[0] || 'user',
+            full_name: user.user_metadata?.full_name || '',
+            picture: user.user_metadata?.avatar_url || '',
+            auth_provider: 'supabase',
+            has_completed_onboarding: false,
+            has_paid: false,
+            has_code_bypass: false
+          })
+          .select('has_completed_onboarding, has_paid, has_code_bypass')
+          .single();
+
+        if (createError) {
+          console.error("Error creating user:", createError);
+          return res.status(500).json({ error: "Failed to create user" });
+        }
+
+        const completed = newUser.has_completed_onboarding || newUser.has_paid || newUser.has_code_bypass || false;
+        return res.json({ 
+          completed: completed,
+          data: newUser
+        });
+      }
+
       // User has completed onboarding if they've filled out the form OR have paid OR have code bypass
-      const completed = data?.has_completed_onboarding || data?.has_paid || data?.has_code_bypass || false;
+      const completed = userData.has_completed_onboarding || userData.has_paid || userData.has_code_bypass || false;
 
       res.json({ 
         completed: completed,
-        data: data || null
+        data: userData
       });
     } catch (error) {
       console.error("Error checking onboarding status:", error);
-      res.status(500).json({ error: "Failed to check onboarding status" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to check onboarding status" });
+      }
     }
   });
 
   app.post("/api/onboarding/complete", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
+      const user = await getAuthenticatedUser(req);
 
       const { answers } = req.body;
       if (!answers || typeof answers !== 'object') {
@@ -2504,7 +2532,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         .update({
           has_completed_onboarding: true
         })
-        .eq('id', userId);
+        .eq('email', user.email);
 
       if (error) {
         console.error("Error completing onboarding:", error);
@@ -2514,7 +2542,11 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       res.json({ success: true, message: "Onboarding completed successfully" });
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      res.status(500).json({ error: "Failed to complete onboarding" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to complete onboarding" });
+      }
     }
   });
 

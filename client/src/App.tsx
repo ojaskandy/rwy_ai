@@ -85,8 +85,7 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
 
         {/* Privacy Policy - accessible without login */}
-        <Route path="/privacy-policy" component={PrivacyPolicy} />
-        <Route path="/privacy" component={Privacy} />
+        <Route path="/privacy" component={PrivacyPolicy} />
 
         {/* Health Monitor - accessible without login but password protected */}
         <Route path="/health" component={Health} />

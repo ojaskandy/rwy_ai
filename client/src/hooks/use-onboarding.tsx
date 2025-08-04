@@ -92,6 +92,10 @@ export function useOnboarding() {
   };
 
   // Check if user needs onboarding
+  // User doesn't need onboarding if:
+  // 1. They completed the onboarding flow, OR
+  // 2. They have paid (subscribed), OR  
+  // 3. They have a code bypass
   const needsOnboarding = user && !status.completed;
 
   useEffect(() => {
