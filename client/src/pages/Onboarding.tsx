@@ -240,7 +240,7 @@ export default function Onboarding() {
           >
             {/* Big Beautiful Start Now Button */}
             <div className="mb-16">
-              <Link href="/app">
+              <Link href="/pricing">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -251,20 +251,39 @@ export default function Onboarding() {
               </Link>
             </div>
 
-            {/* Arshia's Speech Bubble - Smaller and slides in from side */}
+            {/* Arshia's Speech Bubble - EXACT copy from welcome page */}
             <motion.div
-              initial={{ opacity: 0, x: 200 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
-              className="absolute -right-4 top-32 max-w-xs"
+              initial={{ opacity: 0, x: -100, rotate: 0 }}
+              animate={{ 
+                opacity: 1, 
+                x: 0, 
+                rotate: 2 
+              }}
+              transition={{ 
+                duration: 0.8, 
+                delay: 1.2,
+                type: "spring",
+                stiffness: 100
+              }}
+              whileHover={{ 
+                scale: 1.05, 
+                rotate: -3,
+                transition: { duration: 0.3 }
+              }}
+              className="absolute -right-8 top-24 max-w-2xl"
             >
-              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-pink-200">
-                <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                  "This is the <span className="text-pink-600 font-semibold">unfair advantage</span> you've been looking for."
-                </p>
-                <div className="text-right">
-                  <p className="font-bold text-gray-800 text-xs">Arshia</p>
-                  <p className="text-xs text-gray-500">Miss Teen India USA 2024</p>
+              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">💫</div>
+                  <div>
+                    <p className="text-2xl text-gray-700 leading-relaxed">
+                      "This is the{" "}
+                      <span className="text-pink-600 font-bold bg-pink-100 px-2 py-1 rounded-lg">
+                        unfair advantage
+                      </span>{" "}
+                      you've been looking for."
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>

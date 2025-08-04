@@ -24,6 +24,7 @@ import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Privacy from "@/pages/Privacy";
+import Pricing from "@/pages/Pricing";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
@@ -47,6 +48,9 @@ function Router() {
         
         {/* Onboarding page - accessible without login */}
         <Route path="/onboarding" component={Onboarding} />
+        
+        {/* Pricing page - accessible without login */}
+        <Route path="/pricing" component={Pricing} />
 
         {/* Privacy Policy - accessible without login */}
         <Route path="/privacy-policy" component={PrivacyPolicy} />
