@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
-import { Check, Star, Crown, Sparkles, Zap, Target, Heart, Trophy } from 'lucide-react';
+import { Check, Star, Crown, Sparkles, Zap, Target, Heart, Trophy, Gift } from 'lucide-react';
+import { useSubscription } from '@/hooks/use-subscription';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [code, setCode] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeMessage, setCodeMessage] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  
+  const { user } = useAuth();
+  const { isPremium, applyCode, createCheckoutSession } = useSubscription();
 
   const basicFeatures = [
     "3 AI coaching sessions per month",
@@ -28,6 +39,47 @@ export default function Pricing() {
     "Advanced analytics & insights",
     "Competition strategy guidance"
   ];
+
+  const handleApplyCode = async () => {
+    if (!code.trim()) return;
+    
+    setCodeLoading(true);
+    setCodeMessage('');
+    
+    try {
+      const result = await applyCode(code.trim());
+      
+      if (result.success) {
+        setCodeMessage('🎉 Premium access activated!');
+        setTimeout(() => {
+          window.location.href = '/app';
+        }, 2000);
+      } else {
+        setCodeMessage(result.error || 'Invalid code');
+      }
+    } catch (error) {
+      setCodeMessage('Failed to apply code');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleUpgrade = async (planType: 'monthly' | 'yearly') => {
+    if (!user) {
+      window.location.href = '/auth';
+      return;
+    }
+    
+    setUpgradeLoading(true);
+    
+    try {
+      const { url } = await createCheckoutSession(planType);
+      window.location.href = url;
+    } catch (error) {
+      console.error('Failed to create checkout session:', error);
+      setUpgradeLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -240,13 +292,15 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Link href="/app">
-                  <Button className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
-                    <Crown className="w-5 h-5 mr-2" />
-                    Claim Your Crown
-                    <Trophy className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
+                  disabled={upgradeLoading || isPremium}
+                  className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Crown className="w-5 h-5 mr-2" />
+                  {isPremium ? 'Already Premium' : upgradeLoading ? 'Processing...' : 'Claim Your Crown'}
+                  <Trophy className="w-5 h-5 ml-2" />
+                </Button>
 
                 {/* Guarantee Badge */}
                 <div className="text-center mt-6">
@@ -257,6 +311,51 @@ export default function Pricing() {
                 </div>
               </div>
             </motion.div>
+          </div>
+
+          {/* Premium Code Section */}
+          <div className="text-center mt-16">
+            {!showCodeInput ? (
+              <Button
+                variant="ghost"
+                onClick={() => setShowCodeInput(true)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                Have a premium code?
+              </Button>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="max-w-md mx-auto space-y-4"
+              >
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter premium code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    onKeyPress={(e) => e.key === 'Enter' && handleApplyCode()}
+                    disabled={codeLoading}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleApplyCode}
+                    disabled={codeLoading || !code.trim()}
+                  >
+                    {codeLoading ? 'Applying...' : 'Apply'}
+                  </Button>
+                </div>
+                {codeMessage && (
+                  <p className={`text-sm ${
+                    codeMessage.includes('🎉') ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {codeMessage}
+                  </p>
+                )}
+              </motion.div>
+            )}
           </div>
 
           {/* Footer */}

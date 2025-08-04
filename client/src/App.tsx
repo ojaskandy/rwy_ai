@@ -9,6 +9,8 @@ import Profile from "@/pages/Profile";
 import Auth from "@/pages/Auth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/hooks/use-auth";
+import { SubscriptionProvider } from "@/hooks/use-subscription";
+import { useOnboarding } from "@/hooks/use-onboarding";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
 // NEW PAGEANT FEATURES
@@ -30,6 +32,36 @@ import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
 import AuthCallback from "@/pages/AuthCallback";
 import ResetPassword from "@/pages/ResetPassword";
+
+// Component that requires onboarding completion before accessing protected routes
+function OnboardingRequiredRoute({ children }: { children: React.ReactNode }) {
+  const { needsOnboarding, isLoading } = useOnboarding();
+  const [, setLocation] = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (needsOnboarding) {
+    setLocation('/onboarding');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to onboarding...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 function Router() {
   const [location] = useLocation();
@@ -62,26 +94,21 @@ function Router() {
         {/* Early access waitlist - accessible without login */}
         <Route path="/early" component={Early} />
 
-        {/* All protected routes require authentication */}
-        <Route path="/" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/app" component={() => <ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/profile" component={() => <ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/dress-tryon" component={() => <ProtectedRoute><DressTryOn /></ProtectedRoute>} />
-        <Route path="/interview-coach" component={() => <ProtectedRoute><InterviewCoach /></ProtectedRoute>} />
-        <Route path="/calendar" component={() => <ProtectedRoute><PageantCalendar /></ProtectedRoute>} />
-        <Route path="/board" component={() => <ProtectedRoute><Board /></ProtectedRoute>} />
-        <Route path="/routine" component={() => <ProtectedRoute><Routine /></ProtectedRoute>} />
-        <Route path="/admin/early-access" component={() => <ProtectedRoute><EarlyAccessAdmin /></ProtectedRoute>} />
+        {/* All protected routes require authentication AND onboarding completion */}
+        <Route path="/" component={() => <ProtectedRoute><OnboardingRequiredRoute><Home /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/app" component={() => <ProtectedRoute><OnboardingRequiredRoute><Home /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/profile" component={() => <ProtectedRoute><OnboardingRequiredRoute><Profile /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/dress-tryon" component={() => <ProtectedRoute><OnboardingRequiredRoute><DressTryOn /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/interview-coach" component={() => <ProtectedRoute><OnboardingRequiredRoute><InterviewCoach /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/calendar" component={() => <ProtectedRoute><OnboardingRequiredRoute><PageantCalendar /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/board" component={() => <ProtectedRoute><OnboardingRequiredRoute><Board /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/routine" component={() => <ProtectedRoute><OnboardingRequiredRoute><Routine /></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/admin/early-access" component={() => <ProtectedRoute><OnboardingRequiredRoute><EarlyAccessAdmin /></OnboardingRequiredRoute></ProtectedRoute>} />
 
         {/* Redirect legacy routes to main app (also protected) */}
-        <Route path="/practice" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
-        <Route path="/challenges" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
-        <Route path="/workouts" component={() => <ProtectedRoute><div>Redirecting...</div></ProtectedRoute>} />
-        
-        <Route path="/onboarding" component={() => {
-          window.location.href = '/app';
-          return <div>Redirecting...</div>;
-        }} />
+        <Route path="/practice" component={() => <ProtectedRoute><OnboardingRequiredRoute><div>Redirecting...</div></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/challenges" component={() => <ProtectedRoute><OnboardingRequiredRoute><div>Redirecting...</div></OnboardingRequiredRoute></ProtectedRoute>} />
+        <Route path="/workouts" component={() => <ProtectedRoute><OnboardingRequiredRoute><div>Redirecting...</div></OnboardingRequiredRoute></ProtectedRoute>} />
 
         {/* 404 page */}
         <Route component={NotFound} />
@@ -99,7 +126,9 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <AuthProvider>
-            <Router />
+            <SubscriptionProvider>
+              <Router />
+            </SubscriptionProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>

@@ -255,7 +255,7 @@ export default function RunwayAIWelcome() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <Link href="/onboarding">
+                          <Link href="/auth">
                             <Button className="bg-black text-white hover:bg-gray-900 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-pink-400 hover:border-pink-300 transition-all duration-300 hover:shadow-pink-400/25 relative overflow-hidden group">
                               {/* Pink highlight effect */}
                               <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 via-pink-400/20 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -579,7 +579,7 @@ export default function RunwayAIWelcome() {
               <p className="text-xl text-gray-700 mb-8">
                 Give yourself the competitive edge with AI-powered pageant training
                 </p>
-                <Link href="/app">
+                <Link href="/auth">
                 <Button 
                   className="bg-pink-600 text-white hover:bg-pink-700 px-8 py-3"
                 >
@@ -682,7 +682,7 @@ export default function RunwayAIWelcome() {
               whileTap={{ scale: 0.95 }}
               className="relative"
             >
-              <Link href="/app">
+              <Link href="/auth">
                 <Button 
                   className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-white/20 transform transition-all duration-300 hover:shadow-3xl"
                 >

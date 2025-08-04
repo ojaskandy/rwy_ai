@@ -398,3 +398,108 @@ export type BoardImage = typeof boardImages.$inferSelect;
 export type BoardImageInsert = typeof boardImages.$inferInsert;
 export type BoardLike = typeof boardLikes.$inferSelect;
 export type BoardSave = typeof boardSaves.$inferSelect;
+
+// Premium access codes table
+export const premiumCodes = pgTable("premium_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  description: text("description"), // e.g., "Influencer access", "Beta tester"
+  isActive: boolean("is_active").default(true),
+  usageLimit: integer("usage_limit"), // null = unlimited, number = max uses
+  usedCount: integer("used_count").default(0),
+  expiresAt: timestamp("expires_at"), // null = never expires
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: text("created_by"), // who created this code
+});
+
+export const premiumCodeUsage = pgTable("premium_code_usage", {
+  id: serial("id").primaryKey(),
+  codeId: integer("code_id").references(() => premiumCodes.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  usedAt: timestamp("used_at").defaultNow(),
+});
+
+// Usage tracking tables for subscription limits
+export const userUsage = pgTable("user_usage", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  // Board usage (weekly limit: 10 saves)
+  boardSavesThisWeek: integer("board_saves_this_week").default(0),
+  boardSavesWeekStart: timestamp("board_saves_week_start").defaultNow(),
+  
+  // Routine usage (weekly limit: 7 minutes)
+  routineMinutesThisWeek: integer("routine_minutes_this_week").default(0),
+  routineWeekStart: timestamp("routine_week_start").defaultNow(),
+  
+  // Interview coach (daily limit: 3 questions)
+  interviewQuestionsToday: integer("interview_questions_today").default(0),
+  interviewQuestionsDate: timestamp("interview_questions_date").defaultNow(),
+  
+  // Dress try-on (monthly limit: 10 try-ons)
+  dressTryOnsThisMonth: integer("dress_tryons_this_month").default(0),
+  dressTryOnsMonthStart: timestamp("dress_tryons_month_start").defaultNow(),
+  
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+// Subscription status tracking
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  status: text("status").notNull(), // 'basic', 'premium', 'premium_code'
+  planType: text("plan_type"), // 'monthly', 'yearly', 'code'
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  premiumCodeId: integer("premium_code_id").references(() => premiumCodes.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Schemas for the new tables
+export const insertPremiumCodeSchema = createInsertSchema(premiumCodes).pick({
+  code: true,
+  description: true,
+  isActive: true,
+  usageLimit: true,
+  expiresAt: true,
+  createdBy: true,
+});
+
+export const insertUserUsageSchema = createInsertSchema(userUsage).pick({
+  userId: true,
+  boardSavesThisWeek: true,
+  routineMinutesThisWeek: true,
+  interviewQuestionsToday: true,
+  dressTryOnsThisMonth: true,
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).pick({
+  userId: true,
+  status: true,
+  planType: true,
+  stripeSubscriptionId: true,
+  stripeCustomerId: true,
+  currentPeriodStart: true,
+  currentPeriodEnd: true,
+  cancelAtPeriodEnd: true,
+  premiumCodeId: true,
+});
+
+// Types
+export type PremiumCode = typeof premiumCodes.$inferSelect;
+export type PremiumCodeUsage = typeof premiumCodeUsage.$inferSelect;
+export type UserUsage = typeof userUsage.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertPremiumCode = z.infer<typeof insertPremiumCodeSchema>;
+export type InsertUserUsage = z.infer<typeof insertUserUsageSchema>;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+// Schema for premium code validation
+export const premiumCodeValidationSchema = z.object({
+  code: z.string().min(1, "Code is required"),
+});
+
+export type PremiumCodeValidation = z.infer<typeof premiumCodeValidationSchema>;

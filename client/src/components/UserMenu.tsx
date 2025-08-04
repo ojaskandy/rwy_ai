@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSubscription } from '@/hooks/use-subscription';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings, Loader2, Trash2, Key, Shield } from 'lucide-react';
+import { LogOut, User, Settings, Loader2, Trash2, Key, Shield, Crown, ArrowUpCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ import { supabase } from '@/lib/supabase';
 
 const UserMenu: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { subscription, usage, isLoading } = useSubscription();
   const [signingOut, setSigningOut] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -122,9 +124,46 @@ const UserMenu: React.FC = () => {
             <p className="text-xs leading-none text-gray-600">
               {user.email}
             </p>
+            {/* Subscription Status */}
+            <div className="flex items-center gap-1 mt-2">
+              {subscription?.status === 'premium' || subscription?.status === 'premium_code' ? (
+                <>
+                  <Crown className="h-3 w-3 text-yellow-600" />
+                  <span className="text-xs font-medium text-yellow-600">Premium</span>
+                </>
+              ) : (
+                <>
+                  <div className="h-3 w-3 rounded-full bg-gray-400" />
+                  <span className="text-xs font-medium text-gray-500">Basic</span>
+                </>
+              )}
+            </div>
+            {/* Usage Info for Basic Users */}
+            {subscription?.status === 'basic' && usage && (
+              <div className="text-xs text-gray-500 space-y-0.5 mt-1">
+                <div>Images: {usage.boardSavesThisWeek}/10 this week</div>
+                <div>Recording: {usage.routineMinutesThisWeek}/7 min this week</div>
+                <div>Questions: {usage.interviewQuestionsToday}/3 today</div>
+                <div>Try-ons: {usage.dressTryOnsThisMonth}/10 this month</div>
+              </div>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {/* Upgrade Option for Basic Users */}
+        {subscription?.status === 'basic' && (
+          <>
+            <DropdownMenuItem 
+              className="cursor-pointer text-blue-600 hover:bg-blue-50"
+              onClick={() => window.location.href = '/pricing'}
+            >
+              <ArrowUpCircle className="mr-2 h-4 w-4 text-blue-600" />
+              <span>Upgrade to Premium</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
           <User className="mr-2 h-4 w-4 text-gray-600" />
           <span>Profile</span>

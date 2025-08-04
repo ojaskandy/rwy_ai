@@ -645,7 +645,7 @@ export default function WelcomePage() {
               <p className="text-xl text-gray-300 mb-8">
                 Give your child the competitive edge with AI-powered pageant training
                 </p>
-                <Link href="/early">
+                <Link href="/auth">
                 <Button 
                   className="bg-white text-black hover:bg-gray-100 px-8 py-3"
                 >
@@ -712,7 +712,7 @@ export default function WelcomePage() {
               whileTap={{ scale: 0.95 }}
               className="relative"
             >
-              <Link href="/early">
+              <Link href="/auth">
                 <Button 
                   className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 px-12 py-6 text-2xl font-bold rounded-2xl shadow-2xl border-2 border-white/20 transform transition-all duration-300 hover:shadow-3xl"
                 >

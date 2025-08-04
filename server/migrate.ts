@@ -1,6 +1,5 @@
 import 'dotenv/config';
-import { sql } from "drizzle-orm";
-import { db } from "./db";
+import { supabase } from "./db";
 
 // Define the migrations to run
 async function runMigrations() {
@@ -8,18 +7,20 @@ async function runMigrations() {
     console.log("Running migrations...");
 
     // Add lastPracticeDate, recordingsCount, goal, goalDueDate, createdAt to users table
-    await db.execute(sql`
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS last_practice_date TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS recordings_count INTEGER DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS goal TEXT DEFAULT '',
-      ADD COLUMN IF NOT EXISTS goal_due_date TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
-      ADD COLUMN IF NOT EXISTS belt TEXT DEFAULT 'white',
-      ADD COLUMN IF NOT EXISTS belt_name TEXT DEFAULT 'White Belt',
-      ADD COLUMN IF NOT EXISTS belt_level INTEGER DEFAULT 1,
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
-    `);
+    await supabase.rpc('exec_sql', {
+      sql_query: `
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS last_practice_date TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS recordings_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS goal TEXT DEFAULT '',
+        ADD COLUMN IF NOT EXISTS goal_due_date TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS belt TEXT DEFAULT 'white',
+        ADD COLUMN IF NOT EXISTS belt_name TEXT DEFAULT 'White Belt',
+        ADD COLUMN IF NOT EXISTS belt_level INTEGER DEFAULT 1,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+      `
+    });
     console.log("Updated users table");
 
     // Create userProfiles table
@@ -153,6 +154,151 @@ async function runMigrations() {
       ON CONFLICT (pose_name) DO NOTHING
     `);
     console.log("Inserted default pose references");
+
+    // SUBSCRIPTION SYSTEM MIGRATION - Add premium access codes, usage tracking, and subscription management
+    console.log("Running subscription system migration...");
+
+    // Create premium codes table for special access codes
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS premium_codes (
+        id SERIAL PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        description TEXT,
+        is_active BOOLEAN DEFAULT true,
+        usage_limit INTEGER, -- null = unlimited, number = max uses
+        used_count INTEGER DEFAULT 0,
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        created_by TEXT
+      )
+    `);
+    console.log("Created premium_codes table");
+
+    // Create premium code usage tracking
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS premium_code_usage (
+        id SERIAL PRIMARY KEY,
+        code_id INTEGER REFERENCES premium_codes(id) ON DELETE CASCADE NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+        used_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("Created premium_code_usage table");
+
+    // Create user usage tracking table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_usage (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+        
+        -- Board usage (weekly limit: 10 saves for basic users)
+        board_saves_this_week INTEGER DEFAULT 0,
+        board_saves_week_start TIMESTAMP DEFAULT NOW(),
+        
+        -- Routine usage (weekly limit: 7 minutes for basic users)
+        routine_minutes_this_week INTEGER DEFAULT 0,
+        routine_week_start TIMESTAMP DEFAULT NOW(),
+        
+        -- Interview coach (daily limit: 3 questions for basic users)
+        interview_questions_today INTEGER DEFAULT 0,
+        interview_questions_date TIMESTAMP DEFAULT NOW(),
+        
+        -- Dress try-on (monthly limit: 10 try-ons for basic users)
+        dress_tryons_this_month INTEGER DEFAULT 0,
+        dress_tryons_month_start TIMESTAMP DEFAULT NOW(),
+        
+        last_updated TIMESTAMP DEFAULT NOW(),
+        
+        -- Ensure one record per user
+        UNIQUE(user_id)
+      )
+    `);
+    console.log("Created user_usage table");
+
+    // Create subscriptions table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+        status TEXT NOT NULL, -- 'basic', 'premium', 'premium_code'
+        plan_type TEXT, -- 'monthly', 'yearly', 'code'
+        stripe_subscription_id TEXT,
+        stripe_customer_id TEXT,
+        current_period_start TIMESTAMP,
+        current_period_end TIMESTAMP,
+        cancel_at_period_end BOOLEAN DEFAULT false,
+        premium_code_id INTEGER REFERENCES premium_codes(id),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("Created subscriptions table");
+
+    // Create indexes for better performance
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_premium_codes_code ON premium_codes(code)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_premium_codes_active ON premium_codes(is_active)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_premium_code_usage_user ON premium_code_usage(user_id)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_premium_code_usage_code ON premium_code_usage(code_id)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_user_usage_user ON user_usage(user_id)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_subscription_id)
+    `);
+    console.log("Created subscription system indexes");
+
+    // Initialize user_usage records for existing users
+    await db.execute(sql`
+      INSERT INTO user_usage (user_id)
+      SELECT id FROM users
+      WHERE id NOT IN (SELECT user_id FROM user_usage WHERE user_id IS NOT NULL)
+    `);
+    console.log("Initialized user_usage records");
+
+    // Initialize subscriptions for existing users
+    await db.execute(sql`
+      INSERT INTO subscriptions (user_id, status, plan_type)
+      SELECT 
+        id,
+        CASE 
+          WHEN has_paid = true OR has_code_bypass = true THEN 'premium'
+          ELSE 'basic'
+        END as status,
+        CASE 
+          WHEN has_code_bypass = true THEN 'code'
+          WHEN has_paid = true THEN 'yearly' -- assume yearly for existing paid users
+          ELSE 'basic'
+        END as plan_type
+      FROM users
+      WHERE id NOT IN (SELECT user_id FROM subscriptions WHERE user_id IS NOT NULL)
+    `);
+    console.log("Initialized subscription records");
+
+    // Create some initial premium codes for testing
+    await db.execute(sql`
+      INSERT INTO premium_codes (code, description, is_active, usage_limit, created_by) VALUES
+      ('BETA2025', 'Beta tester access for 2025', true, null, 'system'),
+      ('INFLUENCER50', 'Influencer access code', true, 50, 'system'),
+      ('VIP100', 'VIP access for early adopters', true, 100, 'system')
+      ON CONFLICT (code) DO NOTHING
+    `);
+    console.log("Created initial premium codes");
+
+    console.log("Subscription system migration completed successfully");
 
     console.log("Migrations completed successfully");
   } catch (error) {

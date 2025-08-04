@@ -2156,6 +2156,353 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
+  // ==========================================
+  // SUBSCRIPTION & USAGE TRACKING ROUTES
+  // ==========================================
+  
+  // Import subscription utilities
+  const { 
+    getUserSubscription, 
+    getUserUsage, 
+    hasPremiumAccess, 
+    canUserPerformAction,
+    validatePremiumCode,
+    applyPremiumCode,
+    requireUsageLimit,
+    trackUsageAfterAction
+  } = await import('./lib/subscription.js');
+  
+  const { 
+    stripe, 
+    STRIPE_PLANS, 
+    createCustomer, 
+    createCheckoutSession, 
+    createBillingPortalSession 
+  } = await import('./lib/stripe.js');
+
+  // Get user's subscription status and usage
+  app.get("/api/subscription/status", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const [subscription, usage] = await Promise.all([
+        getUserSubscription(userId),
+        getUserUsage(userId)
+      ]);
+
+      const isPremium = hasPremiumAccess(subscription);
+
+      res.json({
+        subscription: subscription || { status: 'basic' },
+        usage: usage || {
+          boardSavesThisWeek: 0,
+          routineMinutesThisWeek: 0,
+          interviewQuestionsToday: 0,
+          dressTryOnsThisMonth: 0
+        },
+        isPremium,
+        limits: {
+          boardSavesWeekly: 10,
+          routineMinutesWeekly: 7,
+          interviewQuestionsDaily: 3,
+          dressTryOnsMonthly: 10
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ error: "Failed to fetch subscription status" });
+    }
+  });
+
+  // Check if user can perform specific action
+  app.post("/api/subscription/check-usage", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { action, amount = 1 } = req.body;
+      if (!action || !['board_save', 'routine_minute', 'interview_question', 'dress_tryon'].includes(action)) {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+
+      const result = await canUserPerformAction(userId, action, amount);
+      res.json(result);
+    } catch (error) {
+      console.error("Error checking usage:", error);
+      res.status(500).json({ error: "Failed to check usage" });
+    }
+  });
+
+  // Validate premium code
+  app.post("/api/subscription/validate-code", async (req: Request, res: Response) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ error: "Code is required" });
+      }
+
+      const result = await validatePremiumCode(code.trim().toUpperCase());
+      res.json(result);
+    } catch (error) {
+      console.error("Error validating code:", error);
+      res.status(500).json({ error: "Failed to validate code" });
+    }
+  });
+
+  // Apply premium code
+  app.post("/api/subscription/apply-code", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { code } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ error: "Code is required" });
+      }
+
+      const validation = await validatePremiumCode(code.trim().toUpperCase());
+      if (!validation.valid || !validation.codeId) {
+        return res.status(400).json({ error: validation.message || "Invalid code" });
+      }
+
+      const success = await applyPremiumCode(userId, validation.codeId);
+      if (!success) {
+        return res.status(500).json({ error: "Failed to apply code" });
+      }
+
+      res.json({ success: true, message: "Premium access activated!" });
+    } catch (error) {
+      console.error("Error applying premium code:", error);
+      res.status(500).json({ error: "Failed to apply code" });
+    }
+  });
+
+  // Create Stripe checkout session
+  app.post("/api/subscription/create-checkout", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const userEmail = req.user?.email;
+      const userName = req.user?.fullName;
+      
+      if (!userId || !userEmail) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { planType } = req.body; // 'monthly' or 'yearly'
+      if (!planType || !['monthly', 'yearly'].includes(planType)) {
+        return res.status(400).json({ error: "Invalid plan type" });
+      }
+
+      const priceId = planType === 'monthly' ? STRIPE_PLANS.MONTHLY : STRIPE_PLANS.YEARLY;
+
+      // Get or create Stripe customer
+      let stripeCustomerId = req.user?.stripeCustomerId;
+      if (!stripeCustomerId) {
+        const customer = await createCustomer(userEmail, userName);
+        stripeCustomerId = customer.id;
+        
+        // Update user record with Stripe customer ID
+        await supabase
+          .from('profiles')
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq('user_id', userId);
+      }
+
+      // Create checkout session
+      const session = await createCheckoutSession(
+        stripeCustomerId,
+        priceId,
+        `${req.headers.origin}/app?subscription=success`,
+        `${req.headers.origin}/pricing?subscription=cancelled`
+      );
+
+      res.json({ sessionId: session.id, url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Create billing portal session
+  app.post("/api/subscription/billing-portal", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const stripeCustomerId = req.user?.stripeCustomerId;
+      
+      if (!userId || !stripeCustomerId) {
+        return res.status(401).json({ error: "Authentication required or no subscription found" });
+      }
+
+      const session = await createBillingPortalSession(
+        stripeCustomerId,
+        `${req.headers.origin}/app`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating billing portal session:", error);
+      res.status(500).json({ error: "Failed to create billing portal session" });
+    }
+  });
+
+  // Stripe webhook endpoint
+  app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('Stripe webhook secret not configured');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
+    let event: any;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object;
+          
+          // Find user by Stripe customer ID
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('stripe_customer_id', subscription.customer)
+            .single();
+
+          if (userData) {
+            // Update subscription status
+            await supabase
+              .from('subscriptions')
+              .upsert([{
+                user_id: userData.user_id,
+                status: subscription.status === 'active' ? 'premium' : 'basic',
+                plan_type: subscription.items.data[0]?.price.id === STRIPE_PLANS.YEARLY ? 'yearly' : 'monthly',
+                stripe_subscription_id: subscription.id,
+                stripe_customer_id: subscription.customer,
+                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                cancel_at_period_end: subscription.cancel_at_period_end,
+                updated_at: new Date().toISOString(),
+              }]);
+          }
+          break;
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object;
+          
+          // Find user by Stripe customer ID
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('stripe_customer_id', subscription.customer)
+            .single();
+
+          if (userData) {
+            // Update subscription to basic
+            await supabase
+              .from('subscriptions')
+              .update({
+                status: 'basic',
+                plan_type: 'basic',
+                stripe_subscription_id: null,
+                current_period_end: null,
+                cancel_at_period_end: false,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', userData.id);
+          }
+          break;
+        }
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ error: 'Failed to process webhook' });
+    }
+  });
+
+  // Onboarding completion routes
+  app.get("/api/onboarding/status", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed, onboarding_data')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error checking onboarding status:", error);
+        return res.status(500).json({ error: "Failed to check onboarding status" });
+      }
+
+      res.json({ 
+        completed: data?.onboarding_completed || false,
+        data: data?.onboarding_data || null
+      });
+    } catch (error) {
+      console.error("Error checking onboarding status:", error);
+      res.status(500).json({ error: "Failed to check onboarding status" });
+    }
+  });
+
+  app.post("/api/onboarding/complete", async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { answers } = req.body;
+      if (!answers || typeof answers !== 'object') {
+        return res.status(400).json({ error: "Onboarding answers are required" });
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          onboarding_completed: true,
+          onboarding_data: answers,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error("Error completing onboarding:", error);
+        return res.status(500).json({ error: "Failed to save onboarding data" });
+      }
+
+      res.json({ success: true, message: "Onboarding completed successfully" });
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      res.status(500).json({ error: "Failed to complete onboarding" });
+    }
+  });
+
      const server = createServer(app);
    return server;
 }

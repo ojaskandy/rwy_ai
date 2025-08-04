@@ -220,7 +220,7 @@ export default function Landing() {
             </div>
             
             <div className="mt-8 flex justify-center">
-              <Link to="/app">
+              <Link to="/auth">
                 <div className="inline-block relative group animate-fade-in">
                   <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-400 rounded-lg blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
                   <div className="relative px-12 py-6 bg-black border border-red-800/50 rounded-lg leading-none flex items-center">

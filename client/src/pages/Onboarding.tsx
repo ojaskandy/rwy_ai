@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { useOnboarding } from '@/hooks/use-onboarding';
 
 const onboardingSteps = [
   {
@@ -80,6 +81,9 @@ export default function Onboarding() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textInput, setTextInput] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const { completeOnboarding } = useOnboarding();
+  const [, setLocation] = useLocation();
 
 
   const handleStepAnswer = (answer: string) => {
@@ -100,6 +104,24 @@ export default function Onboarding() {
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       handleStepAnswer(textInput.trim());
+    }
+  };
+
+  const handleCompleteOnboarding = async () => {
+    setIsCompleting(true);
+    try {
+      // Save onboarding data to localStorage as backup
+      localStorage.setItem('onboardingAnswers', JSON.stringify(answers));
+      
+      // Complete onboarding and redirect to pricing
+      await completeOnboarding(answers);
+      setLocation('/pricing');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      // If there's an error, still redirect to pricing with localStorage backup
+      setLocation('/pricing');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -240,15 +262,15 @@ export default function Onboarding() {
           >
             {/* Big Beautiful Start Now Button */}
             <div className="mb-16">
-              <Link href="/pricing">
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-pink-400 to-pink-600 hover:from-pink-500 hover:to-pink-700 text-white px-16 py-6 text-3xl font-bold rounded-3xl shadow-2xl transition-all duration-300 transform hover:shadow-3xl"
-                >
-                  Start Now
-                </motion.button>
-              </Link>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleCompleteOnboarding}
+                disabled={isCompleting}
+                className="bg-gradient-to-r from-pink-400 to-pink-600 hover:from-pink-500 hover:to-pink-700 text-white px-16 py-6 text-3xl font-bold rounded-3xl shadow-2xl transition-all duration-300 transform hover:shadow-3xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCompleting ? 'Saving...' : 'Start Now'}
+              </motion.button>
             </div>
 
             {/* Arshia's Speech Bubble - EXACT copy from welcome page */}
