@@ -251,26 +251,20 @@ export default function Onboarding() {
               </Link>
             </div>
 
-            {/* Arshia's Speech Bubble - Exact style from welcome page */}
+            {/* Arshia's Speech Bubble - Smaller and slides in from side */}
             <motion.div
-              initial={{ opacity: 0, x: -100, rotate: -5 }}
-              animate={{ opacity: 1, x: 0, rotate: 2 }}
-              transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
-              whileHover={{ scale: 1.05, rotate: -1 }}
-              className="absolute -right-8 top-20 max-w-2xl"
+              initial={{ opacity: 0, x: 200 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
+              className="absolute -right-4 top-32 max-w-xs"
             >
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-pink-200">
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">💫</div>
-                  <div>
-                    <p className="text-2xl text-gray-700 leading-relaxed">
-                      "This is the <span className="text-pink-600 font-bold bg-pink-100 px-2 py-1 rounded-lg">unfair advantage</span> you've been looking for."
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right mt-4">
-                  <p className="font-bold text-gray-800">Arshia</p>
-                  <p className="text-sm text-gray-500">Miss Teen India USA 2024</p>
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-pink-200">
+                <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                  "This is the <span className="text-pink-600 font-semibold">unfair advantage</span> you've been looking for."
+                </p>
+                <div className="text-right">
+                  <p className="font-bold text-gray-800 text-xs">Arshia</p>
+                  <p className="text-xs text-gray-500">Miss Teen India USA 2024</p>
                 </div>
               </div>
             </motion.div>
