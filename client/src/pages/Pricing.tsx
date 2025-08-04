@@ -126,10 +126,10 @@ export default function Pricing() {
             
             {/* Basic Plan */}
             <motion.div
-              initial={{ opacity: 0, y: 50, rotate: -2 }}
-              animate={{ opacity: 1, y: 0, rotate: -1 }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              whileHover={{ scale: 1.02, rotate: 0 }}
+              whileHover={{ scale: 1.02 }}
               className="relative"
             >
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-gray-200 h-full">
@@ -166,10 +166,10 @@ export default function Pricing() {
 
             {/* Premium Plan */}
             <motion.div
-              initial={{ opacity: 0, y: 50, rotate: 2 }}
-              animate={{ opacity: 1, y: 0, rotate: 1 }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              whileHover={{ scale: 1.05, rotate: -1 }}
+              whileHover={{ scale: 1.05 }}
               className="relative"
             >
               {/* Premium Glow Effect */}
@@ -258,27 +258,6 @@ export default function Pricing() {
               </div>
             </motion.div>
           </div>
-
-          {/* Social Proof */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="text-center mt-16"
-          >
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-pink-200 max-w-2xl mx-auto">
-              <div className="flex items-center justify-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <blockquote className="text-xl text-gray-700 italic mb-4">
-                "I went from nervous contestant to confident queen in just 3 months. The AI coaching is like having a personal pageant expert 24/7."
-              </blockquote>
-              <div className="font-semibold text-gray-800">Sarah M.</div>
-              <div className="text-gray-600">Miss California 2024 Winner</div>
-            </div>
-          </motion.div>
 
           {/* Footer */}
           <div className="text-center mt-16 text-gray-500 text-sm">

@@ -33,7 +33,7 @@ import ResetPassword from "@/pages/ResetPassword";
 
 function Router() {
   const [location] = useLocation();
-  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome') && !location.includes('/onboarding');
+  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome') && !location.includes('/onboarding') && !location.includes('/pricing');
 
   return (
     <>
