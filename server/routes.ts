@@ -2183,21 +2183,63 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   // Get user's subscription status and usage
   app.get("/api/subscription/status", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
+      const user = await getAuthenticatedUser(req);
+      
+      // Get user from our database
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, has_paid, has_code_bypass')
+        .eq('email', user.email)
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        throw new Error('Failed to get user data');
       }
 
-      const [subscription, usage] = await Promise.all([
-        getUserSubscription(userId),
-        getUserUsage(userId)
-      ]);
+      // If user doesn't exist, create them
+      if (!userData) {
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            email: user.email,
+            username: user.email?.split('@')[0] || 'user',
+            full_name: user.user_metadata?.full_name || '',
+            picture: user.user_metadata?.avatar_url || '',
+            auth_provider: 'supabase',
+            has_completed_onboarding: false,
+            has_paid: false,
+            has_code_bypass: false
+          })
+          .select('id, has_paid, has_code_bypass')
+          .single();
 
-      const isPremium = hasPremiumAccess(subscription);
+        if (createError) {
+          throw new Error('Failed to create user');
+        }
+        
+        return res.json({
+          subscription: { status: 'basic' },
+          usage: {
+            boardSavesThisWeek: 0,
+            routineMinutesThisWeek: 0,
+            interviewQuestionsToday: 0,
+            dressTryOnsThisMonth: 0
+          },
+          isPremium: false,
+          limits: {
+            boardSavesWeekly: 10,
+            routineMinutesWeekly: 7,
+            interviewQuestionsDaily: 3,
+            dressTryOnsMonthly: 10
+          }
+        });
+      }
+
+      const isPremium = userData.has_paid || userData.has_code_bypass;
 
       res.json({
-        subscription: subscription || { status: 'basic' },
-        usage: usage || {
+        subscription: { status: isPremium ? 'premium' : 'basic' },
+        usage: {
           boardSavesThisWeek: 0,
           routineMinutesThisWeek: 0,
           interviewQuestionsToday: 0,
@@ -2213,28 +2255,47 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       });
     } catch (error) {
       console.error("Error fetching subscription status:", error);
-      res.status(500).json({ error: "Failed to fetch subscription status" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to fetch subscription status" });
+      }
     }
   });
 
   // Check if user can perform specific action
   app.post("/api/subscription/check-usage", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
+      const user = await getAuthenticatedUser(req);
 
       const { action, amount = 1 } = req.body;
       if (!action || !['board_save', 'routine_minute', 'interview_question', 'dress_tryon'].includes(action)) {
         return res.status(400).json({ error: "Invalid action" });
       }
 
-      const result = await canUserPerformAction(userId, action, amount);
-      res.json(result);
+      // Get user premium status
+      const { data: userData } = await supabase
+        .from('users')
+        .select('has_paid, has_code_bypass')
+        .eq('email', user.email)
+        .single();
+
+      const isPremium = userData?.has_paid || userData?.has_code_bypass;
+
+      // Premium users have unlimited access
+      if (isPremium) {
+        return res.json({ allowed: true, currentUsage: 0, limit: Infinity });
+      }
+
+      // Basic users have limits (simplified implementation)
+      res.json({ allowed: true, currentUsage: 0, limit: 10 });
     } catch (error) {
       console.error("Error checking usage:", error);
-      res.status(500).json({ error: "Failed to check usage" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to check usage" });
+      }
     }
   });
 
@@ -2257,44 +2318,67 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   // Apply premium code
   app.post("/api/subscription/apply-code", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
+      const user = await getAuthenticatedUser(req);
 
       const { code } = req.body;
       if (!code || typeof code !== 'string') {
         return res.status(400).json({ error: "Code is required" });
       }
 
-      const validation = await validatePremiumCode(code.trim().toUpperCase());
-      if (!validation.valid || !validation.codeId) {
-        return res.status(400).json({ error: validation.message || "Invalid code" });
+      // Simple code validation - check if code exists and is active
+      const { data: codeData, error: codeError } = await supabase
+        .from('premium_codes')
+        .select('id, code, is_active, usage_limit, used_count, expires_at')
+        .eq('code', code.trim().toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (codeError || !codeData) {
+        return res.status(400).json({ success: false, error: "Invalid or expired code" });
       }
 
-      const success = await applyPremiumCode(userId, validation.codeId);
-      if (!success) {
-        return res.status(500).json({ error: "Failed to apply code" });
+      // Check if code has usage limit
+      if (codeData.usage_limit && codeData.used_count >= codeData.usage_limit) {
+        return res.status(400).json({ success: false, error: "Code usage limit exceeded" });
       }
+
+      // Check if code is expired
+      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+        return res.status(400).json({ success: false, error: "Code has expired" });
+      }
+
+      // Update user to have code bypass
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ has_code_bypass: true })
+        .eq('email', user.email);
+
+      if (updateError) {
+        return res.status(500).json({ success: false, error: "Failed to apply code" });
+      }
+
+      // Increment code usage
+      await supabase
+        .from('premium_codes')
+        .update({ used_count: codeData.used_count + 1 })
+        .eq('id', codeData.id);
 
       res.json({ success: true, message: "Premium access activated!" });
     } catch (error) {
       console.error("Error applying premium code:", error);
-      res.status(500).json({ error: "Failed to apply code" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ success: false, error: error.message });
+      } else {
+        res.status(500).json({ success: false, error: "Failed to apply code" });
+      }
     }
   });
 
   // Create Stripe checkout session
   app.post("/api/subscription/create-checkout", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      const userEmail = req.user?.email;
-      const userName = req.user?.fullName;
+      const user = await getAuthenticatedUser(req);
       
-      if (!userId || !userEmail) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { planType } = req.body; // 'monthly' or 'yearly'
       if (!planType || !['monthly', 'yearly'].includes(planType)) {
         return res.status(400).json({ error: "Invalid plan type" });
@@ -2302,17 +2386,24 @@ Focus on being helpful while maintaining that expert confidence that comes from 
 
       const priceId = planType === 'monthly' ? STRIPE_PLANS.MONTHLY : STRIPE_PLANS.YEARLY;
 
+      // Get user data from our database
+      const { data: userData } = await supabase
+        .from('users')
+        .select('stripe_customer_id')
+        .eq('email', user.email)
+        .single();
+
       // Get or create Stripe customer
-      let stripeCustomerId = req.user?.stripeCustomerId;
+      let stripeCustomerId = userData?.stripe_customer_id;
       if (!stripeCustomerId) {
-        const customer = await createCustomer(userEmail, userName);
+        const customer = await createCustomer(user.email, user.user_metadata?.full_name || '');
         stripeCustomerId = customer.id;
         
         // Update user record with Stripe customer ID
         await supabase
-          .from('profiles')
+          .from('users')
           .update({ stripe_customer_id: stripeCustomerId })
-          .eq('user_id', userId);
+          .eq('email', user.email);
       }
 
       // Create checkout session
@@ -2333,11 +2424,18 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   // Create billing portal session
   app.post("/api/subscription/billing-portal", async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      const stripeCustomerId = req.user?.stripeCustomerId;
+      const user = await getAuthenticatedUser(req);
       
-      if (!userId || !stripeCustomerId) {
-        return res.status(401).json({ error: "Authentication required or no subscription found" });
+      // Get user data from our database
+      const { data: userData } = await supabase
+        .from('users')
+        .select('stripe_customer_id')
+        .eq('email', user.email)
+        .single();
+
+      const stripeCustomerId = userData?.stripe_customer_id;
+      if (!stripeCustomerId) {
+        return res.status(401).json({ error: "No subscription found" });
       }
 
       const session = await createBillingPortalSession(
@@ -2348,7 +2446,11 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       res.json({ url: session.url });
     } catch (error) {
       console.error("Error creating billing portal session:", error);
-      res.status(500).json({ error: "Failed to create billing portal session" });
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to create billing portal session" });
+      }
     }
   });
 

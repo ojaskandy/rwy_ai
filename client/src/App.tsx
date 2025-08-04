@@ -25,7 +25,6 @@ import GlobalDock from "@/components/GlobalDock";
 import RunwayAIWelcome from "@/pages/RunwayAIWelcome";
 import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import Privacy from "@/pages/Privacy";
 import Pricing from "@/pages/Pricing";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
