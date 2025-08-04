@@ -251,42 +251,44 @@ export default function Onboarding() {
               </Link>
             </div>
 
-            {/* Arshia's Speech Bubble - Swoops in from side */}
+            {/* Arshia's Speech Bubble - Exact style from welcome page */}
             <motion.div
-              initial={{ x: 300, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.8, type: "spring" }}
-              className="absolute -right-4 top-32 max-w-sm"
+              initial={{ opacity: 0, x: -100, rotate: -5 }}
+              animate={{ opacity: 1, x: 0, rotate: 2 }}
+              transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
+              whileHover={{ scale: 1.05, rotate: -1 }}
+              className="absolute -right-8 top-20 max-w-2xl"
             >
-              <div className="relative bg-white rounded-3xl p-6 shadow-2xl border border-gray-100">
-                {/* Speech bubble tail */}
-                <div className="absolute -left-2 top-6 w-4 h-4 bg-white border-l border-b border-gray-100 transform rotate-45"></div>
-                
-                <p className="text-gray-700 text-base leading-relaxed mb-4">
-                  "This is the <span className="text-pink-600 font-semibold">unfair advantage</span> you've been looking for."
-                </p>
-                
-                <div className="text-right">
-                  <p className="font-bold text-gray-800 text-sm">Arshia</p>
-                  <p className="text-xs text-gray-500">Miss Teen India USA 2024</p>
+              <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-pink-200">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">💫</div>
+                  <div>
+                    <p className="text-2xl text-gray-700 leading-relaxed">
+                      "This is the <span className="text-pink-600 font-bold bg-pink-100 px-2 py-1 rounded-lg">unfair advantage</span> you've been looking for."
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right mt-4">
+                  <p className="font-bold text-gray-800">Arshia</p>
+                  <p className="text-sm text-gray-500">Miss Teen India USA 2024</p>
                 </div>
               </div>
             </motion.div>
-
-            {/* Footer Links */}
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-8 text-sm text-gray-500">
-              <button 
-                onClick={() => window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,ojaskandy@gmail.com?subject=Runway AI Contact'}
-                className="hover:text-pink-600 transition-colors"
-              >
-                Contact Us
-              </button>
-              <Link href="/privacy" className="hover:text-pink-600 transition-colors">
-                Learn about your privacy
-              </Link>
-            </div>
           </motion.div>
         )}
+      </div>
+
+      {/* Footer Links - Moved to bottom */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex gap-8 text-sm text-gray-500 z-50">
+        <button 
+          onClick={() => window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,ojaskandy@gmail.com?subject=Runway AI Contact'}
+          className="hover:text-pink-600 transition-colors"
+        >
+          Contact Us
+        </button>
+        <Link href="/privacy" className="hover:text-pink-600 transition-colors">
+          Learn about your privacy
+        </Link>
       </div>
     </div>
   );
