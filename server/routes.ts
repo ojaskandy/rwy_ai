@@ -39,9 +39,9 @@ const DEFAULT_GUEST_USER = {
   authProvider: "guest",
   profileCompleted: true,
   taekwondoExperience: "beginner",
-  hasCompletedOnboarding: true,
-  hasPaid: true, // Give full access to guest users
-  hasCodeBypass: true,
+  hasCompletedOnboarding: false, // Guest users should see onboarding
+  hasPaid: false, // Guest users don't have paid access by default
+  hasCodeBypass: false, // No code bypass for guests
   stripeCustomerId: null,
   stripeSubscriptionId: null,
   createdAt: new Date(),
@@ -2184,82 +2184,61 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   app.get("/api/subscription/status", async (req: Request, res: Response) => {
     try {
       const user = await getAuthenticatedUser(req);
-      
-      // Get user from our database
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, has_paid, has_code_bypass')
-        .eq('email', user.email)
+
+      // Check for an active subscription in the 'subscriptions' table
+      const { data: subscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['premium', 'active']) // Standard active statuses
         .single();
 
-      if (userError && userError.code !== 'PGRST116') {
-        throw new Error('Failed to get user data');
+      if (subError && subError.code !== 'PGRST116') { // Ignore "not found" errors
+        console.error('Error fetching subscription:', subError.message);
+        return res.status(500).json({ error: 'Failed to fetch subscription status.' });
       }
 
-      // If user doesn't exist, create them
-      if (!userData) {
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert({
-            email: user.email,
-            username: user.email?.split('@')[0] || 'user',
-            full_name: user.user_metadata?.full_name || '',
-            picture: user.user_metadata?.avatar_url || '',
-            auth_provider: 'supabase',
-            has_completed_onboarding: false,
-            has_paid: false,
-            has_code_bypass: false
-          })
-          .select('id, has_paid, has_code_bypass')
-          .single();
-
-        if (createError) {
-          throw new Error('Failed to create user');
-        }
-        
+      if (subscription) {
         return res.json({
-          subscription: { status: 'basic' },
-          usage: {
-            boardSavesThisWeek: 0,
-            routineMinutesThisWeek: 0,
-            interviewQuestionsToday: 0,
-            dressTryOnsThisMonth: 0
-          },
-          isPremium: false,
-          limits: {
-            boardSavesWeekly: 10,
-            routineMinutesWeekly: 7,
-            interviewQuestionsDaily: 3,
-            dressTryOnsMonthly: 10
-          }
+          status: subscription.status,
+          planType: subscription.plan_type,
+          isPremium: true,
         });
       }
 
-      const isPremium = userData.has_paid || userData.has_code_bypass;
+      // If no subscription, check for a premium code usage
+      const { data: codeUsage, error: codeError } = await supabase
+        .from('premium_code_usage')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
 
-      res.json({
-        subscription: { status: isPremium ? 'premium' : 'basic' },
-        usage: {
-          boardSavesThisWeek: 0,
-          routineMinutesThisWeek: 0,
-          interviewQuestionsToday: 0,
-          dressTryOnsThisMonth: 0
-        },
-        isPremium,
-        limits: {
-          boardSavesWeekly: 10,
-          routineMinutesWeekly: 7,
-          interviewQuestionsDaily: 3,
-          dressTryOnsMonthly: 10
-        }
-      });
-    } catch (error) {
-      console.error("Error fetching subscription status:", error);
-      if (error instanceof Error && error.message.includes("token")) {
-        res.status(401).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Failed to fetch subscription status" });
+      if (codeError) {
+        // Log the error but don't block the user
+        console.error('Error checking premium code usage:', codeError.message);
       }
+
+      if (codeUsage && codeUsage.length > 0) {
+        return res.json({
+          status: 'premium_code',
+          planType: 'code',
+          isPremium: true,
+        });
+      }
+
+      // Default to basic if no active subscription or code is found
+      res.json({
+        status: 'basic',
+        planType: 'free',
+        isPremium: false,
+      });
+
+    } catch (error) {
+      console.error("Error in /api/subscription/status:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        return res.status(401).json({ error: error.message });
+      }
+      res.status(500).json({ error: "An internal server error occurred." });
     }
   });
 
@@ -2562,53 +2541,47 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     try {
       const user = await getAuthenticatedUser(req);
       
-      // First check if user exists in our users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('has_completed_onboarding, has_paid, has_code_bypass')
-        .eq('email', user.email)
+      // Check if user profile exists in profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('onboarding_completed, onboarding_data')
+        .eq('user_id', user.id)
         .single();
 
-      if (userError && userError.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error("Error checking user in database:", userError);
+      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error("Error checking user profile:", profileError);
         return res.status(500).json({ error: "Failed to check onboarding status" });
       }
 
-      // If user doesn't exist in our users table, create them
-      if (!userData) {
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
+      // If profile doesn't exist, create it
+      if (!profileData) {
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
           .insert({
-            email: user.email,
-            username: user.email?.split('@')[0] || 'user',
-            full_name: user.user_metadata?.full_name || '',
-            picture: user.user_metadata?.avatar_url || '',
-            auth_provider: 'supabase',
-            has_completed_onboarding: false,
-            has_paid: false,
-            has_code_bypass: false
+            user_id: user.id,
+            onboarding_completed: false,
+            onboarding_data: null
           })
-          .select('has_completed_onboarding, has_paid, has_code_bypass')
+          .select('onboarding_completed, onboarding_data')
           .single();
 
         if (createError) {
-          console.error("Error creating user:", createError);
-          return res.status(500).json({ error: "Failed to create user" });
+          console.error("Error creating profile:", createError);
+          return res.status(500).json({ error: "Failed to create profile" });
         }
 
-        const completed = newUser.has_completed_onboarding || newUser.has_paid || newUser.has_code_bypass || false;
         return res.json({ 
-          completed: completed,
-          data: newUser
+          completed: false,
+          data: newProfile
         });
       }
 
-      // User has completed onboarding if they've filled out the form OR have paid OR have code bypass
-      const completed = userData.has_completed_onboarding || userData.has_paid || userData.has_code_bypass || false;
+      // User has completed onboarding if they've filled out the form
+      const completed = profileData.onboarding_completed || false;
 
       res.json({ 
         completed: completed,
-        data: userData
+        data: profileData
       });
     } catch (error) {
       console.error("Error checking onboarding status:", error);
@@ -2630,11 +2603,14 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       }
 
       const { error } = await supabase
-        .from('users')
-        .update({
-          has_completed_onboarding: true
-        })
-        .eq('email', user.email);
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          onboarding_completed: true,
+          onboarding_data: answers
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (error) {
         console.error("Error completing onboarding:", error);

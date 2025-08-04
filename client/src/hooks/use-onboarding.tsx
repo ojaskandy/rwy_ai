@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
+import { supabase } from '@/lib/supabase';
 
 export interface OnboardingData {
   end_goal?: string;
@@ -30,9 +31,19 @@ export function useOnboarding() {
 
     try {
       setIsLoading(true);
+      // Get the session token from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        console.error('No auth token available for onboarding check');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/onboarding/status', {
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -62,10 +73,18 @@ export function useOnboarding() {
     }
 
     try {
+      // Get the session token from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        throw new Error('No auth token available');
+      }
+
       const response = await fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ answers }),
