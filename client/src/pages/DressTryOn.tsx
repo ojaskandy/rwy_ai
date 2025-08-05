@@ -7,6 +7,8 @@ import {
   RefreshCw, ArrowLeft, Download
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useSubscription } from '@/hooks/use-subscription';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 
 // Virtual try-on interfaces (keeping all backend logic intact)
 interface TryOnResult {
@@ -80,6 +82,8 @@ const compressImage = (file: File): Promise<string> => {
 
 export default function DressTryOn() {
   const [, navigate] = useLocation();
+  const { checkUsage, limits } = useSubscription();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [userImageFile, setUserImageFile] = useState<File | null>(null);
   const [userImageUrl, setUserImageUrl] = useState<string>('');
@@ -179,6 +183,11 @@ export default function DressTryOn() {
 
   // Handle try-on with FashnAI integration (keeping all backend logic)
   const handleTryOn = async () => {
+    const usage = await checkUsage('dress_tryon');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
     const { personImage: personImg, garmentImage: garmentImg } = getCurrentImages();
     
     if (!personImg || !garmentImg) {
@@ -490,7 +499,15 @@ export default function DressTryOn() {
   }
 
   return (
-    <div className="min-h-screen p-4" style={{ backgroundColor: '#FFC5D3' }}>
+    <>
+      <LimitReachedModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="Dress Try-Ons"
+        limit={limits.dressTryOnsWeekly}
+        timePeriod="week"
+      />
+      <div className="min-h-screen p-4" style={{ backgroundColor: '#FFC5D3' }}>
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -758,5 +775,6 @@ export default function DressTryOn() {
         </AnimatePresence>
       </div>
     </div>
+    </>
   );
 } 

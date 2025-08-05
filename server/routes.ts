@@ -26,6 +26,13 @@ import { OpenAI } from 'openai';
 import Lmnt from 'lmnt-node';
 import * as fashnAI from './routes/fashnAI';
 import * as interview from './routes/interview';
+import * as billing from './routes/billing';
+import { 
+  requireUsageLimit, 
+  trackUsageAfterAction,
+  canUserPerformAction,
+  validatePremiumCode
+} from './lib/subscription';
 // import photoRoutes from './routes/photo'; // Now using inline routes
 
 
@@ -428,16 +435,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/fashn/test", fashnAI.testFashnAI);
   app.get("/api/fashn/credits", fashnAI.checkCredits);
   app.get("/api/fashn/status/:id", fashnAI.checkStatus);
-  app.post("/api/fashn/tryon", fashnAI.generateTryOn);
+  app.post("/api/fashn/tryon", requireUsageLimit('dress_tryon'), trackUsageAfterAction(), fashnAI.generateTryOn);
   app.post("/api/fashn/tryon-complete", fashnAI.runTryOnComplete);
 
   // Interview Coach routes
   app.get("/api/interview/test", interview.testConnection);
   app.post("/api/interview/transcribe", interview.transcribeAudio);
-  app.post("/api/interview/feedback", interview.generateFeedback);
+  app.post("/api/interview/feedback", requireUsageLimit('interview_question'), trackUsageAfterAction(), interview.generateFeedback);
+
+  // Billing routes
+  app.post("/api/billing/verify-code", billing.verifyCode);
 
   // Pageant Coaching endpoint - Real-time AI coaching with vision
-  app.post('/api/pageant-coaching', async (req, res) => {
+  app.post('/api/pageant-coaching', requireUsageLimit('walk_routine'), trackUsageAfterAction(), async (req, res) => {
     try {
       const { frames, isSequenceSummary = false } = req.body;
       console.log('Pageant Coaching - Received:', {
@@ -937,7 +947,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
-  app.post("/api/calendar/events", async (req, res) => {
+  app.post("/api/calendar/events", requireUsageLimit('calendar_event'), async (req, res) => {
     try {
       const user = await getAuthenticatedUser(req);
       
@@ -1561,7 +1571,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   });
 
   // Create new board image entry
-  app.post("/api/board/images", async (req, res) => {
+  app.post("/api/board/images", requireUsageLimit('board_save'), trackUsageAfterAction(), async (req, res) => {
     try {
       const user = await getAuthenticatedUser(req);
       const { url, title, description, category, tags, width, height } = req.body;
@@ -2160,18 +2170,6 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   // SUBSCRIPTION & USAGE TRACKING ROUTES
   // ==========================================
   
-  // Import subscription utilities
-  const { 
-    getUserSubscription, 
-    getUserUsage, 
-    hasPremiumAccess, 
-    canUserPerformAction,
-    validatePremiumCode,
-    applyPremiumCode,
-    requireUsageLimit,
-    trackUsageAfterAction
-  } = await import('./lib/subscription.js');
-  
   const { 
     stripe, 
     STRIPE_PLANS, 
@@ -2252,22 +2250,9 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(400).json({ error: "Invalid action" });
       }
 
-      // Get user premium status
-      const { data: userData } = await supabase
-        .from('users')
-        .select('has_paid, has_code_bypass')
-        .eq('email', user.email)
-        .single();
-
-      const isPremium = userData?.has_paid || userData?.has_code_bypass;
-
-      // Premium users have unlimited access
-      if (isPremium) {
-        return res.json({ allowed: true, currentUsage: 0, limit: Infinity });
-      }
-
-      // Basic users have limits (simplified implementation)
-      res.json({ allowed: true, currentUsage: 0, limit: 10 });
+      const usageStatus = await canUserPerformAction(user.id, action, amount);
+      res.json(usageStatus);
+      
     } catch (error) {
       console.error("Error checking usage:", error);
       if (error instanceof Error && error.message.includes("token")) {

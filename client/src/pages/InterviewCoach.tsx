@@ -7,6 +7,8 @@ import {
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useSubscription } from '@/hooks/use-subscription';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 
 // Interview question data - Real pageant questions
 const INTERVIEW_QUESTIONS = [
@@ -156,6 +158,9 @@ interface InterviewSession {
 
 export default function InterviewCoach() {
   const [, navigate] = useLocation();
+  const { checkUsage, limits } = useSubscription();
+  
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
   // Practice setup state
   const [mode, setMode] = useState<'question' | 'rounds'>('question');
@@ -219,7 +224,13 @@ export default function InterviewCoach() {
   }, []);
 
   // Start practice session
-  const startPractice = () => {
+  const startPractice = async () => {
+    const usage = await checkUsage('interview_question');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
+
     const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
     
     // For Questions mode: prepare one question at a time
@@ -520,7 +531,15 @@ export default function InterviewCoach() {
   const currentQuestionNumber = sessions.length + 1;
 
   return (
-    <div className="min-h-screen p-3" style={{ backgroundColor: '#FFC5D3' }}>
+    <>
+      <LimitReachedModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="Interview Questions"
+        limit={limits.interviewQuestionsWeekly}
+        timePeriod="week"
+      />
+      <div className="min-h-screen p-3" style={{ backgroundColor: '#FFC5D3' }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -1155,5 +1174,6 @@ export default function InterviewCoach() {
         </AnimatePresence>
       </div>
     </div>
+    </>
   );
 } 

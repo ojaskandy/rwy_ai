@@ -1,466 +1,247 @@
 import { supabase } from '../db';
 import { Request, Response, NextFunction } from 'express';
 
+// --- Interfaces and Constants ---
+
 export interface UserSubscription {
   status: 'basic' | 'premium' | 'premium_code';
-  planType?: string;
-  stripeSubscriptionId?: string;
-  currentPeriodEnd?: Date;
-  cancelAtPeriodEnd?: boolean;
-  premiumCodeId?: number;
 }
 
 export interface UserUsage {
-  boardSavesThisWeek: number;
-  routineMinutesThisWeek: number;
-  interviewQuestionsToday: number;
-  dressTryOnsThisMonth: number;
-  boardSavesWeekStart: Date;
-  routineWeekStart: Date;
-  interviewQuestionsDate: Date;
-  dressTryOnsMonthStart: Date;
+  dressTryOnsThisWeek: number;
+  dressTryOnsWeekStart: Date;
+  interviewQuestionsThisWeek: number;
+  interviewQuestionsWeekStart: Date;
+  boardSavesThisMonth: number;
+  boardSavesMonthStart: Date;
 }
 
-// Usage limits for basic users
+// Your new, specific usage limits
 export const USAGE_LIMITS = {
-  BOARD_SAVES_WEEKLY: 10,
-  ROUTINE_MINUTES_WEEKLY: 7,
-  INTERVIEW_QUESTIONS_DAILY: 3,
-  DRESS_TRYONS_MONTHLY: 10,
+  DRESS_TRYONS_WEEKLY: 3,
+  INTERVIEW_QUESTIONS_WEEKLY: 5,
+  BOARD_SAVES_MONTHLY: 10,
+  WALK_ROUTINES_MONTHLY: 5,
+  CALENDAR_EVENTS_TOTAL: 10,
 } as const;
 
-// Get user's subscription status
+// --- Core Subscription and Usage Functions ---
+
 export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('*')
+    .select('status')
     .eq('user_id', userId)
     .single();
 
   if (error || !data) {
-    console.error('Error fetching subscription:', error);
+    if (error && error.code !== 'PGRST116') console.error('Error fetching subscription:', error);
     return null;
   }
-
-  return {
-    status: data.status,
-    planType: data.plan_type,
-    stripeSubscriptionId: data.stripe_subscription_id,
-    currentPeriodEnd: data.current_period_end ? new Date(data.current_period_end) : undefined,
-    cancelAtPeriodEnd: data.cancel_at_period_end,
-    premiumCodeId: data.premium_code_id,
-  };
+  return { status: data.status as UserSubscription['status'] };
 }
 
-// Get user's current usage
-export async function getUserUsage(userId: string): Promise<UserUsage | null> {
-  const { data: initialData, error } = await supabase
-    .from('user_usage')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching usage:', error);
-    return null;
-  }
-
-  let usageData = initialData;
-  if (!initialData) {
-    // Create initial usage record
-    const { data: newData, error: createError } = await supabase
-      .from('user_usage')
-      .insert([{ user_id: userId }])
-      .select()
-      .single();
-
-    if (createError || !newData) {
-      console.error('Error creating usage record:', createError);
-      return null;
-    }
-    usageData = newData;
-  }
-
-  return {
-    boardSavesThisWeek: usageData.board_saves_this_week || 0,
-    routineMinutesThisWeek: usageData.routine_minutes_this_week || 0,
-    interviewQuestionsToday: usageData.interview_questions_today || 0,
-    dressTryOnsThisMonth: usageData.dress_tryons_this_month || 0,
-    boardSavesWeekStart: new Date(usageData.board_saves_week_start),
-    routineWeekStart: new Date(usageData.routine_week_start),
-    interviewQuestionsDate: new Date(usageData.interview_questions_date),
-    dressTryOnsMonthStart: new Date(usageData.dress_tryons_month_start),
-  };
-}
-
-// Check if user has premium access
 export function hasPremiumAccess(subscription: UserSubscription | null): boolean {
-  if (!subscription) return false;
-  
-  if (subscription.status === 'premium' || subscription.status === 'premium_code') {
-    // Check if subscription is still active
-    if (subscription.currentPeriodEnd && subscription.currentPeriodEnd < new Date()) {
-      return false;
-    }
-    return true;
-  }
-  
-  return false;
+  return subscription?.status === 'premium' || subscription?.status === 'premium_code';
 }
 
-// Check if user can perform an action
-export async function canUserPerformAction(
-  userId: string,
-  action: 'board_save' | 'routine_minute' | 'interview_question' | 'dress_tryon',
-  amount: number = 1
-): Promise<{ allowed: boolean; currentUsage: number; limit: number; resetDate?: Date }> {
+export async function getUserUsage(userId: string): Promise<UserUsage | null> {
+    const { data, error } = await supabase
+        .from('user_usage')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching usage:', error);
+        return null;
+    }
+
+    // If no usage record exists, create one
+    if (!data) {
+        const { data: newData, error: createError } = await supabase
+            .from('user_usage')
+            .insert({ user_id: userId })
+            .select()
+            .single();
+        
+        if (createError) {
+            console.error('Error creating usage record:', createError);
+            return null;
+        }
+        return {
+            dressTryOnsThisWeek: 0,
+            dressTryOnsWeekStart: new Date(),
+            interviewQuestionsThisWeek: 0,
+            interviewQuestionsWeekStart: new Date(),
+            boardSavesThisMonth: 0,
+            boardSavesMonthStart: new Date(),
+        };
+    }
+
+    return {
+        dressTryOnsThisWeek: data.dress_tryons_this_week,
+        dressTryOnsWeekStart: new Date(data.dress_tryons_week_start),
+        interviewQuestionsThisWeek: data.interview_questions_this_week,
+        interviewQuestionsWeekStart: new Date(data.interview_questions_week_start),
+        boardSavesThisMonth: data.board_saves_this_month,
+        boardSavesMonthStart: new Date(data.board_saves_month_start),
+    };
+}
+
+// --- Limit Enforcement Logic ---
+
+type ActionType = 'dress_tryon' | 'interview_question' | 'board_save' | 'walk_routine' | 'calendar_event';
+
+export async function canUserPerformAction(userId: string, action: ActionType): Promise<{ allowed: boolean; message?: string }> {
   const subscription = await getUserSubscription(userId);
-  const usage = await getUserUsage(userId);
-
-  // Premium users have unlimited access
   if (hasPremiumAccess(subscription)) {
-    return { allowed: true, currentUsage: 0, limit: Infinity };
+    return { allowed: true };
   }
 
-  if (!usage) {
-    return { allowed: false, currentUsage: 0, limit: 0 };
-  }
+  const usage = await getUserUsage(userId);
+  const now = new Date();
 
-  // Check specific limits for basic users
   switch (action) {
-    case 'board_save':
-      const weeksSinceStart = Math.floor((Date.now() - usage.boardSavesWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weeksSinceStart >= 1) {
-        // Reset weekly counter
-        await resetWeeklyUsage(userId, 'board_saves');
-        return { 
-          allowed: amount <= USAGE_LIMITS.BOARD_SAVES_WEEKLY, 
-          currentUsage: 0, 
-          limit: USAGE_LIMITS.BOARD_SAVES_WEEKLY,
-          resetDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000))
-        };
+    case 'dress_tryon': {
+      const weekStart = usage?.dressTryOnsWeekStart || now;
+      if (now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
+        await supabase.from('user_usage').update({ dress_tryons_this_week: 0, dress_tryons_week_start: now }).eq('user_id', userId);
+        return { allowed: true };
       }
-      return { 
-        allowed: usage.boardSavesThisWeek + amount <= USAGE_LIMITS.BOARD_SAVES_WEEKLY, 
-        currentUsage: usage.boardSavesThisWeek, 
-        limit: USAGE_LIMITS.BOARD_SAVES_WEEKLY,
-        resetDate: new Date(usage.boardSavesWeekStart.getTime() + (7 * 24 * 60 * 60 * 1000))
-      };
-
-    case 'routine_minute':
-      const routineWeeksSinceStart = Math.floor((Date.now() - usage.routineWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (routineWeeksSinceStart >= 1) {
-        await resetWeeklyUsage(userId, 'routine_minutes');
-        return { 
-          allowed: amount <= USAGE_LIMITS.ROUTINE_MINUTES_WEEKLY, 
-          currentUsage: 0, 
-          limit: USAGE_LIMITS.ROUTINE_MINUTES_WEEKLY,
-          resetDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000))
-        };
-      }
-      return { 
-        allowed: usage.routineMinutesThisWeek + amount <= USAGE_LIMITS.ROUTINE_MINUTES_WEEKLY, 
-        currentUsage: usage.routineMinutesThisWeek, 
-        limit: USAGE_LIMITS.ROUTINE_MINUTES_WEEKLY,
-        resetDate: new Date(usage.routineWeekStart.getTime() + (7 * 24 * 60 * 60 * 1000))
-      };
-
-    case 'interview_question':
-      const today = new Date();
-      const usageDate = new Date(usage.interviewQuestionsDate);
-      if (today.toDateString() !== usageDate.toDateString()) {
-        // Reset daily counter
-        await resetDailyUsage(userId, 'interview_questions');
-        return { 
-          allowed: amount <= USAGE_LIMITS.INTERVIEW_QUESTIONS_DAILY, 
-          currentUsage: 0, 
-          limit: USAGE_LIMITS.INTERVIEW_QUESTIONS_DAILY,
-          resetDate: new Date(today.getTime() + (24 * 60 * 60 * 1000))
-        };
-      }
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return { 
-        allowed: usage.interviewQuestionsToday + amount <= USAGE_LIMITS.INTERVIEW_QUESTIONS_DAILY, 
-        currentUsage: usage.interviewQuestionsToday, 
-        limit: USAGE_LIMITS.INTERVIEW_QUESTIONS_DAILY,
-        resetDate: tomorrow
-      };
-
-    case 'dress_tryon':
-      const monthsSinceStart = Math.floor((Date.now() - usage.dressTryOnsMonthStart.getTime()) / (30 * 24 * 60 * 60 * 1000));
-      if (monthsSinceStart >= 1) {
-        await resetMonthlyUsage(userId, 'dress_tryons');
-        return { 
-          allowed: amount <= USAGE_LIMITS.DRESS_TRYONS_MONTHLY, 
-          currentUsage: 0, 
-          limit: USAGE_LIMITS.DRESS_TRYONS_MONTHLY,
-          resetDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
-        };
-      }
-      return { 
-        allowed: usage.dressTryOnsThisMonth + amount <= USAGE_LIMITS.DRESS_TRYONS_MONTHLY, 
-        currentUsage: usage.dressTryOnsThisMonth, 
-        limit: USAGE_LIMITS.DRESS_TRYONS_MONTHLY,
-        resetDate: new Date(usage.dressTryOnsMonthStart.getTime() + (30 * 24 * 60 * 60 * 1000))
-      };
-
-    default:
-      return { allowed: false, currentUsage: 0, limit: 0 };
-  }
-}
-
-// Track usage
-export async function trackUsage(
-  userId: string,
-  action: 'board_save' | 'routine_minute' | 'interview_question' | 'dress_tryon',
-  amount: number = 1
-): Promise<boolean> {
-  const canPerform = await canUserPerformAction(userId, action, amount);
-  
-  if (!canPerform.allowed) {
-    return false;
-  }
-
-  let updateField: string;
-  switch (action) {
-    case 'board_save':
-      updateField = 'board_saves_this_week';
-      break;
-    case 'routine_minute':
-      updateField = 'routine_minutes_this_week';
-      break;
-    case 'interview_question':
-      updateField = 'interview_questions_today';
-      break;
-    case 'dress_tryon':
-      updateField = 'dress_tryons_this_month';
-      break;
-    default:
-      return false;
-  }
-
-  // Get current value first, then increment
-  const { data: currentUsage, error: fetchError } = await supabase
-    .from('user_usage')
-    .select(updateField)
-    .eq('user_id', userId)
-    .single();
-
-  if (fetchError || !currentUsage) {
-    console.error('Error fetching current usage:', fetchError);
-    return false;
-  }
-
-  const currentValue = (currentUsage as any)[updateField] || 0;
-  const { error } = await supabase
-    .from('user_usage')
-    .update({
-      [updateField]: currentValue + amount,
-      last_updated: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
-
-  if (error) {
-    console.error('Error tracking usage:', error);
-    return false;
-  }
-
-  return true;
-}
-
-// Reset usage counters
-async function resetWeeklyUsage(userId: string, type: 'board_saves' | 'routine_minutes') {
-  const updates: any = { last_updated: new Date().toISOString() };
-  
-  if (type === 'board_saves') {
-    updates.board_saves_this_week = 0;
-    updates.board_saves_week_start = new Date().toISOString();
-  } else {
-    updates.routine_minutes_this_week = 0;
-    updates.routine_week_start = new Date().toISOString();
-  }
-
-  await supabase
-    .from('user_usage')
-    .update(updates)
-    .eq('user_id', userId);
-}
-
-async function resetDailyUsage(userId: string, type: 'interview_questions') {
-  await supabase
-    .from('user_usage')
-    .update({
-      interview_questions_today: 0,
-      interview_questions_date: new Date().toISOString(),
-      last_updated: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
-}
-
-async function resetMonthlyUsage(userId: string, type: 'dress_tryons') {
-  await supabase
-    .from('user_usage')
-    .update({
-      dress_tryons_this_month: 0,
-      dress_tryons_month_start: new Date().toISOString(),
-      last_updated: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
-}
-
-// Middleware to check if user can perform action
-export function requireUsageLimit(action: 'board_save' | 'routine_minute' | 'interview_question' | 'dress_tryon', amount: number = 1) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return { allowed: (usage?.dressTryOnsThisWeek || 0) < USAGE_LIMITS.DRESS_TRYONS_WEEKLY };
     }
 
-    const canPerform = await canUserPerformAction(userId, action, amount);
-    
-    if (!canPerform.allowed) {
-      return res.status(403).json({
-        error: 'Usage limit exceeded',
-        message: `You've reached your ${action.replace('_', ' ')} limit`,
-        currentUsage: canPerform.currentUsage,
-        limit: canPerform.limit,
-        resetDate: canPerform.resetDate,
-        upgradeRequired: true
+    case 'interview_question': {
+        const weekStart = usage?.interviewQuestionsWeekStart || now;
+        if (now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
+            await supabase.from('user_usage').update({ interview_questions_this_week: 0, interview_questions_week_start: now }).eq('user_id', userId);
+            return { allowed: true };
+        }
+        return { allowed: (usage?.interviewQuestionsThisWeek || 0) < USAGE_LIMITS.INTERVIEW_QUESTIONS_WEEKLY };
+    }
+
+    case 'board_save': {
+        const monthStart = usage?.boardSavesMonthStart || now;
+        if (now.getMonth() !== monthStart.getMonth() || now.getFullYear() !== monthStart.getFullYear()) {
+            await supabase.from('user_usage').update({ board_saves_this_month: 0, board_saves_month_start: now }).eq('user_id', userId);
+            return { allowed: true };
+        }
+        return { allowed: (usage?.boardSavesThisMonth || 0) < USAGE_LIMITS.BOARD_SAVES_MONTHLY };
+    }
+      
+    case 'walk_routine': {
+      // This is a count of records in a given month, not a simple counter
+      const { count, error } = await supabase
+        .from('recordings') // Assuming 'recordings' table is for walk routines
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .gte('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
+
+      if (error) {
+        console.error('Error counting walk routines:', error);
+        return { allowed: false, message: 'Could not verify usage.' };
+      }
+      return { allowed: (count || 0) < USAGE_LIMITS.WALK_ROUTINES_MONTHLY };
+    }
+
+    case 'calendar_event': {
+      // This is a simple total count of active events
+      const { count, error } = await supabase
+        .from('calendar_events')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('completed', false); // Only count non-completed events
+
+      if (error) {
+        console.error('Error counting calendar events:', error);
+        return { allowed: false, message: 'Could not verify usage.' };
+      }
+      return { allowed: (count || 0) < USAGE_LIMITS.CALENDAR_EVENTS_TOTAL };
+    }
+
+    default:
+      return { allowed: false, message: 'Invalid action type.' };
+  }
+}
+
+// --- Middleware ---
+
+// This middleware should be placed before any route that performs a limited action.
+export function requireUsageLimit(action: ActionType) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user; // Assumes user is attached from a previous auth middleware
+    if (!user || !user.id) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const check = await canUserPerformAction(user.id, action);
+    if (check.allowed) {
+      // Attach action to request so we can track it after the request succeeds
+      (req as any).usageInfo = { action };
+      return next();
+    } else {
+      return res.status(403).json({ 
+        error: 'Usage limit exceeded.', 
+        message: check.message || 'You have reached the limit for this feature on the Basic plan.'
       });
     }
-
-    // Add usage info to request for tracking
-    req.usageInfo = { action, amount };
-    next();
   };
 }
 
-// Middleware to track usage after successful action
+// This middleware should be placed AFTER the main logic of a limited route.
+// It increments the usage counter only if the request was successful.
 export function trackUsageAfterAction() {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const originalSend = res.send;
-    
-    res.send = function(data) {
-      // Only track if the response was successful
-      if (res.statusCode >= 200 && res.statusCode < 300 && req.usageInfo && req.user?.id) {
-        trackUsage(req.user.id, req.usageInfo.action, req.usageInfo.amount)
-          .catch(console.error);
-      }
-      
-      return originalSend.call(this, data);
+    return async (req: Request, res: Response, next: NextFunction) => {
+        const user = (req as any).user;
+        const usageInfo = (req as any).usageInfo;
+
+        if (!user || !user.id || !usageInfo) return next();
+
+        const action = usageInfo.action;
+        let fieldToIncrement: keyof UserUsage | null = null;
+        
+        switch(action) {
+            case 'dress_tryon': fieldToIncrement = 'dressTryOnsThisWeek'; break;
+            case 'interview_question': fieldToIncrement = 'interviewQuestionsThisWeek'; break;
+            case 'board_save': fieldToIncrement = 'boardSavesThisMonth'; break;
+        }
+
+        // Only increment counters for actions tracked in the user_usage table
+        if (fieldToIncrement) {
+             const { error } = await supabase.rpc('increment_usage', {
+                user_id_in: user.id,
+                field_name: fieldToIncrement
+             });
+
+            if (error) {
+                console.error(`Failed to track usage for ${action}:`, error);
+            }
+        }
+        
+        next();
     };
-    
-    next();
-  };
 }
 
-// Validate premium code
-export async function validatePremiumCode(code: string): Promise<{ valid: boolean; codeId?: number; message?: string }> {
+// --- Premium Code Functions ---
+
+export async function validatePremiumCode(code: string): Promise<{ valid: boolean; message?: string }> {
   const { data, error } = await supabase
     .from('premium_codes')
-    .select('*')
-    .eq('code', code)
+    .select('id, usage_limit, used_count, expires_at')
+    .eq('code', code.toUpperCase())
     .eq('is_active', true)
     .single();
 
   if (error || !data) {
-    return { valid: false, message: 'Invalid code' };
+    return { valid: false, message: 'Invalid or inactive code.' };
   }
-
-  // Check if code has expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    return { valid: false, message: 'Code has expired' };
+    return { valid: false, message: 'This code has expired.' };
   }
-
-  // Check usage limit
   if (data.usage_limit && data.used_count >= data.usage_limit) {
-    return { valid: false, message: 'Code usage limit reached' };
+    return { valid: false, message: 'This code has reached its usage limit.' };
   }
 
-  return { valid: true, codeId: data.id };
-}
-
-// Apply premium code to user
-export async function applyPremiumCode(userId: string, codeId: number): Promise<boolean> {
-  try {
-    // Start transaction
-    const { error: usageError } = await supabase
-      .from('premium_code_usage')
-      .insert([{ user_id: userId, code_id: codeId }]);
-
-    if (usageError) {
-      console.error('Error recording code usage:', usageError);
-      return false;
-    }
-
-    // Update user's code bypass status
-    const { error: userError } = await supabase
-      .from('users')
-      .update({ has_code_bypass: true })
-      .eq('id', userId);
-
-    if (userError) {
-      console.error('Error updating user code bypass:', userError);
-      return false;
-    }
-
-    // Update user subscription
-    const { error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .upsert([{
-        user_id: userId,
-        status: 'premium_code',
-        plan_type: 'code',
-        premium_code_id: codeId,
-        updated_at: new Date().toISOString(),
-      }]);
-
-    if (subscriptionError) {
-      console.error('Error updating subscription:', subscriptionError);
-      return false;
-    }
-
-    // Increment code usage count
-    const { data: codeData, error: fetchCodeError } = await supabase
-      .from('premium_codes')
-      .select('used_count')
-      .eq('id', codeId)
-      .single();
-
-    if (!fetchCodeError && codeData) {
-      const { error: incrementError } = await supabase
-        .from('premium_codes')
-        .update({ used_count: (codeData.used_count || 0) + 1 })
-        .eq('id', codeId);
-
-      if (incrementError) {
-        console.error('Error incrementing code usage:', incrementError);
-        // Don't return false here as the main operations succeeded
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error applying premium code:', error);
-    return false;
-  }
-}
-
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email?: string;
-      };
-      usageInfo?: {
-        action: 'board_save' | 'routine_minute' | 'interview_question' | 'dress_tryon';
-        amount: number;
-      };
-    }
-  }
+  return { valid: true };
 }

@@ -11,21 +11,20 @@ export interface UserSubscription {
 }
 
 export interface UserUsage {
-  boardSavesThisWeek: number;
-  routineMinutesThisWeek: number;
-  interviewQuestionsToday: number;
-  dressTryOnsThisMonth: number;
-  boardSavesWeekStart?: Date;
-  routineWeekStart?: Date;
-  interviewQuestionsDate?: Date;
-  dressTryOnsMonthStart?: Date;
+  dressTryOnsThisWeek: number;
+  dressTryOnsWeekStart?: Date;
+  interviewQuestionsThisWeek: number;
+  interviewQuestionsWeekStart?: Date;
+  boardSavesThisMonth: number;
+  boardSavesMonthStart?: Date;
 }
 
 export interface UsageLimits {
-  boardSavesWeekly: number;
-  routineMinutesWeekly: number;
-  interviewQuestionsDaily: number;
-  dressTryOnsMonthly: number;
+  dressTryOnsWeekly: number;
+  interviewQuestionsWeekly: number;
+  boardSavesMonthly: number;
+  walkRoutinesMonthly: number;
+  calendarEventsTotal: number;
 }
 
 export interface SubscriptionContextType {
@@ -52,10 +51,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [usage, setUsage] = useState<UserUsage | null>(null);
   const [limits] = useState<UsageLimits>({
-    boardSavesWeekly: 10,
-    routineMinutesWeekly: 7,
-    interviewQuestionsDaily: 3,
-    dressTryOnsMonthly: 10,
+    dressTryOnsWeekly: 3,
+    interviewQuestionsWeekly: 5,
+    boardSavesMonthly: 10,
+    walkRoutinesMonthly: 5,
+    calendarEventsTotal: 10,
   });
   const [isPremium, setIsPremium] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

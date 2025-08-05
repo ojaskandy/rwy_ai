@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSubscription } from '@/hooks/use-subscription';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,6 +50,8 @@ const categories = [
 
 export default function Board() {
   const { user, session } = useAuth();
+  const { checkUsage, limits } = useSubscription();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const isMobile = useIsMobile();
   const [images, setImages] = useState<BoardImage[]>([]);
   const [filteredImages, setFilteredImages] = useState<BoardImage[]>([]);
@@ -183,6 +187,14 @@ export default function Board() {
 
   // Handle save/unsave
   const handleSave = async (imageId: string, currentlySaved: boolean) => {
+    // Don't check limit when unsaving
+    if (!currentlySaved) {
+      const usage = await checkUsage('board_save');
+      if (!usage.allowed) {
+        setIsLimitModalOpen(true);
+        return;
+      }
+    }
     try {
       const response = await fetch(`/api/board/images/${imageId}/save`, {
         method: currentlySaved ? 'DELETE' : 'POST',
@@ -336,7 +348,15 @@ export default function Board() {
   }
 
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: '#FFC5D3' }}>
+    <>
+      <LimitReachedModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="Board Saves"
+        limit={limits.boardSavesMonthly}
+        timePeriod="month"
+      />
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Header */}
       <div className="bg-white/20 backdrop-blur-md border-b border-white/30 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -914,5 +934,6 @@ export default function Board() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 } 

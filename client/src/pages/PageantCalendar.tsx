@@ -12,6 +12,8 @@ import {
   X, Check, AlertCircle, Star, Palette, Loader2, Sparkles
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useSubscription } from '@/hooks/use-subscription';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { useCalendarEvents } from '@/hooks/use-calendar';
 
 // Event types with colors
@@ -51,6 +53,8 @@ interface CalendarEvent {
 
 export default function PageantCalendar() {
   const [, navigate] = useLocation();
+  const { checkUsage, limits } = useSubscription();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -139,7 +143,12 @@ export default function PageantCalendar() {
     setSelectedDate(date);
   };
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
+    const usage = await checkUsage('calendar_event');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
     setEditingEvent(null);
     const today = new Date();
     const defaultDate = selectedDate ? selectedDate : (today.getFullYear() >= 2025 ? today : new Date(2025, 0, 1));
@@ -262,7 +271,15 @@ export default function PageantCalendar() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+    <>
+      <LimitReachedModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="Active Calendar Events"
+        limit={limits.calendarEventsTotal}
+        timePeriod="total"
+      />
+      <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
       {/* Header */}
       <div className="w-full bg-gradient-to-r from-indigo-800 to-purple-800 h-16 px-4 shadow-lg flex items-center">
         <button 
@@ -681,5 +698,6 @@ export default function PageantCalendar() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 } 

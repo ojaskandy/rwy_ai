@@ -423,21 +423,18 @@ export const premiumCodeUsage = pgTable("premium_code_usage", {
 export const userUsage = pgTable("user_usage", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  // Board usage (weekly limit: 10 saves)
-  boardSavesThisWeek: integer("board_saves_this_week").default(0),
-  boardSavesWeekStart: timestamp("board_saves_week_start").defaultNow(),
   
-  // Routine usage (weekly limit: 7 minutes)
-  routineMinutesThisWeek: integer("routine_minutes_this_week").default(0),
-  routineWeekStart: timestamp("routine_week_start").defaultNow(),
+  // Dress try-on (weekly limit: 3)
+  dressTryOnsThisWeek: integer("dress_tryons_this_week").default(0),
+  dressTryOnsWeekStart: timestamp("dress_tryons_week_start").defaultNow(),
   
-  // Interview coach (daily limit: 3 questions)
-  interviewQuestionsToday: integer("interview_questions_today").default(0),
-  interviewQuestionsDate: timestamp("interview_questions_date").defaultNow(),
-  
-  // Dress try-on (monthly limit: 10 try-ons)
-  dressTryOnsThisMonth: integer("dress_tryons_this_month").default(0),
-  dressTryOnsMonthStart: timestamp("dress_tryons_month_start").defaultNow(),
+  // Interview coach (weekly limit: 5 questions)
+  interviewQuestionsThisWeek: integer("interview_questions_this_week").default(0),
+  interviewQuestionsWeekStart: timestamp("interview_questions_week_start").defaultNow(),
+
+  // Board usage (monthly limit: 10 saves)
+  boardSavesThisMonth: integer("board_saves_this_month").default(0),
+  boardSavesMonthStart: timestamp("board_saves_month_start").defaultNow(),
   
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
@@ -503,3 +500,11 @@ export const premiumCodeValidationSchema = z.object({
 });
 
 export type PremiumCodeValidation = z.infer<typeof premiumCodeValidationSchema>;
+
+export const oneTimeCodes = pgTable("one_time_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  isUsed: boolean("is_used").default(false),
+  usedAt: timestamp("used_at"),
+  usedByUserId: text("used_by_user_id"),
+});

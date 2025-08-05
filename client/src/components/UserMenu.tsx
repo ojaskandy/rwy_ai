@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings, Loader2, Trash2, Key, Shield, Crown, ArrowUpCircle } from 'lucide-react';
+import { LogOut, User, Settings, Loader2, Trash2, Key, Shield, Crown, ArrowUpCircle, CreditCard } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,10 +27,11 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 
 const UserMenu: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, resetPassword } = useAuth();
   const { subscription, usage, isLoading } = useSubscription();
   const [signingOut, setSigningOut] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -109,7 +110,13 @@ const UserMenu: React.FC = () => {
           >
             <Avatar className="h-9 w-9">
               <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || 'User'} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
+              <AvatarFallback 
+                className={`text-white text-sm font-semibold ${
+                  subscription?.status === 'premium' || subscription?.status === 'premium_code'
+                    ? 'bg-gradient-to-br from-yellow-400 via-purple-500 to-pink-500 animate-gradient-xy'
+                    : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                }`}
+              >
                 {userInitials}
               </AvatarFallback>
             </Avatar>
@@ -124,61 +131,70 @@ const UserMenu: React.FC = () => {
             <p className="text-xs leading-none text-gray-600">
               {user.email}
             </p>
+            {/* Get Premium Button for Basic Users */}
+            {subscription?.status === 'basic' && (
+              <button
+                onClick={() => window.location.href = '/pricing'}
+                className="mt-2 w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+              >
+                Get Premium
+              </button>
+            )}
             {/* Subscription Status */}
             <div className="flex items-center gap-1 mt-2">
               {subscription?.status === 'premium' || subscription?.status === 'premium_code' ? (
-                <>
-                  <Crown className="h-3 w-3 text-yellow-600" />
-                  <span className="text-xs font-medium text-yellow-600">Premium</span>
-                </>
+                <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-purple-500 to-pink-500 p-1 rounded-full animate-shimmer">
+                  <Crown className="h-3 w-3 text-white" />
+                  <span className="text-xs font-bold text-white px-1">Premium</span>
+                </div>
               ) : (
-                <>
-                  <div className="h-3 w-3 rounded-full bg-gray-400" />
-                  <span className="text-xs font-medium text-gray-500">Basic</span>
-                </>
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-gray-300" />
+                  <span className="text-xs text-gray-400">Basic</span>
+                </div>
               )}
             </div>
             {/* Usage Info for Basic Users */}
             {subscription?.status === 'basic' && usage && (
               <div className="text-xs text-gray-500 space-y-0.5 mt-1">
-                <div>Images: {usage.boardSavesThisWeek}/10 this week</div>
-                <div>Recording: {usage.routineMinutesThisWeek}/7 min this week</div>
-                <div>Questions: {usage.interviewQuestionsToday}/3 today</div>
-                <div>Try-ons: {usage.dressTryOnsThisMonth}/10 this month</div>
+                <div>Try-ons: {usage.dressTryOnsThisWeek}/3 this week</div>
+                <div>Questions: {usage.interviewQuestionsThisWeek}/5 this week</div>
+                <div>Board Saves: {usage.boardSavesThisMonth}/10 this month</div>
               </div>
             )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* Upgrade Option for Basic Users */}
         {subscription?.status === 'basic' && (
+          <DropdownMenuItem 
+            className="cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+            onClick={() => window.location.href = '/pricing'}
+          >
+            <Crown className="mr-2 h-4 w-4" />
+            <span className="font-bold">Get Premium</span>
+          </DropdownMenuItem>
+        )}
+        
+        {/* Subscription Management for Premium Users */}
+        {(subscription?.status === 'premium' || subscription?.status === 'premium_code') && (
           <>
             <DropdownMenuItem 
               className="cursor-pointer text-blue-600 hover:bg-blue-50"
-              onClick={() => window.location.href = '/pricing'}
+              onClick={() => window.location.href = '/app/subscription'} // A dedicated page for subscription management
             >
-              <ArrowUpCircle className="mr-2 h-4 w-4 text-blue-600" />
-              <span>Upgrade to Premium</span>
+              <CreditCard className="mr-2 h-4 w-4 text-blue-600" />
+              <span>Manage Subscription</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
         
-        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
-          <User className="mr-2 h-4 w-4 text-gray-600" />
-          <span>Profile</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
-          <Settings className="mr-2 h-4 w-4 text-gray-600" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
+        <DropdownMenuItem 
+          className="cursor-pointer text-gray-900 hover:bg-gray-50"
+          onClick={() => setShowResetPasswordDialog(true)}
+        >
           <Key className="mr-2 h-4 w-4 text-gray-600" />
           <span>Change Password</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer text-gray-900 hover:bg-gray-50">
-          <Shield className="mr-2 h-4 w-4 text-gray-600" />
-          <span>Privacy & Security</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
@@ -203,6 +219,29 @@ const UserMenu: React.FC = () => {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    {/* Password Reset Confirmation Dialog */}
+    <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Change Password</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to send a password reset link to {user.email}?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              await resetPassword(user.email!);
+              setShowResetPasswordDialog(false);
+            }}
+          >
+            Send Reset Link
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     {/* Account Deletion Confirmation Dialog */}
     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -248,19 +287,11 @@ const UserMenu: React.FC = () => {
           </div>
         </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel 
-            onClick={() => {
-              setDeletePassword('');
-              setDeleteConfirmText('');
-            }}
-          >
-            Cancel
-          </AlertDialogCancel>
+        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
           <AlertDialogAction
             onClick={handleDeleteAccount}
             disabled={deleting || !deletePassword || deleteConfirmText !== 'DELETE'}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-600 opacity-50 hover:opacity-60 text-sm"
           >
             {deleting ? (
               <>
@@ -271,6 +302,15 @@ const UserMenu: React.FC = () => {
               'Delete Account'
             )}
           </AlertDialogAction>
+          <AlertDialogCancel 
+            onClick={() => {
+              setDeletePassword('');
+              setDeleteConfirmText('');
+            }}
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 font-semibold text-base px-8 py-3"
+          >
+            Keep My Account
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

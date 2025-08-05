@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { useSubscription } from '@/hooks/use-subscription';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Play, Square, Camera, Send, MessageCircle } from 'lucide-react';
@@ -353,6 +355,8 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
 }
 
 export default function Routine() {
+  const { checkUsage, limits } = useSubscription();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   // Core state
   const [isActive, setIsActive] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -456,7 +460,12 @@ export default function Routine() {
   };
 
   // Start practice session
-  const startPractice = () => {
+  const startPractice = async () => {
+    const usage = await checkUsage('walk_routine');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
     if (hasPermission === false) return;
     
     setIsActive(true);
@@ -501,7 +510,15 @@ export default function Routine() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative bg-black">
+    <>
+      <LimitReachedModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="Walk Routines"
+        limit={limits.walkRoutinesMonthly}
+        timePeriod="month"
+      />
+      <div className="h-screen w-screen overflow-hidden relative bg-black">
       {/* Video Element - Full Screen */}
       <video
         ref={videoRef}
@@ -581,5 +598,6 @@ export default function Routine() {
         isLoading={summaryLoading}
       />
     </div>
+    </>
   );
 } 
