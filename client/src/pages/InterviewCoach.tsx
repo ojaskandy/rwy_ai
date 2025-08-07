@@ -7,6 +7,8 @@ import {
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { supabase } from '@/lib/supabase';
+import UsageAfterAction from '@/components/UsageAfterAction';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
 
@@ -158,7 +160,9 @@ interface InterviewSession {
 
 export default function InterviewCoach() {
   const [, navigate] = useLocation();
+
   const { checkUsage, limits } = useSubscription();
+  const [showUsage, setShowUsage] = useState(false);
   
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
@@ -470,10 +474,16 @@ export default function InterviewCoach() {
     setCurrentStep('grading');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch('/api/interview/feedback', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           sessions: allSessions,
@@ -488,6 +498,7 @@ export default function InterviewCoach() {
       }
 
       setFeedback(result.feedback);
+      setShowUsage(true);
       
       // CRITICAL DIFFERENCE: Questions mode vs Rounds mode
       if (mode === 'question') {
@@ -532,6 +543,7 @@ export default function InterviewCoach() {
 
   return (
     <>
+      <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" />
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}

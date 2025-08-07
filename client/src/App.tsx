@@ -32,6 +32,7 @@ import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
 import AuthCallback from "@/pages/AuthCallback";
 import ResetPassword from "@/pages/ResetPassword";
+import UsagePage from "@/pages/Usage";
 
 // Component that requires onboarding completion before accessing protected routes
 function OnboardingRequiredRoute({ children }: { children: React.ReactNode }) {
@@ -83,6 +84,8 @@ function Router() {
         
         {/* Pricing page - accessible without login */}
         <Route path="/pricing" component={Pricing} />
+        {/* Usage page - protected */}
+        <Route path="/usage" component={() => <ProtectedRoute><OnboardingRequiredRoute><UsagePage /></OnboardingRequiredRoute></ProtectedRoute>} />
 
         {/* Privacy Policy - accessible without login */}
         <Route path="/privacy-policy" component={PrivacyPolicy} />
@@ -116,6 +119,7 @@ function Router() {
       
       {/* Global iOS-style dock - hidden on privacy page */}
       {shouldShowDock && <GlobalDock />}
+      
     </>
   );
 }

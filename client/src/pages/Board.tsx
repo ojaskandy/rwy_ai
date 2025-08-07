@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
+import UsageAfterAction from '@/components/UsageAfterAction';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,6 +53,7 @@ export default function Board() {
   const { user, session } = useAuth();
   const { checkUsage, limits } = useSubscription();
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [showUsage, setShowUsage] = useState(false);
   const isMobile = useIsMobile();
   const [images, setImages] = useState<BoardImage[]>([]);
   const [filteredImages, setFilteredImages] = useState<BoardImage[]>([]);
@@ -223,6 +225,8 @@ export default function Board() {
             saveCount: currentlySaved ? selectedImage.saveCount - 1 : selectedImage.saveCount + 1
           });
         }
+        // Show usage popup after a successful save
+        if (!currentlySaved) setShowUsage(true);
       }
     } catch (error) {
       console.error('Failed to toggle save:', error);
@@ -349,6 +353,7 @@ export default function Board() {
 
   return (
     <>
+      <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="board" />
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}

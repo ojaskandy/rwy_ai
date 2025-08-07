@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
+import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Play, Square, Camera, Send, MessageCircle } from 'lucide-react';
@@ -374,6 +375,7 @@ export default function Routine() {
   const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sendIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const allFramesRef = useRef<string[]>([]);
+  const sessionStartRef = useRef<number | null>(null);
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -469,6 +471,7 @@ export default function Routine() {
     if (hasPermission === false) return;
     
     setIsActive(true);
+    sessionStartRef.current = Date.now();
     frameBufferRef.current = [];
     allFramesRef.current = [];
     
@@ -485,6 +488,23 @@ export default function Routine() {
         }
       }
     }, 1000);
+
+    // Send incremental usage every 15s; round up strictly
+    sendIntervalRef.current = setInterval(() => {
+      if (!sessionStartRef.current) return;
+      const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      if (elapsedSec > 0) {
+        const quarters = Math.ceil(elapsedSec / 15);
+        // Report quarters since last report
+        fetch('/api/usage/routine-minutes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ minutes: 1 })
+        }).catch(() => {});
+        // Advance start baseline by 15s slice so next tick posts next slice
+        sessionStartRef.current += 15000;
+      }
+    }, 15000);
   };
 
   // Stop practice session
@@ -506,6 +526,20 @@ export default function Routine() {
       setSummaryLoading(true);
       setShowSummary(true);
       sendFramesForAnalysis(allFramesRef.current, true);
+    }
+
+    // Track partial time in 15s quarters: round up each 15s slice
+    if (sessionStartRef.current) {
+      const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      if (elapsedSec >= 5) {
+        const quarters = Math.max(1, Math.ceil(elapsedSec / 15));
+        fetch('/api/usage/routine-minutes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ minutes: quarters })
+        }).catch(() => {});
+      }
+      sessionStartRef.current = null;
     }
   };
 
@@ -591,6 +625,7 @@ export default function Routine() {
       )}
 
       {/* Summary Modal */}
+      <UsageAfterAction open={!isActive && showSummary} onOpenChange={(open) => { if (!open) setShowSummary(false); }} focus="routine" />
       <SummaryModal
         isOpen={showSummary}
         onClose={() => setShowSummary(false)}

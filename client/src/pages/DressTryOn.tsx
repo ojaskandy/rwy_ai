@@ -9,6 +9,7 @@ import {
 import { useLocation } from 'wouter';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
+import UsageAfterAction from '@/components/UsageAfterAction';
 
 // Virtual try-on interfaces (keeping all backend logic intact)
 interface TryOnResult {
@@ -84,6 +85,7 @@ export default function DressTryOn() {
   const [, navigate] = useLocation();
   const { checkUsage, limits } = useSubscription();
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [showUsage, setShowUsage] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [userImageFile, setUserImageFile] = useState<File | null>(null);
   const [userImageUrl, setUserImageUrl] = useState<string>('');
@@ -242,6 +244,7 @@ export default function DressTryOn() {
       
       if (result.data.status === 'completed' && result.data.output?.length > 0) {
         console.log('[TryOn] ✅ Try-on completed successfully');
+        setShowUsage(true);
       } else if (result.data.status === 'failed') {
         const errorMsg = result.data.error?.message || 'Try-on failed';
         throw new Error(errorMsg);
@@ -500,6 +503,7 @@ export default function DressTryOn() {
 
   return (
     <>
+      <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="dress" />
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}

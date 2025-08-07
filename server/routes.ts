@@ -31,7 +31,9 @@ import {
   requireUsageLimit, 
   trackUsageAfterAction,
   canUserPerformAction,
-  validatePremiumCode
+  validatePremiumCode,
+  getUserUsage,
+  USAGE_LIMITS
 } from './lib/subscription';
 // import photoRoutes from './routes/photo'; // Now using inline routes
 
@@ -447,7 +449,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/billing/verify-code", billing.verifyCode);
 
   // Pageant Coaching endpoint - Real-time AI coaching with vision
-  app.post('/api/pageant-coaching', requireUsageLimit('walk_routine'), trackUsageAfterAction(), async (req, res) => {
+  app.post('/api/pageant-coaching', async (req, res, next) => {
+    // For routines, we treat each request as 1 minute unless flagged as sequence summary
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { isSequenceSummary = false } = req.body || {};
+      if (!isSequenceSummary) {
+        const status = await canUserPerformAction(user.id, 'walk_routine', 1);
+        if (!status.allowed) return res.status(403).json({ error: 'Usage limit exceeded.' });
+        // Pre-attach for post tracking
+        (req as any).user = user;
+        (req as any).usageInfo = { action: 'walk_routine', minutes: 1 };
+      } else {
+        (req as any).user = user;
+      }
+      next();
+    } catch (e) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+  }, async (req, res) => {
     try {
       const { frames, isSequenceSummary = false } = req.body;
       console.log('Pageant Coaching - Received:', {
@@ -2240,6 +2260,61 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     }
   });
 
+  // Get current usage counters and limits for the authenticated user
+  app.get('/api/usage', async (req: Request, res: Response) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const usage = await getUserUsage(user.id);
+      res.json({
+        usage,
+        limits: USAGE_LIMITS,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('token')) {
+        return res.status(401).json({ error: error.message });
+      }
+      console.error('Error fetching usage:', error);
+      res.status(500).json({ error: 'Failed to fetch usage' });
+    }
+  });
+
+  // Increment routine minutes explicitly (used when a session ends)
+  app.post('/api/usage/routine-minutes', async (req: Request, res: Response) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { minutes } = req.body as { minutes?: number };
+      const amount = Math.max(0, Math.floor(minutes || 0));
+      if (!amount) return res.status(400).json({ error: 'Minutes must be a positive integer' });
+
+      const status = await canUserPerformAction(user.id, 'walk_routine', amount);
+      if (!status.allowed) return res.status(403).json({ error: 'Usage limit exceeded.' });
+
+      // Update counters
+      const { data } = await supabase
+        .from('user_usage')
+        .select('routine_minutes_this_month, routine_minutes_month_start')
+        .eq('user_id', user.id)
+        .single();
+
+      const now = new Date();
+      let fields: any = {};
+      if (!data || !data.routine_minutes_month_start || new Date(data.routine_minutes_month_start).getMonth() !== now.getMonth() || new Date(data.routine_minutes_month_start).getFullYear() !== now.getFullYear()) {
+        fields = { routine_minutes_this_month: amount, routine_minutes_month_start: now };
+      } else {
+        fields = { routine_minutes_this_month: (data.routine_minutes_this_month || 0) + amount };
+      }
+      await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
+
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('token')) {
+        return res.status(401).json({ error: error.message });
+      }
+      console.error('Error adding routine minutes:', error);
+      res.status(500).json({ error: 'Failed to add routine minutes' });
+    }
+  });
+
   // Check if user can perform specific action
   app.post("/api/subscription/check-usage", async (req: Request, res: Response) => {
     try {
@@ -2250,7 +2325,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(400).json({ error: "Invalid action" });
       }
 
-      const usageStatus = await canUserPerformAction(user.id, action, amount);
+      const usageStatus = await canUserPerformAction(user.id, action as any);
       res.json(usageStatus);
       
     } catch (error) {
@@ -2360,7 +2435,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       // Get or create Stripe customer
       let stripeCustomerId = userData?.stripe_customer_id;
       if (!stripeCustomerId) {
-        const customer = await createCustomer(user.email, user.user_metadata?.full_name || '');
+        const customer = await createCustomer(user.email!, (user.user_metadata as any)?.full_name || '');
         stripeCustomerId = customer.id;
         
         // Update user record with Stripe customer ID
@@ -2371,11 +2446,12 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       }
 
       // Create checkout session
+      const origin = (req.headers.origin as string) || 'http://localhost:5001';
       const session = await createCheckoutSession(
         stripeCustomerId,
         priceId,
-        `${req.headers.origin}/app?subscription=success`,
-        `${req.headers.origin}/pricing?subscription=cancelled`
+        `${origin}/app?subscription=success`,
+        `${origin}/pricing?subscription=cancelled`
       );
 
       res.json({ sessionId: session.id, url: session.url });

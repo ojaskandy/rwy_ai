@@ -174,6 +174,14 @@ const UserMenu: React.FC = () => {
             <span className="font-bold">Get Premium</span>
           </DropdownMenuItem>
         )}
+        {/* Usage page entry */}
+        <DropdownMenuItem 
+          className="cursor-pointer text-gray-900 hover:bg-gray-50"
+          onClick={() => window.location.href = '/usage'}
+        >
+          <ArrowUpCircle className="mr-2 h-4 w-4 text-gray-600" />
+          <span>Usage</span>
+        </DropdownMenuItem>
         
         {/* Subscription Management for Premium Users */}
         {(subscription?.status === 'premium' || subscription?.status === 'premium_code') && (

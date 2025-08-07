@@ -1,5 +1,6 @@
 import { supabase } from '../db';
 import { Request, Response, NextFunction } from 'express';
+import { getAuthenticatedUser } from './auth';
 
 // --- Interfaces and Constants ---
 
@@ -14,6 +15,8 @@ export interface UserUsage {
   interviewQuestionsWeekStart: Date;
   boardSavesThisMonth: number;
   boardSavesMonthStart: Date;
+  routineMinutesThisMonth?: number;
+  routineMinutesMonthStart?: Date;
 }
 
 // Your new, specific usage limits
@@ -22,6 +25,7 @@ export const USAGE_LIMITS = {
   INTERVIEW_QUESTIONS_WEEKLY: 5,
   BOARD_SAVES_MONTHLY: 10,
   WALK_ROUTINES_MONTHLY: 5,
+  WALK_QUARTERS_MONTHLY: 12, // 12 x 15s = 3 minutes
   CALENDAR_EVENTS_TOTAL: 10,
 } as const;
 
@@ -76,6 +80,8 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
             interviewQuestionsWeekStart: new Date(),
             boardSavesThisMonth: 0,
             boardSavesMonthStart: new Date(),
+            routineMinutesThisMonth: 0,
+            routineMinutesMonthStart: new Date(),
         };
     }
 
@@ -86,6 +92,8 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
         interviewQuestionsWeekStart: new Date(data.interview_questions_week_start),
         boardSavesThisMonth: data.board_saves_this_month,
         boardSavesMonthStart: new Date(data.board_saves_month_start),
+        routineMinutesThisMonth: (data.routine_minutes_this_month ?? 0),
+        routineMinutesMonthStart: data.routine_minutes_month_start ? new Date(data.routine_minutes_month_start) : new Date(),
     };
 }
 
@@ -93,7 +101,7 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
 
 type ActionType = 'dress_tryon' | 'interview_question' | 'board_save' | 'walk_routine' | 'calendar_event';
 
-export async function canUserPerformAction(userId: string, action: ActionType): Promise<{ allowed: boolean; message?: string }> {
+export async function canUserPerformAction(userId: string, action: ActionType, amount: number = 0): Promise<{ allowed: boolean; message?: string }> {
   const subscription = await getUserSubscription(userId);
   if (hasPremiumAccess(subscription)) {
     return { allowed: true };
@@ -131,18 +139,13 @@ export async function canUserPerformAction(userId: string, action: ActionType): 
     }
       
     case 'walk_routine': {
-      // This is a count of records in a given month, not a simple counter
-      const { count, error } = await supabase
-        .from('recordings') // Assuming 'recordings' table is for walk routines
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .gte('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
-
-      if (error) {
-        console.error('Error counting walk routines:', error);
-        return { allowed: false, message: 'Could not verify usage.' };
+      const monthStart = usage?.routineMinutesMonthStart || now;
+      if (now.getMonth() !== monthStart.getMonth() || now.getFullYear() !== monthStart.getFullYear()) {
+        await supabase.from('user_usage').update({ routine_minutes_this_month: 0, routine_minutes_month_start: now }).eq('user_id', userId);
+        return { allowed: amount <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
       }
-      return { allowed: (count || 0) < USAGE_LIMITS.WALK_ROUTINES_MONTHLY };
+      const used = usage?.routineMinutesThisMonth || 0;
+      return { allowed: used + (amount || 0) <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
     }
 
     case 'calendar_event': {
@@ -170,9 +173,16 @@ export async function canUserPerformAction(userId: string, action: ActionType): 
 // This middleware should be placed before any route that performs a limited action.
 export function requireUsageLimit(action: ActionType) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user; // Assumes user is attached from a previous auth middleware
+    // Try to use attached user if a previous middleware already set it
+    let user = (req as any).user;
     if (!user || !user.id) {
-      return res.status(401).json({ error: 'Authentication required.' });
+      // Fall back to extracting the user from the Authorization header
+      try {
+        user = await getAuthenticatedUser(req);
+        (req as any).user = user;
+      } catch (err) {
+        return res.status(401).json({ error: 'Authentication required.' });
+      }
     }
 
     const check = await canUserPerformAction(user.id, action);
@@ -198,7 +208,7 @@ export function trackUsageAfterAction() {
 
         if (!user || !user.id || !usageInfo) return next();
 
-        const action = usageInfo.action;
+        const action = usageInfo.action as ActionType;
         let fieldToIncrement: keyof UserUsage | null = null;
         
         switch(action) {
@@ -216,6 +226,24 @@ export function trackUsageAfterAction() {
 
             if (error) {
                 console.error(`Failed to track usage for ${action}:`, error);
+            }
+        } else if (action === 'walk_routine') {
+            const minutes = (usageInfo.minutes as number) || 1;
+            const { data, error } = await supabase
+              .from('user_usage')
+              .select('routine_minutes_this_month, routine_minutes_month_start')
+              .eq('user_id', user.id)
+              .single();
+
+            if (!error) {
+                const now = new Date();
+                let fields: any = {};
+                if (!data || !data.routine_minutes_month_start || new Date(data.routine_minutes_month_start).getMonth() !== now.getMonth()) {
+                    fields = { routine_minutes_this_month: minutes, routine_minutes_month_start: now };
+                } else {
+                    fields = { routine_minutes_this_month: (data.routine_minutes_this_month || 0) + minutes };
+                }
+                await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
             }
         }
         

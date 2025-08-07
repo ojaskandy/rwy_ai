@@ -79,9 +79,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       }
       
       const data = await response.json();
-      setSubscription(data.subscription);
-      setUsage(data.usage);
-      setIsPremium(data.isPremium);
+      // Server returns { status, planType, isPremium } (no nested subscription/usage)
+      const normalized: UserSubscription = {
+        status: data.status,
+        planType: data.planType,
+      };
+      setSubscription(normalized);
+      // Usage is not returned by this endpoint; keep last known or null
+      setIsPremium(Boolean(data.isPremium));
     } catch (err) {
       console.error('Error fetching subscription:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription status');
