@@ -59,7 +59,8 @@ export default function PageantCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [viewMode, setViewMode] = useState<'month' | 'twoweek'>('twoweek');
+  const isMobile = window.innerWidth <= 768;
   const [aiDescription, setAiDescription] = useState('');
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   
@@ -97,20 +98,39 @@ export default function PageantCalendar() {
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
     
-    const days = [];
-    const current = new Date(startDate);
-    
-    while (current <= lastDay || current.getDay() !== 0) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 1);
+    if (viewMode === 'twoweek') {
+      // For two-week view, start from current week
+      const startDate = new Date(currentDate);
+      startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of current week
+      
+      const days = [];
+      const current = new Date(startDate);
+      
+      // Generate 14 days (2 weeks)
+      for (let i = 0; i < 14; i++) {
+        days.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+      
+      return days;
+    } else {
+      // For month view
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - firstDay.getDay());
+      
+      const days = [];
+      const current = new Date(startDate);
+      
+      while (current <= lastDay || current.getDay() !== 0) {
+        days.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+      
+      return days;
     }
-    
-    return days;
   };
 
   const calendarDays = generateCalendarDays();
@@ -279,22 +299,22 @@ export default function PageantCalendar() {
         limit={limits.calendarEventsTotal}
         timePeriod="total"
       />
-      <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="w-full bg-gradient-to-r from-indigo-800 to-purple-800 h-16 px-4 shadow-lg flex items-center">
+      <div className="w-full bg-white border-b h-16 px-4 flex items-center">
         <button 
           onClick={() => navigate('/')} 
-          className="flex items-center text-white hover:text-indigo-200 font-semibold transition-colors"
+          className="flex items-center text-gray-600 hover:text-gray-800 font-semibold transition-colors"
         >
           <ChevronLeft className="w-5 h-5 mr-2" /> Back to Home
         </button>
         <div className="flex-1 flex justify-center">
-          <span className="text-indigo-200 font-bold text-xl">Pageant Calendar</span>
+          <span className="text-gray-800 font-bold text-xl">Pageant Calendar</span>
         </div>
         <Button
           onClick={handleAddEvent}
           size="lg"
-          className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3"
+          className="bg-black hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3"
         >
           <Plus className="w-5 h-5 mr-2" />
           <span className="font-semibold">Add Event</span>
@@ -316,11 +336,11 @@ export default function PageantCalendar() {
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Calendar Section */}
           <div className="lg:col-span-3">
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+            <Card className="bg-white border shadow-lg rounded-lg">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-gray-800 flex items-center">
-                    <CalendarIcon className="w-5 h-5 mr-2 text-pink-600" />
+                    <CalendarIcon className="w-5 h-5 mr-2 text-gray-600" />
                     {formatMonth(currentDate)}
                   </CardTitle>
                   <div className="flex items-center space-x-2">
@@ -328,7 +348,7 @@ export default function PageantCalendar() {
                       onClick={previousMonth}
                       variant="outline"
                       size="sm"
-                      className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                      className="border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
@@ -336,7 +356,7 @@ export default function PageantCalendar() {
                       onClick={nextMonth}
                       variant="outline"
                       size="sm"
-                      className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                      className="border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -367,19 +387,19 @@ export default function PageantCalendar() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleDateClick(date)}
                         className={`
-                          relative p-2 h-20 cursor-pointer rounded-lg border transition-all duration-200
+                          relative p-2 h-16 md:h-20 cursor-pointer rounded-lg border transition-all duration-200
                           ${isSelected 
-                            ? 'bg-pink-100 border-pink-400' 
+                            ? 'bg-gray-100 border-gray-400' 
                             : isToday 
-                              ? 'bg-purple-100 border-purple-400' 
-                              : 'border-gray-200 hover:border-pink-300 hover:bg-pink-50'
+                              ? 'bg-black text-white border-black' 
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }
                           ${!isCurrentMonthDay && 'opacity-40'}
                         `}
                       >
                         <div className={`text-sm font-medium ${
-                          isToday ? 'text-purple-700' : 
-                          isSelected ? 'text-pink-700' : 
+                          isToday ? 'text-white' : 
+                          isSelected ? 'text-gray-800' : 
                           isCurrentMonthDay ? 'text-gray-700' : 'text-gray-400'
                         }`}>
                           {date.getDate()}
@@ -411,15 +431,15 @@ export default function PageantCalendar() {
             </Card>
 
             {/* Event Type Legend */}
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-              <CardHeader>
+            <Card className="bg-white border shadow-lg rounded-lg mt-4">
+              <CardHeader className="py-2">
                 <CardTitle className="text-gray-800 text-sm">Event Types</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
+              <CardContent className="py-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {EVENT_TYPES.map((type) => (
                     <div key={type.id} className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full ${type.color}`} />
+                      <div className={`w-2 h-2 rounded-full ${type.color}`} />
                       <span className="text-xs text-gray-600">{type.name}</span>
                     </div>
                   ))}

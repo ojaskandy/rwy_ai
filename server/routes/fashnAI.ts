@@ -247,12 +247,19 @@ export async function runTryOnComplete(req: Request, res: Response) {
     // Poll until completion
     const pollResult = await fashnAI.pollUntilComplete(predictionId);
     
-    res.status(pollResult.status || 200).json({
-      success: pollResult.success,
-      message: pollResult.success ? 'Try-on completed successfully' : 'Try-on failed',
-      data: pollResult.data,
-      error: pollResult.error
-    });
+    if (pollResult.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Try-on completed successfully',
+        data: pollResult.data
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Try-on failed',
+        error: pollResult.error
+      });
+    }
   } catch (error: any) {
     console.error('[FashnAI Route] Complete try-on error:', error);
     res.status(500).json({

@@ -356,8 +356,28 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
   );
 }
 
+function PremiumOnlyOverlay() {
+  const [, navigate] = useLocation();
+  return (
+    <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+      <div className="max-w-md text-center">
+        <h2 className="text-2xl font-bold text-white mb-4">Premium Feature</h2>
+        <p className="text-gray-300 mb-6">
+          The Walk feature is exclusively available to premium users. Upgrade now to access advanced walk & posture analysis.
+        </p>
+        <Button
+          onClick={() => navigate('/pricing')}
+          className="bg-white text-black hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl"
+        >
+          Upgrade to Premium
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Routine() {
-  const { checkUsage, limits } = useSubscription();
+  const { checkUsage, limits, isPremium } = useSubscription();
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   // Core state
   const [isActive, setIsActive] = useState(false);
@@ -552,6 +572,7 @@ export default function Routine() {
 
   return (
     <>
+      {!isPremium && <PremiumOnlyOverlay />}
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}

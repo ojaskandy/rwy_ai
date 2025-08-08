@@ -2288,6 +2288,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       const amount = Math.max(0, Math.floor(minutes || 0));
       if (!amount) return res.status(400).json({ error: 'Minutes must be a positive integer' });
 
+      // Limit is expressed in 15s quarters; convert minutes->quarters in checker
       const status = await canUserPerformAction(user.id, 'walk_routine', amount);
       if (!status.allowed) return res.status(403).json({ error: 'Usage limit exceeded.' });
 

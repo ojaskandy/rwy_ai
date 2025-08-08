@@ -110,23 +110,21 @@ export async function transcribeAudio(req: Request, res: Response) {
 // Generate feedback for interview sessions
 export async function generateFeedback(req: Request, res: Response) {
   try {
-    const { sessions }: { sessions: InterviewSession[] } = req.body;
-
-    if (!sessions || sessions.length === 0) {
-      return res.status(400).json({ error: 'Interview sessions are required' });
+    const { question, answer } = req.body;
+    
+    if (!question || !answer) {
+      return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    console.log(`[Interview] Generating feedback for ${sessions.length} sessions`);
+    console.log(`[Interview] Generating feedback for question: ${question}`);
 
     // Create the prompt for OpenAI
-    const prompt = `You are an extremely strict pageant judge with impossibly high standards. Grade these interview responses like you're judging Miss Universe finals.
+    const prompt = `You are an extremely strict pageant judge with impossibly high standards. Grade this interview response like you're judging Miss Universe finals.
 
-INTERVIEW SESSIONS:
-${sessions.map((session, index) => `
-Question ${session.questionNumber}: ${session.question}
-Response: ${session.transcript}
-Duration: ${session.duration} seconds
-`).join('\n')}
+INTERVIEW RESPONSE:
+
+Question: ${question}
+Response: ${answer}
 
 EXTREMELY HARSH GRADING CRITERIA:
 - Scores of 8+ are ONLY for absolutely flawless, competition-winning responses
@@ -179,7 +177,7 @@ Format as JSON:
 BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. Don't be nice.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      model: 'gpt-4', // Using GPT-4 for high-quality feedback
       messages: [
         {
           role: 'system',
@@ -222,11 +220,21 @@ BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. 
       throw new Error('Invalid feedback structure');
     }
 
-    console.log(`[Interview] Feedback generated successfully for ${sessions.length} sessions`);
+    console.log(`[Interview] Feedback generated successfully`);
 
     res.json({
       success: true,
-      feedback
+      feedback: {
+        answers: [{
+          questionNumber: 1,
+          question,
+          transcript: answer,
+          grades: feedback.answers[0].grades,
+          coachingTip: feedback.answers[0].coachingTip
+        }],
+        overallTips: [],
+        summary: feedback.summary
+      }
     });
 
   } catch (error: any) {
@@ -242,7 +250,7 @@ BE MERCILESS. Real pageant judges are brutal. Most responses deserve 3-5 range. 
 export async function testConnection(req: Request, res: Response) {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      model: 'gpt-4', // Using GPT-4 for high-quality feedback
       messages: [{ role: 'user', content: 'Hello' }],
       max_tokens: 5,
     });

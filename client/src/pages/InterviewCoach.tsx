@@ -486,8 +486,8 @@ export default function InterviewCoach() {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          sessions: allSessions,
-          mode: mode
+          question: currentQuestion,
+          answer: currentTranscript
         })
       });
 

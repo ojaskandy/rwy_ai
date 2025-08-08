@@ -36,13 +36,13 @@ export default function GlobalDock() {
     },
     {
       icon: Video,
-      label: 'Live',
+      label: 'Walk',
       path: '/routine',
       isActive: location === '/routine'
     },
     {
       icon: MessageSquare,
-      label: 'Coach',
+      label: 'Q&A',
       path: '/interview-coach',
       isActive: location === '/interview-coach'
     },

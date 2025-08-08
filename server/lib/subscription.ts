@@ -85,16 +85,28 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
         };
     }
 
-    return {
-        dressTryOnsThisWeek: data.dress_tryons_this_week,
-        dressTryOnsWeekStart: new Date(data.dress_tryons_week_start),
-        interviewQuestionsThisWeek: data.interview_questions_this_week,
-        interviewQuestionsWeekStart: new Date(data.interview_questions_week_start),
-        boardSavesThisMonth: data.board_saves_this_month,
-        boardSavesMonthStart: new Date(data.board_saves_month_start),
+    const usage: UserUsage = {
+        dressTryOnsThisWeek: data.dress_tryons_this_week ?? 0,
+        dressTryOnsWeekStart: data.dress_tryons_week_start ? new Date(data.dress_tryons_week_start) : new Date(),
+        interviewQuestionsThisWeek: data.interview_questions_this_week ?? 0,
+        interviewQuestionsWeekStart: data.interview_questions_week_start ? new Date(data.interview_questions_week_start) : new Date(),
+        boardSavesThisMonth: data.board_saves_this_month ?? 0,
+        boardSavesMonthStart: data.board_saves_month_start ? new Date(data.board_saves_month_start) : new Date(),
         routineMinutesThisMonth: (data.routine_minutes_this_month ?? 0),
         routineMinutesMonthStart: data.routine_minutes_month_start ? new Date(data.routine_minutes_month_start) : new Date(),
-    };
+    } as UserUsage;
+
+    // Fallbacks for legacy columns if weekly columns are missing
+    if ((data.interview_questions_this_week == null) && (data.interview_questions_today != null)) {
+        (usage as any).interviewQuestionsThisWeek = data.interview_questions_today || 0;
+        (usage as any).interviewQuestionsWeekStart = data.interview_questions_date ? new Date(data.interview_questions_date) : new Date();
+    }
+    if ((data.dress_tryons_this_week == null) && (data.dress_tryons_this_month != null)) {
+        (usage as any).dressTryOnsThisWeek = data.dress_tryons_this_month || 0;
+        (usage as any).dressTryOnsWeekStart = data.dress_tryons_month_start ? new Date(data.dress_tryons_month_start) : new Date();
+    }
+
+    return usage;
 }
 
 // --- Limit Enforcement Logic ---
@@ -121,12 +133,26 @@ export async function canUserPerformAction(userId: string, action: ActionType, a
     }
 
     case 'interview_question': {
-        const weekStart = usage?.interviewQuestionsWeekStart || now;
-        if (now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
-            await supabase.from('user_usage').update({ interview_questions_this_week: 0, interview_questions_week_start: now }).eq('user_id', userId);
-            return { allowed: true };
+        // Prefer weekly fields; fall back to daily legacy columns
+        const hasWeekly = (usage as any).interviewQuestionsWeekStart != null;
+        if (hasWeekly) {
+          const weekStart = usage?.interviewQuestionsWeekStart || now;
+          if (now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
+              await supabase.from('user_usage').update({ interview_questions_this_week: 0, interview_questions_week_start: now }).eq('user_id', userId);
+              return { allowed: true };
+          }
+          return { allowed: (usage?.interviewQuestionsThisWeek || 0) < USAGE_LIMITS.INTERVIEW_QUESTIONS_WEEKLY };
+        } else {
+          const { data } = await supabase
+            .from('user_usage')
+            .select('interview_questions_today, interview_questions_date')
+            .eq('user_id', userId)
+            .single();
+          const date = data?.interview_questions_date ? new Date(data.interview_questions_date) : now;
+          const sameDay = date.toDateString() === now.toDateString();
+          const todayCount = sameDay ? (data?.interview_questions_today || 0) : 0;
+          return { allowed: todayCount < USAGE_LIMITS.INTERVIEW_QUESTIONS_WEEKLY };
         }
-        return { allowed: (usage?.interviewQuestionsThisWeek || 0) < USAGE_LIMITS.INTERVIEW_QUESTIONS_WEEKLY };
     }
 
     case 'board_save': {
@@ -139,13 +165,34 @@ export async function canUserPerformAction(userId: string, action: ActionType, a
     }
       
     case 'walk_routine': {
-      const monthStart = usage?.routineMinutesMonthStart || now;
-      if (now.getMonth() !== monthStart.getMonth() || now.getFullYear() !== monthStart.getFullYear()) {
-        await supabase.from('user_usage').update({ routine_minutes_this_month: 0, routine_minutes_month_start: now }).eq('user_id', userId);
-        return { allowed: amount <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+      // Convert minutes to 15s quarters for limit check
+      const minutes = Math.max(0, Math.floor(amount || 0));
+      const quartersToAdd = Math.ceil(minutes * 4);
+
+      // Prefer monthly counters; fall back to weekly legacy fields
+      const hasMonthly = (usage as any).routineMinutesMonthStart != null;
+      if (hasMonthly) {
+        const monthStart = usage?.routineMinutesMonthStart || now;
+        if (now.getMonth() !== monthStart.getMonth() || now.getFullYear() !== monthStart.getFullYear()) {
+          await supabase.from('user_usage').update({ routine_minutes_this_month: 0, routine_minutes_month_start: now }).eq('user_id', userId);
+          return { allowed: quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+        }
+        const usedMinutes = usage?.routineMinutesThisMonth || 0;
+        const usedQuarters = Math.ceil(usedMinutes * 4);
+        return { allowed: usedQuarters + quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+      } else {
+        const { data } = await supabase
+          .from('user_usage')
+          .select('routine_minutes_this_week, routine_week_start')
+          .eq('user_id', userId)
+          .single();
+        const weekStart = data?.routine_week_start ? new Date(data.routine_week_start) : now;
+        const weekElapsedMs = now.getTime() - weekStart.getTime();
+        const reset = weekElapsedMs > 7 * 24 * 60 * 60 * 1000;
+        const usedMinutes = reset ? 0 : (data?.routine_minutes_this_week || 0);
+        const usedQuarters = Math.ceil(usedMinutes * 4);
+        return { allowed: usedQuarters + quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
       }
-      const used = usage?.routineMinutesThisMonth || 0;
-      return { allowed: used + (amount || 0) <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
     }
 
     case 'calendar_event': {
@@ -210,6 +257,7 @@ export function trackUsageAfterAction() {
     if (!user || !user.id || !usageInfo) return next();
 
     const action = usageInfo.action as ActionType;
+    const minutes = usageInfo.minutes as number;
 
     const incrementCounters = async () => {
       try {
@@ -263,7 +311,29 @@ export function trackUsageAfterAction() {
             }
           }
 
-          await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
+          const { error: upsertError } = await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
+          if (upsertError) {
+            console.error(`user_usage upsert error for ${action}:`, upsertError);
+            // Fallback for legacy daily interview columns
+            if (action === 'interview_question') {
+              const { data: daily, error: selErr } = await supabase
+                .from('user_usage')
+                .select('interview_questions_today, interview_questions_date')
+                .eq('user_id', user.id)
+                .single();
+              if (!selErr) {
+                const now = new Date();
+                const sameDay = daily?.interview_questions_date && new Date(daily.interview_questions_date).toDateString() === now.toDateString();
+                const updated = sameDay ? (daily?.interview_questions_today || 0) + 1 : 1;
+                const { error: fallbackErr } = await supabase.from('user_usage').upsert({
+                  user_id: user.id,
+                  interview_questions_today: updated,
+                  interview_questions_date: sameDay ? daily?.interview_questions_date : now,
+                }, { onConflict: 'user_id' });
+                if (fallbackErr) console.error('Fallback daily interview increment error:', fallbackErr);
+              }
+            }
+          }
         } else if (action === 'walk_routine') {
           const minutes = (usageInfo.minutes as number) || 1;
           const { data, error } = await supabase
@@ -290,7 +360,14 @@ export function trackUsageAfterAction() {
 
     // Only increment after we know the outcome
     res.on('finish', () => {
-      if (res.statusCode >= 200 && res.statusCode < 400) {
+      // For dress try-on, count all attempts except auth failures
+      const shouldIncrement = action === 'dress_tryon' ? 
+        // Only exclude auth failures (401/403) and rate limit (429)
+        ![401, 403, 429].includes(res.statusCode) : 
+        // For other actions, only count successes
+        res.statusCode >= 200 && res.statusCode < 300;
+      if (shouldIncrement) {
+        console.log(`[Usage Tracking] Incrementing ${action} usage (status: ${res.statusCode})`);
         // fire and forget
         incrementCounters();
       }
