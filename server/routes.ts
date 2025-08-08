@@ -438,7 +438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/fashn/credits", fashnAI.checkCredits);
   app.get("/api/fashn/status/:id", fashnAI.checkStatus);
   app.post("/api/fashn/tryon", requireUsageLimit('dress_tryon'), trackUsageAfterAction(), fashnAI.generateTryOn);
-  app.post("/api/fashn/tryon-complete", fashnAI.runTryOnComplete);
+  // Also enforce/track the complete endpoint since client currently uses it
+  app.post("/api/fashn/tryon-complete", requireUsageLimit('dress_tryon'), trackUsageAfterAction(), fashnAI.runTryOnComplete);
 
   // Interview Coach routes
   app.get("/api/interview/test", interview.testConnection);
@@ -467,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e) {
       return res.status(401).json({ error: 'Authentication required.' });
     }
-  }, async (req, res) => {
+  }, trackUsageAfterAction(), async (req, res) => {
     try {
       const { frames, isSequenceSummary = false } = req.body;
       console.log('Pageant Coaching - Received:', {
@@ -1801,7 +1802,8 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   });
 
   // Save an image to personal collection
-  app.post("/api/board/images/:id/save", async (req, res) => {
+  // Enforce limit and track when saving to personal collection too
+  app.post("/api/board/images/:id/save", requireUsageLimit('board_save'), trackUsageAfterAction(), async (req, res) => {
     try {
       const user = await getAuthenticatedUser(req);
       const { id } = req.params;
@@ -2320,12 +2322,14 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     try {
       const user = await getAuthenticatedUser(req);
 
-      const { action, amount = 1 } = req.body;
-      if (!action || !['board_save', 'routine_minute', 'interview_question', 'dress_tryon'].includes(action)) {
+      let { action, amount = 1 } = req.body as { action?: string; amount?: number };
+      // Normalize legacy names
+      if (action === 'routine_minute') action = 'walk_routine';
+      if (!action || !['board_save', 'walk_routine', 'interview_question', 'dress_tryon'].includes(action)) {
         return res.status(400).json({ error: "Invalid action" });
       }
 
-      const usageStatus = await canUserPerformAction(user.id, action as any);
+      const usageStatus = await canUserPerformAction(user.id, action as any, amount);
       res.json(usageStatus);
       
     } catch (error) {
@@ -2386,17 +2390,30 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(400).json({ success: false, error: "Code has expired" });
       }
 
-      // Update user to have code bypass
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ has_code_bypass: true })
-        .eq('email', user.email);
+      // Upsert a subscription row with premium_code and record usage
+      const nowIso = new Date().toISOString();
+      await supabase
+        .from('subscriptions')
+        .upsert([{
+          user_id: user.id,
+          status: 'premium_code',
+          plan_type: 'code',
+          premium_code_id: codeData.id,
+          updated_at: nowIso,
+        }], { onConflict: 'user_id' });
 
-      if (updateError) {
-        return res.status(500).json({ success: false, error: "Failed to apply code" });
+      // Record the code usage in premium_code_usage if not already present
+      const { data: existingUsage } = await supabase
+        .from('premium_code_usage')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('code_id', codeData.id)
+        .limit(1);
+      if (!existingUsage || existingUsage.length === 0) {
+        await supabase.from('premium_code_usage').insert({ user_id: user.id, code_id: codeData.id });
       }
 
-      // Increment code usage
+      // Increment code usage counter
       await supabase
         .from('premium_codes')
         .update({ used_count: codeData.used_count + 1 })

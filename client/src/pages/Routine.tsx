@@ -4,6 +4,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
 import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Play, Square, Camera, Send, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -490,17 +491,20 @@ export default function Routine() {
     }, 1000);
 
     // Send incremental usage every 15s; round up strictly
-    sendIntervalRef.current = setInterval(() => {
+    sendIntervalRef.current = setInterval(async () => {
       if (!sessionStartRef.current) return;
       const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
       if (elapsedSec > 0) {
         const quarters = Math.ceil(elapsedSec / 15);
-        // Report quarters since last report
-        fetch('/api/usage/routine-minutes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ minutes: 1 })
-        }).catch(() => {});
+        // Report one quarter per tick
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch('/api/usage/routine-minutes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ minutes: 1 })
+          });
+        } catch {}
         // Advance start baseline by 15s slice so next tick posts next slice
         sessionStartRef.current += 15000;
       }
@@ -508,7 +512,7 @@ export default function Routine() {
   };
 
   // Stop practice session
-  const stopPractice = () => {
+  const stopPractice = async () => {
     setIsActive(false);
     
     // Clear intervals
@@ -533,11 +537,14 @@ export default function Routine() {
       const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
       if (elapsedSec >= 5) {
         const quarters = Math.max(1, Math.ceil(elapsedSec / 15));
-        fetch('/api/usage/routine-minutes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ minutes: quarters })
-        }).catch(() => {});
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch('/api/usage/routine-minutes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ minutes: quarters })
+          });
+        } catch {}
       }
       sessionStartRef.current = null;
     }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
 import UsageAfterAction from '@/components/UsageAfterAction';
@@ -198,6 +199,7 @@ export default function Board() {
       }
     }
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/board/images/${imageId}/save`, {
         method: currentlySaved ? 'DELETE' : 'POST',
         headers: {

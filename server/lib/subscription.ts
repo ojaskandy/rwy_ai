@@ -202,53 +202,102 @@ export function requireUsageLimit(action: ActionType) {
 // This middleware should be placed AFTER the main logic of a limited route.
 // It increments the usage counter only if the request was successful.
 export function trackUsageAfterAction() {
-    return async (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
-        const usageInfo = (req as any).usageInfo;
+  // Ensure usage increments only after the main handler completes successfully (2xx/3xx)
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const usageInfo = (req as any).usageInfo;
 
-        if (!user || !user.id || !usageInfo) return next();
+    if (!user || !user.id || !usageInfo) return next();
 
-        const action = usageInfo.action as ActionType;
-        let fieldToIncrement: keyof UserUsage | null = null;
-        
-        switch(action) {
-            case 'dress_tryon': fieldToIncrement = 'dressTryOnsThisWeek'; break;
-            case 'interview_question': fieldToIncrement = 'interviewQuestionsThisWeek'; break;
-            case 'board_save': fieldToIncrement = 'boardSavesThisMonth'; break;
-        }
+    const action = usageInfo.action as ActionType;
 
-        // Only increment counters for actions tracked in the user_usage table
-        if (fieldToIncrement) {
-             const { error } = await supabase.rpc('increment_usage', {
-                user_id_in: user.id,
-                field_name: fieldToIncrement
-             });
+    const incrementCounters = async () => {
+      try {
+        if (action === 'dress_tryon' || action === 'interview_question' || action === 'board_save') {
+          // Map logical action to DB column
+          const columnMap: Record<string, string> = {
+            'dress_tryon': 'dress_tryons_this_week',
+            'interview_question': 'interview_questions_this_week',
+            'board_save': 'board_saves_this_month',
+          };
+          const column = columnMap[action];
 
-            if (error) {
-                console.error(`Failed to track usage for ${action}:`, error);
+          // Fetch current counters
+          const { data, error } = await supabase
+            .from('user_usage')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error(`Failed to select user_usage for ${action}:`, error);
+            return;
+          }
+
+          const now = new Date();
+          const fields: any = {};
+
+          if (!data) {
+            // Initialize with the first increment
+            if (action === 'dress_tryon') {
+              fields.dress_tryons_this_week = 1;
+              fields.dress_tryons_week_start = now;
+            } else if (action === 'interview_question') {
+              fields.interview_questions_this_week = 1;
+              fields.interview_questions_week_start = now;
+            } else if (action === 'board_save') {
+              fields.board_saves_this_month = 1;
+              fields.board_saves_month_start = now;
             }
+          } else {
+            // Increment appropriate field; do boundary resets lazily in canUserPerformAction
+            if (action === 'dress_tryon') {
+              fields.dress_tryons_this_week = (data.dress_tryons_this_week || 0) + 1;
+              fields.dress_tryons_week_start = data.dress_tryons_week_start || now;
+            } else if (action === 'interview_question') {
+              fields.interview_questions_this_week = (data.interview_questions_this_week || 0) + 1;
+              fields.interview_questions_week_start = data.interview_questions_week_start || now;
+            } else if (action === 'board_save') {
+              fields.board_saves_this_month = (data.board_saves_this_month || 0) + 1;
+              fields.board_saves_month_start = data.board_saves_month_start || now;
+            }
+          }
+
+          await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
         } else if (action === 'walk_routine') {
-            const minutes = (usageInfo.minutes as number) || 1;
-            const { data, error } = await supabase
-              .from('user_usage')
-              .select('routine_minutes_this_month, routine_minutes_month_start')
-              .eq('user_id', user.id)
-              .single();
+          const minutes = (usageInfo.minutes as number) || 1;
+          const { data, error } = await supabase
+            .from('user_usage')
+            .select('routine_minutes_this_month, routine_minutes_month_start')
+            .eq('user_id', user.id)
+            .single();
 
-            if (!error) {
-                const now = new Date();
-                let fields: any = {};
-                if (!data || !data.routine_minutes_month_start || new Date(data.routine_minutes_month_start).getMonth() !== now.getMonth()) {
-                    fields = { routine_minutes_this_month: minutes, routine_minutes_month_start: now };
-                } else {
-                    fields = { routine_minutes_this_month: (data.routine_minutes_this_month || 0) + minutes };
-                }
-                await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
+          if (!error) {
+            const now = new Date();
+            let fields: any = {};
+            if (!data || !data.routine_minutes_month_start || new Date(data.routine_minutes_month_start).getMonth() !== now.getMonth() || new Date(data.routine_minutes_month_start).getFullYear() !== now.getFullYear()) {
+              fields = { routine_minutes_this_month: minutes, routine_minutes_month_start: now };
+            } else {
+              fields = { routine_minutes_this_month: (data.routine_minutes_this_month || 0) + minutes };
             }
+            await supabase.from('user_usage').upsert({ user_id: user.id, ...fields }, { onConflict: 'user_id' });
+          }
         }
-        
-        next();
+      } catch (err) {
+        console.error('trackUsageAfterAction increment error:', err);
+      }
     };
+
+    // Only increment after we know the outcome
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        // fire and forget
+        incrementCounters();
+      }
+    });
+
+    return next();
+  };
 }
 
 // --- Premium Code Functions ---

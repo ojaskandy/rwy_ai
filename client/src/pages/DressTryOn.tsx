@@ -7,6 +7,7 @@ import {
   RefreshCw, ArrowLeft, Download
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { supabase } from '@/lib/supabase';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
 import UsageAfterAction from '@/components/UsageAfterAction';
@@ -217,10 +218,12 @@ export default function DressTryOn() {
 
       console.log('[TryOn] Using options:', options);
 
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/fashn/tryon-complete', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
         },
         body: JSON.stringify({
           model_image: personImg,
