@@ -444,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Interview Coach routes
   app.get("/api/interview/test", interview.testConnection);
   app.post("/api/interview/transcribe", interview.transcribeAudio);
-  app.post("/api/interview/feedback", requireUsageLimit('interview_question'), trackUsageAfterAction(), interview.generateFeedback);
+  app.post("/api/interview/feedback", interview.generateFeedback);
 
   // Billing routes
   app.post("/api/billing/verify-code", billing.verifyCode);

@@ -102,7 +102,9 @@ function Router() {
         <Route path="/app" component={() => <ProtectedRoute><OnboardingRequiredRoute><Home /></OnboardingRequiredRoute></ProtectedRoute>} />
         <Route path="/profile" component={() => <ProtectedRoute><OnboardingRequiredRoute><Profile /></OnboardingRequiredRoute></ProtectedRoute>} />
         <Route path="/dress-tryon" component={() => <ProtectedRoute><OnboardingRequiredRoute><DressTryOn /></OnboardingRequiredRoute></ProtectedRoute>} />
-        <Route path="/interview-coach" component={() => <ProtectedRoute><OnboardingRequiredRoute><InterviewCoach /></OnboardingRequiredRoute></ProtectedRoute>} />
+        {/* Interview Coach - accessible without login for Q&A functionality */}
+        <Route path="/interview-coach" component={InterviewCoach} />
+        <Route path="/q&a" component={InterviewCoach} />
         <Route path="/calendar" component={() => <ProtectedRoute><OnboardingRequiredRoute><PageantCalendar /></OnboardingRequiredRoute></ProtectedRoute>} />
         <Route path="/board" component={() => <ProtectedRoute><OnboardingRequiredRoute><Board /></OnboardingRequiredRoute></ProtectedRoute>} />
         <Route path="/routine" component={() => <ProtectedRoute><OnboardingRequiredRoute><Routine /></OnboardingRequiredRoute></ProtectedRoute>} />

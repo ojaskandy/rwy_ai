@@ -474,20 +474,17 @@ export default function InterviewCoach() {
     setCurrentStep('grading');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
-      }
-
+      // Get the most recent session (the one we just completed)
+      const currentSession = allSessions[allSessions.length - 1];
+      
       const response = await fetch('/api/interview/feedback', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          question: currentQuestion,
-          answer: currentTranscript
+          question: currentSession.question,
+          answer: currentSession.transcript
         })
       });
 

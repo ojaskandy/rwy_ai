@@ -47,7 +47,18 @@ export interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { user, session } = useAuth();
+  // Handle auth gracefully - don't fail if auth is not available
+  let user = null;
+  let session = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    session = auth.session;
+  } catch (error) {
+    // Auth not available, continue with guest mode
+    console.log('Auth not available, continuing in guest mode');
+  }
+
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [usage, setUsage] = useState<UserUsage | null>(null);
   const [limits] = useState<UsageLimits>({
@@ -96,24 +107,46 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   };
 
   const checkUsage = async (action: string, amount: number = 1) => {
+    // If no authentication, allow unlimited usage for guest users
     if (!session?.access_token) {
-      throw new Error('Authentication required');
+      return {
+        allowed: true,
+        currentUsage: 0,
+        limit: action === 'interview_question' ? limits.interviewQuestionsWeekly : 999,
+        resetDate: new Date(),
+      };
     }
     
-    const response = await fetch('/api/subscription/check-usage', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ action: action === 'routine_minute' ? 'walk_routine' : action, amount }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to check usage');
+    try {
+      const response = await fetch('/api/subscription/check-usage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: action === 'routine_minute' ? 'walk_routine' : action, amount }),
+      });
+      
+      if (!response.ok) {
+        // If API fails, allow usage for guest mode
+        return {
+          allowed: true,
+          currentUsage: 0,
+          limit: action === 'interview_question' ? limits.interviewQuestionsWeekly : 999,
+          resetDate: new Date(),
+        };
+      }
+      
+      return response.json();
+    } catch (error) {
+      // If fetch fails, allow usage for guest mode
+      return {
+        allowed: true,
+        currentUsage: 0,
+        limit: action === 'interview_question' ? limits.interviewQuestionsWeekly : 999,
+        resetDate: new Date(),
+      };
     }
-    
-    return response.json();
   };
 
   const validateCode = async (code: string) => {
