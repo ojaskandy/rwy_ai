@@ -136,18 +136,53 @@ export default function PageantCalendar() {
   const calendarDays = generateCalendarDays();
   const today = new Date();
 
-  // Navigation
-  const previousMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  // Navigation - context-aware for different view modes
+  const navigatePrevious = () => {
+    if (viewMode === 'twoweek') {
+      // Navigate back 2 weeks
+      setCurrentDate(prev => {
+        const newDate = new Date(prev);
+        newDate.setDate(newDate.getDate() - 14);
+        return newDate;
+      });
+    } else {
+      // Navigate back 1 month
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    }
   };
 
-  const nextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const navigateNext = () => {
+    if (viewMode === 'twoweek') {
+      // Navigate forward 2 weeks
+      setCurrentDate(prev => {
+        const newDate = new Date(prev);
+        newDate.setDate(newDate.getDate() + 14);
+        return newDate;
+      });
+    } else {
+      // Navigate forward 1 month
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    }
   };
 
   // Date utilities
-  const formatMonth = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const formatDateRange = (date: Date) => {
+    if (viewMode === 'twoweek') {
+      // Show 2-week range
+      const startDate = new Date(date);
+      startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of current week
+      
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 13); // End of 2-week period
+      
+      const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endMonth = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      
+      return `${startMonth} - ${endMonth}`;
+    } else {
+      // Show month and year
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
   };
 
   const isSameDay = (date1: Date, date2: Date) => {
@@ -299,29 +334,8 @@ export default function PageantCalendar() {
         limit={limits.calendarEventsTotal}
         timePeriod="total"
       />
-      <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="w-full bg-white border-b h-16 px-4 flex items-center">
-        <button 
-          onClick={() => navigate('/')} 
-          className="flex items-center text-gray-600 hover:text-gray-800 font-semibold transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 mr-2" /> Back to Home
-        </button>
-        <div className="flex-1 flex justify-center">
-          <span className="text-gray-800 font-bold text-xl">Pageant Calendar</span>
-        </div>
-        <Button
-          onClick={handleAddEvent}
-          size="lg"
-          className="bg-black hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          <span className="font-semibold">Add Event</span>
-        </Button>
-      </div>
-
-      <div className="container mx-auto px-4 py-6">
+      <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+        <div className="container mx-auto px-4 py-8">
         {/* Prominent Add Event Section for Mobile */}
         <div className="lg:hidden mb-6">
           <Button
@@ -341,11 +355,36 @@ export default function PageantCalendar() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-gray-800 flex items-center">
                     <CalendarIcon className="w-5 h-5 mr-2 text-gray-600" />
-                    {formatMonth(currentDate)}
+                    {formatDateRange(currentDate)}
                   </CardTitle>
                   <div className="flex items-center space-x-2">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('twoweek')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          viewMode === 'twoweek'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        2 Weeks
+                      </button>
+                      <button
+                        onClick={() => setViewMode('month')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          viewMode === 'month'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        Month
+                      </button>
+                    </div>
+                    
+                    {/* Navigation Buttons */}
                     <Button
-                      onClick={previousMonth}
+                      onClick={navigatePrevious}
                       variant="outline"
                       size="sm"
                       className="border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -353,7 +392,7 @@ export default function PageantCalendar() {
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <Button
-                      onClick={nextMonth}
+                      onClick={navigateNext}
                       variant="outline"
                       size="sm"
                       className="border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -365,15 +404,15 @@ export default function PageantCalendar() {
               </CardHeader>
               <CardContent>
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1 mb-4">
+                <div className="grid grid-cols-7 gap-3 mb-6">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-sm font-semibold text-gray-700 p-2">
+                    <div key={day} className="text-center text-sm font-semibold text-gray-700 py-3">
                       {day}
                     </div>
                   ))}
                 </div>
                 
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-7 gap-3">
                   {calendarDays.map((date, index) => {
                     const dayEvents = getEventsForDate(date);
                     const isToday = isSameDay(date, today);
@@ -387,17 +426,17 @@ export default function PageantCalendar() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleDateClick(date)}
                         className={`
-                          relative p-2 h-16 md:h-20 cursor-pointer rounded-lg border transition-all duration-200
+                          relative p-4 h-20 md:h-24 cursor-pointer rounded-xl border-2 transition-all duration-200 flex flex-col
                           ${isSelected 
-                            ? 'bg-gray-100 border-gray-400' 
+                            ? 'bg-gray-100 border-gray-400 shadow-md' 
                             : isToday 
-                              ? 'bg-black text-white border-black' 
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              ? 'bg-black text-white border-black shadow-lg' 
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
                           }
                           ${!isCurrentMonthDay && 'opacity-40'}
                         `}
                       >
-                        <div className={`text-sm font-medium ${
+                        <div className={`text-lg font-semibold mb-1 ${
                           isToday ? 'text-white' : 
                           isSelected ? 'text-gray-800' : 
                           isCurrentMonthDay ? 'text-gray-700' : 'text-gray-400'
@@ -406,20 +445,20 @@ export default function PageantCalendar() {
                         </div>
                         
                         {/* Event indicators */}
-                        <div className="absolute bottom-1 left-1 right-1 space-y-0.5">
+                        <div className="flex-1 flex flex-col justify-end space-y-1">
                           {dayEvents.slice(0, 2).map((event, eventIndex) => {
                             const typeInfo = getEventTypeInfo(event.type);
                             return (
                               <div
                                 key={eventIndex}
-                                className={`h-1 rounded-full ${typeInfo.color} opacity-80`}
+                                className={`h-1.5 rounded-full ${typeInfo.color} opacity-80`}
                                 title={event.title}
                               />
                             );
                           })}
                           {dayEvents.length > 2 && (
-                            <div className="text-xs text-gray-500 text-center">
-                              +{dayEvents.length - 2} more
+                            <div className="text-xs text-gray-500 text-center font-medium">
+                              +{dayEvents.length - 2}
                             </div>
                           )}
                         </div>
