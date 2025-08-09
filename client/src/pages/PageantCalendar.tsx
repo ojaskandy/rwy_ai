@@ -351,38 +351,43 @@ export default function PageantCalendar() {
           {/* Calendar Section */}
           <div className="lg:col-span-3">
             <Card className="bg-white border shadow-lg rounded-lg">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-gray-800 flex items-center">
+              <CardHeader className="pb-4">
+                {/* Date Range - Top Row */}
+                <div className="text-center mb-4">
+                  <CardTitle className="text-gray-800 text-xl font-bold flex items-center justify-center">
                     <CalendarIcon className="w-5 h-5 mr-2 text-gray-600" />
                     {formatDateRange(currentDate)}
                   </CardTitle>
+                </div>
+                
+                {/* Controls - Bottom Row */}
+                <div className="flex items-center justify-between">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('twoweek')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'twoweek'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      2 Weeks
+                    </button>
+                    <button
+                      onClick={() => setViewMode('month')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'month'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      Month
+                    </button>
+                  </div>
+                  
+                  {/* Navigation Buttons */}
                   <div className="flex items-center space-x-2">
-                    {/* View Mode Toggle */}
-                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                      <button
-                        onClick={() => setViewMode('twoweek')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          viewMode === 'twoweek'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        2 Weeks
-                      </button>
-                      <button
-                        onClick={() => setViewMode('month')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          viewMode === 'month'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        Month
-                      </button>
-                    </div>
-                    
-                    {/* Navigation Buttons */}
                     <Button
                       onClick={navigatePrevious}
                       variant="outline"
