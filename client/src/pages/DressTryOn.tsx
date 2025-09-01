@@ -278,7 +278,7 @@ export default function DressTryOn() {
 
   if (showResult) {
     return (
-      <div className="min-h-screen p-4" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen p-4" style={{ backgroundColor: '#FFB6C1' }}>
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -466,7 +466,7 @@ export default function DressTryOn() {
   // Magic Animation Overlay
   if (showMagicAnimation) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFB6C1' }}>
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -514,7 +514,7 @@ export default function DressTryOn() {
         limit={limits.dressTryOnsWeekly}
         timePeriod="week"
       />
-      <div className="min-h-screen p-4" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen p-4" style={{ backgroundColor: '#FFB6C1' }}>
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

@@ -347,7 +347,7 @@ export default function Board() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#FFB6C1' }}>
         <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
@@ -363,7 +363,7 @@ export default function Board() {
         limit={limits.boardSavesMonthly}
         timePeriod="month"
       />
-      <div className="min-h-screen pb-20" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Header */}
       <div className="bg-white/20 backdrop-blur-md border-b border-white/30 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">

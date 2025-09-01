@@ -548,7 +548,7 @@ export default function InterviewCoach() {
         limit={limits.interviewQuestionsWeekly}
         timePeriod="week"
       />
-      <div className="min-h-screen p-3" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen p-3" style={{ backgroundColor: '#FFB6C1' }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">

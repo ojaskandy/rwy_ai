@@ -316,7 +316,7 @@ export default function PageantCalendar() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-3 flex items-center justify-center" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen p-3 flex items-center justify-center" style={{ backgroundColor: '#FFB6C1' }}>
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-600" />
           <p className="text-gray-700">Loading calendar...</p>
@@ -334,7 +334,7 @@ export default function PageantCalendar() {
         limit={limits.calendarEventsTotal}
         timePeriod="total"
       />
-      <div className="min-h-screen" style={{ backgroundColor: '#FFC5D3' }}>
+      <div className="min-h-screen" style={{ backgroundColor: '#FFB6C1' }}>
         <div className="container mx-auto px-4 py-8">
         {/* Prominent Add Event Section for Mobile */}
         <div className="lg:hidden mb-6">

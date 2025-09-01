@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Send, MessageCircle, Sparkles } from "lucide-react";
+import { Send, MessageCircle, Sparkles, Wand, Star, Award, HeartHandshake } from "lucide-react";
 import partnershipHero from "@assets/partnership_hero.jpeg";
 import challengesImage from "@assets/partnership_challenges.png";
 import practiceLibraryImage from "@assets/partnership_practicelibrary.png";

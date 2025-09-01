@@ -412,7 +412,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen overflow-hidden" style={{ backgroundColor: '#FFC5D3' }}>
+    <div className="h-screen overflow-hidden" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Top Welcome Banner */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
         <div className="flex items-center justify-between px-6 py-6">
