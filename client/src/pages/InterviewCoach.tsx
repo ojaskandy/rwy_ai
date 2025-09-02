@@ -624,8 +624,8 @@ export default function InterviewCoach() {
           
           // Create analyzer
           const analyser = audioContext.createAnalyser();
-          analyser.fftSize = 128; // Must be power of 2 - smaller for better performance
-          analyser.smoothingTimeConstant = 0.5; // Smoothing (0-1) - less smoothing for more responsive
+          analyser.fftSize = 64; // Smaller FFT size for more responsiveness
+          analyser.smoothingTimeConstant = 0.2; // Lower smoothing for much more reactive visualization
           analyserRef.current = analyser;
           
           // Connect microphone to analyzer
@@ -670,17 +670,19 @@ export default function InterviewCoach() {
               // Apply center emphasis: center bars show normal volume,
               // edge bars are dampened based on distance from center AND overall volume
               // This creates the effect of sound "spreading out" from center as volume increases
-              const volumeThreshold = 40; // Baseline for when edges should start showing
-              const volumeFactor = Math.max(0, Math.min(1, (overallVolume - volumeThreshold) / 100));
+              const volumeThreshold = 20; // Lower threshold for when edges should start showing
+              const volumeFactor = Math.max(0, Math.min(1, (overallVolume - volumeThreshold) / 50)); // More sensitive
               
               // Edge dampening factor - higher volume means less dampening
-              const edgeDampening = distanceFromCenter * (1 - volumeFactor);
+              const edgeDampening = distanceFromCenter * (1 - volumeFactor) * 0.8; // Less dampening overall
               
               // Apply dampening (1.0 at center, decreases toward edges based on volume)
-              const scaledValue = average * (1 - edgeDampening);
+              // Amplify the signal for more reactivity
+              const amplification = 1.8; // Boost the signal
+              const scaledValue = average * (1 - edgeDampening) * amplification;
               
-              // Scale to percentage (5-80%)
-              return Math.max(5, Math.min(80, (scaledValue / 255) * 80));
+              // Scale to percentage (5-95%) - allow for taller bars
+              return Math.max(5, Math.min(95, (scaledValue / 255) * 95));
             });
             
             setAudioData(newAudioData);
@@ -731,7 +733,7 @@ export default function InterviewCoach() {
                 )}
                 style={{ 
                   height: `${audioData[i]}%`,
-                  transition: 'height 0.05s ease'
+                  transition: 'height 0.02s ease' // Faster transitions for more immediate response
                 }}
               />
             );
