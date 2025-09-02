@@ -599,31 +599,68 @@ export default function InterviewCoach() {
   // Audio Visualizer Component
   const AudioVisualizer = () => {
     const [bars] = useState(20); // Number of bars in the visualizer
+    const [animationValues, setAnimationValues] = useState<number[]>([]);
     
-    // For demo/testing purposes, always show the visualizer with random values
+    // For demo/testing purposes, always show the visualizer with simulated values
     const demoMode = true;
     
+    // Initialize and update animation values
+    useEffect(() => {
+      // Create initial values - small bars at rest
+      if (animationValues.length === 0) {
+        setAnimationValues(Array(bars).fill(0).map(() => Math.random() * 10 + 5));
+      }
+      
+      // Animation loop for demo mode
+      let animationFrame: number;
+      if (demoMode) {
+        let increasing = Array(bars).fill(false);
+        let speeds = Array(bars).fill(0).map(() => Math.random() * 0.8 + 0.2);
+        
+        const animate = () => {
+          setAnimationValues(prev => 
+            prev.map((val, i) => {
+              // Randomly change direction occasionally
+              if (Math.random() < 0.03) {
+                increasing[i] = !increasing[i];
+              }
+              
+              // Calculate new value based on direction
+              let newVal = increasing[i] 
+                ? val + speeds[i] * 2
+                : val - speeds[i];
+                
+              // Keep within bounds and change direction if needed
+              if (newVal < 5) {
+                newVal = 5;
+                increasing[i] = true;
+              } else if (newVal > 70) {
+                newVal = 70;
+                increasing[i] = false;
+              }
+              
+              return newVal;
+            })
+          );
+          
+          animationFrame = requestAnimationFrame(animate);
+        };
+        
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+      }
+    }, [bars, demoMode]);
+    
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-20 left-0 right-0 mx-auto w-11/12 max-w-md h-16 bg-white/20 backdrop-blur-lg rounded-xl overflow-hidden shadow-lg"
-        style={{ zIndex: 50 }}
-      >
-        <div className="flex items-end justify-center h-full w-full px-2 gap-1">
+      <div className="fixed bottom-16 left-0 right-0 mx-auto w-11/12 max-w-md" style={{ zIndex: 50 }}>
+        <div className="flex items-end justify-center h-16 w-full gap-[2px]">
           {Array.from({ length: bars }).map((_, i) => {
-            // Get data for this bar (if available) or use random values for demo
-            const value = demoMode 
-              ? Math.random() * 255
-              : dataArrayRef.current 
-                ? dataArrayRef.current[Math.floor(i * dataArrayRef.current.length / bars)] 
-                : 0;
-            
-            // Calculate height based on audio data (0-255)
+            // Get height from animation values or from audio data
             const height = demoMode 
-              ? Math.random() * 60 + 20 // More dramatic random heights for demo
-              : value ? Math.max(15, (value / 255) * 100) : Math.random() * 40 + 10;
+              ? animationValues[i] || 10
+              : dataArrayRef.current 
+                ? Math.max(5, (dataArrayRef.current[Math.floor(i * dataArrayRef.current.length / bars)] / 255) * 70)
+                : 5;
             
             // Alternate colors for visual interest
             const isEven = i % 2 === 0;
@@ -638,16 +675,15 @@ export default function InterviewCoach() {
                   "rounded-t-full w-full", 
                   gradientClass
                 )}
-                initial={{ height: 5 }}
-                animate={{ 
+                style={{ 
                   height: `${height}%`,
-                  transition: { duration: 0.1 }
+                  transition: 'height 0.1s ease'
                 }}
               />
             );
           })}
         </div>
-      </motion.div>
+      </div>
     );
   };
 
