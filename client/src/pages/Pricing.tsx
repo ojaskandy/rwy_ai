@@ -95,12 +95,12 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen w-full bg-white overflow-hidden flex flex-col justify-center items-center px-6 py-8">
-      {/* Skip Button */}
-      <div className="absolute top-4 right-4">
+      {/* Skip Button - positioned further top-right */}
+      <div className="absolute top-2 right-2">
         <Button
           variant="ghost"
           onClick={handleSkip}
-          className="text-gray-500 hover:text-gray-800 text-sm"
+          className="text-gray-400 hover:text-gray-700 text-sm"
         >
           Skip
         </Button>
@@ -126,7 +126,12 @@ export default function Pricing() {
             <div className="grid grid-cols-3 font-bold text-lg">
               <div className="p-3 text-gray-700">Feature</div>
               <div className="p-3 text-gray-700">Free</div>
-              <div className="p-3 text-green-600">Premium</div>
+              {/* Premium with gradient text */}
+              <div className="p-3">
+                <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+                  Premium
+                </span>
+              </div>
             </div>
 
             {/* Table Content */}
