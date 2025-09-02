@@ -95,7 +95,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen w-full bg-white overflow-hidden flex flex-col justify-center items-center px-6 py-8">
-      {/* Skip Button - positioned further top-right */}
+      {/* Skip Button */}
       <div className="absolute top-2 right-2">
         <Button
           variant="ghost"
@@ -319,25 +319,28 @@ export default function Pricing() {
             </div>
             
             <div className="my-4 text-gray-700 space-y-3">
-              <p><span className="font-bold text-pink-600">95% of premium users</span> achieve higher competition scores.</p>
-              <p>Premium members are <span className="font-bold text-pink-600">3x more likely</span> to place in the top 3 of their competitions.</p>
+              <p><span className="text-pink-500 font-bold">95% of premium users</span> achieve higher competition scores.</p>
+              <p>Premium members are <span className="text-pink-500 font-bold">3x more likely</span> to place in the top 3 of their competitions.</p>
               <p>You'll miss unlimited access to our most powerful AI coaching features.</p>
             </div>
 
             <div className="flex flex-col gap-3 mt-6">
-              <Button
+              {/* Fixed button visibility */}
+              <button
                 onClick={confirmSkip}
-                variant="outline"
-                className="w-full"
+                className="w-full py-3 border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 font-medium rounded-xl"
               >
                 Continue with Free Plan
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => setShowSkipConfirmation(false)}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                className="w-full py-3 text-white font-medium rounded-xl"
+                style={{
+                  background: "linear-gradient(135deg, #f72585 0%, #7209b7 50%, #560bad 100%)",
+                }}
               >
                 Go Premium
-              </Button>
+              </button>
             </div>
             
             <p className="text-center text-gray-500 text-sm mt-4">
