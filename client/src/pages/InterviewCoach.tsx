@@ -505,9 +505,16 @@ export default function InterviewCoach() {
   };
 
   // Next question
-  const nextQuestion = () => {
-    // For question mode, we always allow more questions without limit
-    // For rounds mode, we check if we've reached the limit
+  const nextQuestion = async () => {
+    // Check if the user has reached their usage limit
+    const usage = await checkUsage('interview_question');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
+    
+    // For question mode, we always allow more questions as long as they're under their limit
+    // For rounds mode, we check if we've reached the configured number of questions
     if (mode === 'question' || currentQuestionIndex < numQuestions - 1) {
       const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
       setCurrentQuestionIndex(prev => prev + 1);
@@ -558,6 +565,29 @@ export default function InterviewCoach() {
 
       setFeedback(result.feedback);
       setShowUsage(true);
+      
+      // Track interview question usage
+      try {
+        // Get the session either from supabase or from the session context
+        let accessToken = null;
+        if (supabase?.auth) {
+          const { data } = await supabase.auth.getSession();
+          accessToken = data?.session?.access_token;
+        }
+        
+        if (accessToken) {
+          await fetch('/api/subscription/track-interview-usage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
+        }
+      } catch (trackError) {
+        console.error('Failed to track usage:', trackError);
+        // Non-blocking - continue even if tracking fails
+      }
       
       // CRITICAL DIFFERENCE: Questions mode vs Rounds mode
       if (mode === 'question') {
@@ -1305,10 +1335,13 @@ export default function InterviewCoach() {
                           </Button>
                           
                           <Button
-                            onClick={() => {
-                              nextQuestion();
-                              setCurrentStep('question');
-                              setShowAudioVisualizer(false); // Keep audio visualizer hidden when going to next question
+                            onClick={async () => {
+                              await nextQuestion();
+                              // Only proceed if the modal wasn't shown (meaning they haven't hit their limit)
+                              if (!isLimitModalOpen) {
+                                setCurrentStep('question');
+                                setShowAudioVisualizer(false); // Keep audio visualizer hidden when going to next question
+                              }
                             }}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                             size="sm"

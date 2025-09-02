@@ -445,6 +445,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/interview/test", interview.testConnection);
   app.post("/api/interview/transcribe", interview.transcribeAudio);
   app.post("/api/interview/feedback", interview.generateFeedback);
+  
+  // Track interview question usage
+  app.post("/api/subscription/track-interview-usage", async (req: Request, res: Response) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      
+      // Attach user info for middleware
+      (req as any).user = user;
+      (req as any).usageInfo = { action: 'interview_question' };
+      
+      // Use the same tracking logic as other actions
+      await trackUsageAfterAction()(req, res, () => {
+        res.json({ success: true });
+      });
+    } catch (error) {
+      console.error("Error tracking interview usage:", error);
+      if (error instanceof Error && error.message.includes("token")) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to track interview usage" });
+      }
+    }
+  });
 
   // Billing routes
   app.post("/api/billing/verify-code", billing.verifyCode);
