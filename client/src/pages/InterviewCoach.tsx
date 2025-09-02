@@ -622,11 +622,11 @@ export default function InterviewCoach() {
           const audioContext = new AudioContext();
           audioContextRef.current = audioContext;
           
-          // Create analyzer
-          const analyser = audioContext.createAnalyser();
-          analyser.fftSize = 128; // Medium FFT size for balanced response
-          analyser.smoothingTimeConstant = 0.4; // Moderate smoothing - balance between responsiveness and smoothness
-          analyserRef.current = analyser;
+                      // Create analyzer
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024; // Higher FFT size for more detailed frequency data
+            analyser.smoothingTimeConstant = 0.5; // Balance between responsiveness and smoothness
+            analyserRef.current = analyser;
           
           // Connect microphone to analyzer
           const source = audioContext.createMediaStreamSource(stream);
@@ -642,23 +642,46 @@ export default function InterviewCoach() {
             // Get frequency data
             analyserRef.current.getByteFrequencyData(dataArray);
             
-            // Get the overall volume level first (average of all frequencies)
+            // Calculate overall volume for better speech detection
             let totalSum = 0;
             for (let j = 0; j < bufferLength; j++) {
               totalSum += dataArray[j];
             }
             const overallVolume = totalSum / bufferLength;
             
-            // Simple approach: Map frequency data to bars with center emphasis
+            // Boost factor based on overall volume - makes visualizer more sensitive to speech
+            // When volume is low, we apply more boost to make small sounds visible
+            const minBoost = 1.5;
+            const maxBoost = 3.5;
+            const volumeThreshold = 10; // Lower threshold for detecting speech
+            const boostFactor = overallVolume < volumeThreshold 
+              ? maxBoost // Apply max boost when volume is very low
+              : Math.max(minBoost, maxBoost - (overallVolume - volumeThreshold) / 50);
+            
+            // Map frequency data to our bars with emphasis on speech frequencies
             const newAudioData = Array(bars).fill(0).map((_, i) => {
-              // Calculate distance from center (0 to 1, where 0 is center and 1 is edge)
-              const center = bars / 2;
-              const distanceFromCenter = Math.abs(i - center) / center;
+              // Each bar represents a frequency range, but we'll emphasize mid-range frequencies
+              // Human speech is typically 85-255 Hz (fundamental) and up to 8kHz (harmonics)
+              // We'll give more weight to these frequency ranges
               
-              // Get the raw value from the frequency data
-              // Use simple mapping - each bar gets a portion of the frequency range
+              // Get the frequency range for this bar
               const startIndex = Math.floor(i * bufferLength / bars);
               const endIndex = Math.floor((i + 1) * bufferLength / bars);
+              
+              // Calculate the center frequency of this range
+              const centerFreq = (startIndex + endIndex) / 2 / bufferLength * (audioContext.sampleRate / 2);
+              
+              // Speech emphasis factor - boost frequencies in speech range
+              // Peak emphasis around 1-3kHz where speech is most intelligible
+              let speechEmphasis = 1.0;
+              if (centerFreq > 200 && centerFreq < 4000) {
+                // Extra boost for speech frequencies
+                speechEmphasis = 1.5;
+                if (centerFreq > 800 && centerFreq < 2500) {
+                  // Maximum boost for the most important speech frequencies
+                  speechEmphasis = 2.0;
+                }
+              }
               
               // Average the frequencies in this range
               let sum = 0;
@@ -667,22 +690,14 @@ export default function InterviewCoach() {
               }
               const average = sum / (endIndex - startIndex);
               
-              // Apply center emphasis: center bars show normal volume,
-              // edge bars are dampened based on distance from center AND overall volume
-              // This creates the effect of sound "spreading out" from center as volume increases
-              const volumeThreshold = 15; // Lower threshold for better speech detection
-              const volumeFactor = Math.max(0, Math.min(1, (overallVolume - volumeThreshold) / 60)); // More sensitive
+              // Apply speech emphasis and boost factor
+              const boostedValue = average * speechEmphasis * boostFactor;
               
-              // Edge dampening factor - higher volume means less dampening
-              const edgeDampening = distanceFromCenter * (1 - volumeFactor) * 0.8; // Less dampening for edges
-              
-              // Apply dampening (1.0 at center, decreases toward edges based on volume)
-              // Higher amplification for better speech detection
-              const amplification = 2.2; // Higher boost to make speech more visible
-              const scaledValue = average * (1 - edgeDampening) * amplification;
-              
-              // Scale to percentage (5-100%) - allow for full height range but not excessive
-              return Math.max(5, Math.min(100, (scaledValue / 255) * 100));
+              // Scale to percentage (5-90%) with smoother response curve
+              // Use cubic easing for smoother visual response
+              const normalized = boostedValue / 255;
+              const eased = normalized * normalized * (3 - 2 * normalized); // Smooth cubic easing
+              return Math.max(5, Math.min(90, eased * 90));
             });
             
             setAudioData(newAudioData);
@@ -733,7 +748,7 @@ export default function InterviewCoach() {
                 )}
                 style={{ 
                   height: `${audioData[i]}%`,
-                  transition: 'height 0.08s ease-out' // Moderately fast transitions, still smooth
+                  transition: 'height 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               />
             );
