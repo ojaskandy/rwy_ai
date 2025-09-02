@@ -1187,20 +1187,22 @@ export default function InterviewCoach() {
                   </Card>
                 )}
 
-                {/* Summary */}
-                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-gray-800">
-                      <Sparkles className="w-5 h-5 text-green-600" />
-                      {mode === 'question' ? 'Question Feedback' : 'Interview Summary'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-800 leading-relaxed text-sm">
-                      {feedback.summary}
-                    </p>
-                  </CardContent>
-                </Card>
+                {/* We're only keeping one feedback section - removing this summary card for question mode */}
+                {mode === 'rounds' && (
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-gray-800">
+                        <Sparkles className="w-5 h-5 text-green-600" />
+                        Interview Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-800 leading-relaxed text-sm">
+                        {feedback.summary}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Individual Answer Feedback */}
                 {feedback.answers.map((answer, index) => (
