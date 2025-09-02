@@ -548,26 +548,28 @@ export default function InterviewCoach() {
         limit={limits.interviewQuestionsWeekly}
         timePeriod="week"
       />
-      <div className="min-h-screen p-3 flex flex-col items-center justify-center" style={{ backgroundColor: '#FFB6C1' }}>
-      <div className="w-full max-w-md mx-auto mt-12">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-2xl font-bold text-gray-800 mb-2"
-          >
-            Interview Coach
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-gray-600 text-sm"
-          >
-            Practice your pageant interview skills
-          </motion.p>
-        </div>
+      <div className="min-h-screen p-3 flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
+      {/* Header at the top */}
+      <div className="text-center mb-10 pt-8">
+        <motion.h1 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-bold text-gray-800 mb-2"
+        >
+          Interview Coach
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-gray-600 text-sm"
+        >
+          Practice your pageant interview skills
+        </motion.p>
+      </div>
+      
+      {/* Content centered but higher up */}
+      <div className="w-full max-w-md mx-auto mt-4 flex-grow flex flex-col justify-start items-center">
 
         {/* Error Display */}
         {error && (
