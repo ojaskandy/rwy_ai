@@ -230,6 +230,12 @@ export default function InterviewCoach() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(console.error);
+      }
     };
   }, []);
 
@@ -1187,22 +1193,23 @@ export default function InterviewCoach() {
                   </Card>
                 )}
 
-                {/* We're only keeping one feedback section - removing this summary card for question mode */}
-                {mode === 'rounds' && (
-                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="flex items-center gap-2 text-gray-800">
-                        <Sparkles className="w-5 h-5 text-green-600" />
-                        Interview Summary
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-800 leading-relaxed text-sm">
-                        {feedback.summary}
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Card for question coaching tip or rounds summary */}
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Sparkles className="w-5 h-5 text-green-600" />
+                      {mode === 'question' ? 'Question Feedback' : 'Interview Summary'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-800 leading-relaxed text-sm">
+                      {mode === 'question' 
+                        ? feedback.answers[0]?.coachingTip // Show coaching tip for question mode
+                        : feedback.summary // Show summary for rounds mode
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
 
                 {/* Individual Answer Feedback */}
                 {feedback.answers.map((answer, index) => (
@@ -1237,10 +1244,12 @@ export default function InterviewCoach() {
                         </div>
                       </div>
 
-                      {/* Coaching Tip - shown directly in main content */}
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-gray-800 text-sm leading-relaxed">{answer.coachingTip}</p>
-                      </div>
+                      {/* Remove duplicate coaching tip from individual answer card in question mode */}
+                      {mode === 'rounds' && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-gray-800 text-sm leading-relaxed">{answer.coachingTip}</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -1282,6 +1291,7 @@ export default function InterviewCoach() {
                           <Button
                             onClick={() => {
                               setCurrentStep('question');
+                              setShowAudioVisualizer(false); // Keep audio visualizer hidden when retrying
                               retryQuestion();
                             }}
                             variant="outline"
@@ -1296,6 +1306,7 @@ export default function InterviewCoach() {
                             onClick={() => {
                               nextQuestion();
                               setCurrentStep('question');
+                              setShowAudioVisualizer(false); // Keep audio visualizer hidden when going to next question
                             }}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                             size="sm"
@@ -1311,14 +1322,17 @@ export default function InterviewCoach() {
                         <p className="text-sm text-purple-600 text-center">
                           You answered all {numQuestions} questions. Review your feedback above.
                         </p>
-                        <Button
-                          onClick={() => setCurrentStep('setup')}
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold"
-                          size="sm"
-                        >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          Start New Practice Session
-                        </Button>
+                                                  <Button
+                            onClick={() => {
+                              setCurrentStep('setup');
+                              setShowAudioVisualizer(true); // Show audio visualizer again when returning to home
+                            }}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+                            size="sm"
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Start New Practice Session
+                          </Button>
                       </div>
                     )}
                   </CardContent>
