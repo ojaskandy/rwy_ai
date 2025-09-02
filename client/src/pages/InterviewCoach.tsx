@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { 
   Mic, MicOff, Play, RotateCcw, 
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
@@ -193,9 +194,13 @@ export default function InterviewCoach() {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const transcriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
 
   // Timer ref
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Timer management
   useEffect(() => {
@@ -223,6 +228,12 @@ export default function InterviewCoach() {
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
       }
     };
   }, []);
@@ -256,6 +267,38 @@ export default function InterviewCoach() {
     setCurrentTranscript('');
   };
 
+  // Audio visualization setup
+  const setupAudioVisualization = (stream: MediaStream) => {
+    // Create audio context and analyzer
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    const audioContext = new AudioContext();
+    audioContextRef.current = audioContext;
+    
+    // Create analyzer node
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyserRef.current = analyser;
+    
+    // Connect audio source to analyzer
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+    
+    // Create data array for visualization
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    dataArrayRef.current = dataArray;
+    
+    // Start visualization loop
+    const updateVisualization = () => {
+      if (!isRecording) return;
+      
+      analyser.getByteFrequencyData(dataArray);
+      animationFrameRef.current = requestAnimationFrame(updateVisualization);
+    };
+    
+    updateVisualization();
+  };
+
   // Start recording with real-time transcription
   const handleStartRecording = async () => {
     try {
@@ -267,6 +310,9 @@ export default function InterviewCoach() {
       setError(null);
       setCurrentTranscript('Starting to listen...');
       audioChunksRef.current = [];
+
+      // Setup audio visualization
+      setupAudioVisualization(stream);
 
       mediaRecorderRef.current = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
@@ -366,6 +412,18 @@ export default function InterviewCoach() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
+      }
+      
+      // Stop visualization
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // Close audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
       }
       
       setCurrentTranscript('🔄 Processing your complete answer...');
@@ -538,6 +596,56 @@ export default function InterviewCoach() {
   const progressPercentage = Math.min(100, (sessions.length / numQuestions) * 100);
   const currentQuestionNumber = sessions.length + 1;
 
+  // Audio Visualizer Component
+  const AudioVisualizer = () => {
+    const [bars] = useState(20); // Number of bars in the visualizer
+    
+    if (!isRecording || !dataArrayRef.current) return null;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className="fixed bottom-20 left-0 right-0 mx-auto w-11/12 max-w-md h-16 bg-white/20 backdrop-blur-lg rounded-xl overflow-hidden shadow-lg"
+        style={{ zIndex: 50 }}
+      >
+        <div className="flex items-end justify-center h-full w-full px-2 gap-1">
+          {Array.from({ length: bars }).map((_, i) => {
+            // Get data for this bar (if available)
+            const value = dataArrayRef.current 
+              ? dataArrayRef.current[Math.floor(i * dataArrayRef.current.length / bars)] 
+              : 0;
+            
+            // Calculate height based on audio data (0-255)
+            const height = value ? Math.max(15, (value / 255) * 100) : Math.random() * 40 + 10;
+            
+            // Alternate colors for visual interest
+            const isEven = i % 2 === 0;
+            const gradientClass = isEven 
+              ? "bg-gradient-to-t from-pink-600 to-pink-400" 
+              : "bg-gradient-to-t from-purple-600 to-purple-400";
+            
+            return (
+              <motion.div
+                key={i}
+                className={cn(
+                  "rounded-t-full w-full", 
+                  gradientClass
+                )}
+                initial={{ height: 5 }}
+                animate={{ 
+                  height: `${height}%`,
+                  transition: { duration: 0.1 }
+                }}
+              />
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <>
       <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" />
@@ -548,6 +656,9 @@ export default function InterviewCoach() {
         limit={limits.interviewQuestionsWeekly}
         timePeriod="week"
       />
+      <AnimatePresence>
+        {isRecording && <AudioVisualizer />}
+      </AnimatePresence>
       <div className="min-h-screen p-3 flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Header at the top */}
       <div className="text-center mb-10 pt-8">
