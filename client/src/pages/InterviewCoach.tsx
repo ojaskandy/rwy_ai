@@ -652,7 +652,7 @@ export default function InterviewCoach() {
     }, [bars, demoMode]);
     
     return (
-      <div className="fixed bottom-16 left-0 right-0 mx-auto w-11/12 max-w-md" style={{ zIndex: 50 }}>
+      <div className="fixed bottom-24 left-0 right-0 mx-auto w-11/12 max-w-md" style={{ zIndex: 50 }}>
         <div className="flex items-end justify-center h-16 w-full gap-[2px]">
           {Array.from({ length: bars }).map((_, i) => {
             // Get height from animation values or from audio data
