@@ -170,7 +170,7 @@ export default function InterviewCoach() {
   const [mode, setMode] = useState<'question' | 'rounds'>('question');
   const [numQuestions, setNumQuestions] = useState(3);
   const [timeLimit, setTimeLimit] = useState(90);
-  const [currentStep, setCurrentStep] = useState<'setup' | 'question' | 'grading' | 'feedback'>('setup');
+  const [currentStep, setCurrentStep] = useState<'setup' | 'settings' | 'question' | 'grading' | 'feedback'>('setup');
   
   // Question state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -548,8 +548,8 @@ export default function InterviewCoach() {
         limit={limits.interviewQuestionsWeekly}
         timePeriod="week"
       />
-      <div className="min-h-screen p-3" style={{ backgroundColor: '#FFB6C1' }}>
-      <div className="max-w-2xl mx-auto">
+      <div className="min-h-screen p-3 flex flex-col items-center justify-center" style={{ backgroundColor: '#FFB6C1' }}>
+      <div className="w-full max-w-md mx-auto mt-12">
         {/* Header */}
         <div className="text-center mb-6">
           <motion.h1 
@@ -605,143 +605,94 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-gray-800">
-                    <MessageSquare className="w-5 h-5 text-pink-600" />
-                    Choose Your Interview Practice Mode
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-3xl overflow-hidden transform transition-all duration-300">
+                  <CardHeader className="pb-4 pt-8">
+                   <CardTitle className="text-gray-800 text-2xl font-bold text-center">
+                      Pick Your Style
+                    </CardTitle>
+                  </CardHeader>
+                 <CardContent className="space-y-6 px-6 pb-8">
+                  <Button
+                    onClick={() => { setMode('question'); setCurrentStep('settings'); }}
+                    className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-md"
+                  >
+                    <MessageSquare className="w-6 h-6" />
+                    Rapid Fire (one at a time)
+                  </Button>
+                  <div className="relative">
+                    <Button
+                      onClick={() => { setMode('rounds'); setCurrentStep('settings'); }}
+                      className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-md"
+                    >
+                      <Sparkles className="w-6 h-6" />
+                      Full Run (all at once)
+                    </Button>
+                    <span className="absolute top-0 right-4 bg-pink-100 text-pink-600 text-xs font-semibold px-3 py-1 rounded-full shadow-sm transform -translate-y-1/2">
+                      More realistic
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Settings Step */}
+          {currentStep === 'settings' && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-3xl overflow-hidden transform transition-all duration-300">
+                 <CardHeader className="pb-4 pt-8">
+                   <CardTitle className="text-gray-800 text-2xl font-bold text-center">
+                    {mode === 'question' ? 'Rapid Fire Settings' : 'Full Run Settings'}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Mode Selection - Completely Different Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Questions Mode Card */}
-                    <div 
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        mode === 'question' 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-200 bg-white hover:border-blue-300'
-                      }`}
-                      onClick={() => setMode('question')}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <MessageSquare className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-blue-700">Questions Mode</h3>
-                          <p className="text-xs text-blue-600">Practice one question at a time</p>
-                        </div>
+                <CardContent className="space-y-6 px-6 pb-8">
+                  {mode === 'rounds' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Number of questions:
+                      </label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[3, 5, 7, 10].map((num) => (
+                          <button
+                            key={num}
+                            onClick={() => setNumQuestions(num)}
+                            className={`px-3 py-1 rounded text-sm transition-colors ${
+                              numQuestions === num
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                            }`}
+                          >
+                            {num}
+                          </button>
+                        ))}
                       </div>
-
                     </div>
-
-                    {/* Rounds Mode Card */}
-                    <div 
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        mode === 'rounds' 
-                          ? 'border-purple-500 bg-purple-50' 
-                          : 'border-gray-200 bg-white hover:border-purple-300'
-                      }`}
-                      onClick={() => setMode('rounds')}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                          <Sparkles className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-purple-700">Rounds Mode</h3>
-                          <p className="text-xs text-purple-600">Full interview simulation</p>
-                        </div>
-                      </div>
-
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time limit per question:
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[30, 45, 60, 75, 90].map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setTimeLimit(time)}
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            timeLimit === time
+                              ? mode === 'question' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
+                              : mode === 'question' ? 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-100' : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                          }`}
+                        >
+                          {time}s
+                        </button>
+                      ))}
                     </div>
                   </div>
-
-                  {/* Mode-Specific Settings */}
-                  {mode === 'question' && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-medium text-blue-800 mb-3">Questions Mode Settings</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-blue-700 mb-2">
-                            Time limit per question:
-                          </label>
-                          <div className="flex gap-2 flex-wrap">
-                            {[30, 45, 60, 75, 90].map((time) => (
-                              <button
-                                key={time}
-                                onClick={() => setTimeLimit(time)}
-                                className={`px-3 py-1 rounded text-sm transition-colors ${
-                                  timeLimit === time
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-100'
-                                }`}
-                              >
-                                {time}s
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-xs text-blue-600">
-                          <strong>How it works:</strong> Answer one question → Get immediate feedback → Choose to continue or stop
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {mode === 'rounds' && (
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h4 className="font-medium text-purple-800 mb-3">Rounds Mode Settings</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700 mb-2">
-                            Number of questions in this round:
-                          </label>
-                          <div className="flex gap-2 flex-wrap">
-                            {[3, 5, 7, 10].map((num) => (
-                              <button
-                                key={num}
-                                onClick={() => setNumQuestions(num)}
-                                className={`px-3 py-1 rounded text-sm transition-colors ${
-                                  numQuestions === num
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
-                                }`}
-                              >
-                                {num}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700 mb-2">
-                            Time limit per question:
-                          </label>
-                          <div className="flex gap-2 flex-wrap">
-                            {[30, 45, 60, 75, 90].map((time) => (
-                              <button
-                                key={time}
-                                onClick={() => setTimeLimit(time)}
-                                className={`px-3 py-1 rounded text-sm transition-colors ${
-                                  timeLimit === time
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
-                                }`}
-                              >
-                                {time}s
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-xs text-purple-600">
-                          <strong>How it works:</strong> Answer {numQuestions} questions in a row → Get comprehensive feedback at the end
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Start Button */}
                   <Button
                     onClick={startPractice}
                     className={`w-full py-3 text-white font-medium rounded-lg ${
@@ -750,7 +701,7 @@ export default function InterviewCoach() {
                         : 'bg-purple-600 hover:bg-purple-700'
                     }`}
                   >
-                    Start {mode === 'question' ? 'Questions' : 'Rounds'} Practice
+                    Start {mode === 'question' ? 'Rapid Fire' : 'Full Run'}
                   </Button>
                 </CardContent>
               </Card>
