@@ -169,9 +169,10 @@ export default function InterviewCoach() {
   
   // Practice setup state
   const [mode, setMode] = useState<'question' | 'rounds'>('question');
-  const [numQuestions, setNumQuestions] = useState(3);
+  const [numQuestions, setNumQuestions] = useState(3); // Only used for rounds mode
   const [timeLimit, setTimeLimit] = useState(90);
   const [currentStep, setCurrentStep] = useState<'setup' | 'settings' | 'question' | 'grading' | 'feedback'>('setup');
+  const [showAudioVisualizer, setShowAudioVisualizer] = useState(true);
   
   // Question state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -259,6 +260,7 @@ export default function InterviewCoach() {
     setTimeLeft(timeLimit);
     setHasStarted(false);
     setCurrentTranscript('');
+    setShowAudioVisualizer(false); // Hide audio visualizer when starting practice
   };
 
   // Audio visualization setup
@@ -586,9 +588,16 @@ export default function InterviewCoach() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate progress percentage - fixed logic
-  const progressPercentage = Math.min(100, (sessions.length / numQuestions) * 100);
+  // Calculate progress percentage - different for question vs rounds mode
+  const progressPercentage = mode === 'question' 
+    ? 0 // No progress bar needed for question mode
+    : Math.min(100, (sessions.length / numQuestions) * 100);
+  
+  // For question mode, we don't show "of X" since it's unlimited
   const currentQuestionNumber = sessions.length + 1;
+  const questionDisplay = mode === 'question'
+    ? `Question ${currentQuestionNumber}`
+    : `Question ${currentQuestionNumber} of ${numQuestions}`;
 
   // Audio Visualizer Component
   const AudioVisualizer = () => {
@@ -724,7 +733,7 @@ export default function InterviewCoach() {
         timePeriod="week"
       />
       <AnimatePresence>
-        <AudioVisualizer />
+        {showAudioVisualizer && <AudioVisualizer />}
       </AnimatePresence>
       <div className="min-h-screen p-3 flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Header at the top */}
@@ -901,7 +910,7 @@ export default function InterviewCoach() {
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Question {currentQuestionNumber} of {numQuestions}</span>
+                      <span className="text-sm font-medium text-gray-700">{questionDisplay}</span>
                       <span className="text-sm text-gray-500">{Math.round(progressPercentage)}% Complete</span>
                     </div>
                     <div className="w-full bg-pink-200 rounded-full h-2 relative">
