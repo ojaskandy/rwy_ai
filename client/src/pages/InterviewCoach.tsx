@@ -624,8 +624,8 @@ export default function InterviewCoach() {
           
           // Create analyzer
           const analyser = audioContext.createAnalyser();
-          analyser.fftSize = 256; // Must be power of 2
-          analyser.smoothingTimeConstant = 0.7; // Smoothing (0-1)
+          analyser.fftSize = 128; // Must be power of 2 - smaller for better performance
+          analyser.smoothingTimeConstant = 0.5; // Smoothing (0-1) - less smoothing for more responsive
           analyserRef.current = analyser;
           
           // Connect microphone to analyzer
@@ -642,28 +642,23 @@ export default function InterviewCoach() {
             // Get frequency data
             analyserRef.current.getByteFrequencyData(dataArray);
             
-            // Map frequency data to our bars with center emphasis
+            // Get the overall volume level first (average of all frequencies)
+            let totalSum = 0;
+            for (let j = 0; j < bufferLength; j++) {
+              totalSum += dataArray[j];
+            }
+            const overallVolume = totalSum / bufferLength;
+            
+            // Simple approach: Map frequency data to bars with center emphasis
             const newAudioData = Array(bars).fill(0).map((_, i) => {
               // Calculate distance from center (0 to 1, where 0 is center and 1 is edge)
               const center = bars / 2;
               const distanceFromCenter = Math.abs(i - center) / center;
               
-              // Each bar represents a frequency range
-              // Rearrange frequency mapping to emphasize mid-range frequencies in the center
-              // Lower frequencies in the middle, higher frequencies toward the edges
-              let targetIndex;
-              if (i < center) {
-                // Left side: map from mid-low frequencies
-                targetIndex = Math.floor((i / center) * (bufferLength / 3)) + (bufferLength / 3);
-              } else {
-                // Right side: map from mid-high frequencies
-                targetIndex = Math.floor(((i - center) / center) * (bufferLength / 3)) + (bufferLength * 2 / 3);
-              }
-              
-              // Get a small range around the target frequency
-              const rangeSize = Math.max(1, Math.floor(bufferLength / bars / 2));
-              const startIndex = Math.max(0, targetIndex - rangeSize);
-              const endIndex = Math.min(bufferLength - 1, targetIndex + rangeSize);
+              // Get the raw value from the frequency data
+              // Use simple mapping - each bar gets a portion of the frequency range
+              const startIndex = Math.floor(i * bufferLength / bars);
+              const endIndex = Math.floor((i + 1) * bufferLength / bars);
               
               // Average the frequencies in this range
               let sum = 0;
@@ -672,9 +667,17 @@ export default function InterviewCoach() {
               }
               const average = sum / (endIndex - startIndex);
               
-              // Apply center emphasis: center bars are more responsive, edge bars need more volume
-              const sensitivity = 1 - (distanceFromCenter * 0.7); // 1.0 at center, 0.3 at edges
-              const scaledValue = average * sensitivity;
+              // Apply center emphasis: center bars show normal volume,
+              // edge bars are dampened based on distance from center AND overall volume
+              // This creates the effect of sound "spreading out" from center as volume increases
+              const volumeThreshold = 40; // Baseline for when edges should start showing
+              const volumeFactor = Math.max(0, Math.min(1, (overallVolume - volumeThreshold) / 100));
+              
+              // Edge dampening factor - higher volume means less dampening
+              const edgeDampening = distanceFromCenter * (1 - volumeFactor);
+              
+              // Apply dampening (1.0 at center, decreases toward edges based on volume)
+              const scaledValue = average * (1 - edgeDampening);
               
               // Scale to percentage (5-80%)
               return Math.max(5, Math.min(80, (scaledValue / 255) * 80));
