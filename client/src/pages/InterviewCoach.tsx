@@ -1219,7 +1219,7 @@ export default function InterviewCoach() {
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
                         <MessageSquare className="w-4 h-4 text-pink-600" />
-                        Question {answer.questionNumber}
+                        Question {currentQuestionNumber}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
