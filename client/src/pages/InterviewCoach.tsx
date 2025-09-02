@@ -600,7 +600,8 @@ export default function InterviewCoach() {
   const AudioVisualizer = () => {
     const [bars] = useState(20); // Number of bars in the visualizer
     
-    if (!isRecording || !dataArrayRef.current) return null;
+    // For demo/testing purposes, always show the visualizer with random values
+    const demoMode = true;
     
     return (
       <motion.div
@@ -612,13 +613,17 @@ export default function InterviewCoach() {
       >
         <div className="flex items-end justify-center h-full w-full px-2 gap-1">
           {Array.from({ length: bars }).map((_, i) => {
-            // Get data for this bar (if available)
-            const value = dataArrayRef.current 
-              ? dataArrayRef.current[Math.floor(i * dataArrayRef.current.length / bars)] 
-              : 0;
+            // Get data for this bar (if available) or use random values for demo
+            const value = demoMode 
+              ? Math.random() * 255
+              : dataArrayRef.current 
+                ? dataArrayRef.current[Math.floor(i * dataArrayRef.current.length / bars)] 
+                : 0;
             
             // Calculate height based on audio data (0-255)
-            const height = value ? Math.max(15, (value / 255) * 100) : Math.random() * 40 + 10;
+            const height = demoMode 
+              ? Math.random() * 60 + 20 // More dramatic random heights for demo
+              : value ? Math.max(15, (value / 255) * 100) : Math.random() * 40 + 10;
             
             // Alternate colors for visual interest
             const isEven = i % 2 === 0;
@@ -657,7 +662,7 @@ export default function InterviewCoach() {
         timePeriod="week"
       />
       <AnimatePresence>
-        {isRecording && <AudioVisualizer />}
+        <AudioVisualizer />
       </AnimatePresence>
       <div className="min-h-screen p-3 flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Header at the top */}
