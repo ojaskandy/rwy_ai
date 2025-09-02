@@ -506,15 +506,17 @@ export default function InterviewCoach() {
 
   // Next question
   const nextQuestion = () => {
-    if (currentQuestionIndex < numQuestions - 1) {
+    // For question mode, we always allow more questions without limit
+    // For rounds mode, we check if we've reached the limit
+    if (mode === 'question' || currentQuestionIndex < numQuestions - 1) {
       const shuffled = [...INTERVIEW_QUESTIONS].sort(() => Math.random() - 0.5);
       setCurrentQuestionIndex(prev => prev + 1);
-      setCurrentQuestion(shuffled[currentQuestionIndex + 1] || shuffled[0]);
+      setCurrentQuestion(shuffled[0]); // Always get a fresh random question
       setTimeLeft(timeLimit);
       setHasStarted(false);
       setCurrentTranscript('');
     } else {
-      // All questions completed, show final feedback
+      // All questions completed for rounds mode, show final feedback
       setCurrentStep('feedback');
     }
   };
@@ -599,11 +601,11 @@ export default function InterviewCoach() {
     ? 0 // No progress bar needed for question mode
     : Math.min(100, (sessions.length / numQuestions) * 100);
   
-  // For question mode, we don't show "of X" since it's unlimited
-  const currentQuestionNumber = sessions.length + 1;
+  // For question numbering
+  const currentQuestionNumber = currentQuestionIndex + 1;
   const questionDisplay = mode === 'question'
-    ? `Question ${currentQuestionNumber}`
-    : `Question ${currentQuestionNumber} of ${numQuestions}`;
+    ? `Question ${currentQuestionNumber}` // Just show the question number without limit
+    : `Question ${currentQuestionNumber} of ${numQuestions}`; // Show progress for rounds mode
 
   // Audio Visualizer Component
   const AudioVisualizer = () => {
