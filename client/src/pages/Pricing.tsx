@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, X } from 'lucide-react';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -15,6 +15,7 @@ export default function Pricing() {
   const [codeMessage, setCodeMessage] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [isButtonAnimating, setIsButtonAnimating] = useState(false);
+  const [showSkipConfirmation, setShowSkipConfirmation] = useState(false);
   const [, setLocation] = useLocation();
   
   const { user } = useAuth();
@@ -79,6 +80,12 @@ export default function Pricing() {
   };
 
   const handleSkip = () => {
+    setShowSkipConfirmation(true);
+  };
+
+  const confirmSkip = () => {
+    setShowSkipConfirmation(false);
+    // Navigate to main app with free tier
     setLocation('/app');
   };
 
@@ -87,9 +94,9 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white overflow-hidden flex flex-col justify-center items-center px-4 py-4">
+    <div className="min-h-screen w-full bg-white overflow-hidden flex flex-col justify-center items-center px-6 py-8">
       {/* Skip Button */}
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
           onClick={handleSkip}
@@ -101,33 +108,33 @@ export default function Pricing() {
 
       <div className="max-w-2xl w-full">
         {/* Header */}
-        <div className="text-center mb-4">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-1">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-3">
             <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
               Path to your Crown
             </span>
           </h1>
-          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Every queen deserves the perfect training.
           </p>
         </div>
 
         {/* Pricing Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <div className="divide-y divide-gray-200">
             {/* Table Header */}
             <div className="grid grid-cols-3 font-bold text-lg">
-              <div className="p-2.5 text-gray-700">Feature</div>
-              <div className="p-2.5 text-gray-700">Free</div>
-              <div className="p-2.5 text-green-600">Premium</div>
+              <div className="p-3 text-gray-700">Feature</div>
+              <div className="p-3 text-gray-700">Free</div>
+              <div className="p-3 text-green-600">Premium</div>
             </div>
 
             {/* Table Content */}
             {featureComparison.map((row, index) => (
               <div key={index} className="grid grid-cols-3">
-                <div className="p-2.5 font-medium text-gray-700">{row.feature}</div>
-                <div className="p-2.5 text-gray-500">{row.freeTier}</div>
-                <div className="p-2.5 flex items-center gap-2">
+                <div className="p-3 font-medium text-gray-700">{row.feature}</div>
+                <div className="p-3 text-gray-500">{row.freeTier}</div>
+                <div className="p-3 flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <Check className="w-3 h-3 text-white" />
                   </div>
@@ -139,10 +146,10 @@ export default function Pricing() {
         </div>
         
         {/* Pricing Card - SwingVision Style */}
-        <div className="mb-3">
+        <div className="mb-6">
           <div className="rounded-2xl overflow-hidden">
             {/* Pricing Toggle */}
-            <div className="flex items-center justify-center mb-3">
+            <div className="flex items-center justify-center mb-5">
               <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
                 <button
                   onClick={() => setIsYearly(false)}
@@ -169,13 +176,13 @@ export default function Pricing() {
             </div>
 
             {/* Pricing Box */}
-            <div className="bg-pink-50 text-gray-800 rounded-xl p-3 relative overflow-hidden border border-pink-100">
+            <div className="bg-pink-50 text-gray-800 rounded-xl p-4 relative overflow-hidden border border-pink-100">
               <div className="absolute top-0 right-0 bg-green-500 w-12 h-12 transform rotate-45 translate-x-6 -translate-y-6"></div>
               <div className="absolute top-2 right-2">
                 <Check className="w-5 h-5 text-white" />
               </div>
               
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-1">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800">Premium {isYearly ? 'Yearly' : 'Monthly'}</h3>
                   <p className="text-gray-600 text-sm">
@@ -190,7 +197,7 @@ export default function Pricing() {
             </div>
             
             {/* CTA Button with Amazing Animation */}
-            <div className="relative mt-2 overflow-hidden rounded-xl">
+            <div className="relative mt-4 overflow-hidden rounded-xl">
               <button
                 onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
                 disabled={upgradeLoading || isPremium}
@@ -242,7 +249,7 @@ export default function Pricing() {
         </div>
 
         {/* Premium Code Section */}
-        <div className="text-center">
+        <div className="text-center mt-2">
           {!showCodeInput ? (
             <button
               onClick={() => setShowCodeInput(true)}
@@ -251,8 +258,8 @@ export default function Pricing() {
               Have a premium code?
             </button>
           ) : (
-            <div className="max-w-md mx-auto space-y-2 p-3 bg-white rounded-xl shadow-md border">
-              <p className="font-medium text-gray-800 text-sm">Enter your code for premium access.</p>
+            <div className="max-w-md mx-auto space-y-3 p-4 bg-white rounded-xl shadow-md border mt-4">
+              <p className="font-medium text-gray-800">Enter your code for premium access.</p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Your premium code"
@@ -281,7 +288,7 @@ export default function Pricing() {
           )}
 
           {/* Contact */}
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-4 text-sm text-gray-500">
             <button 
               onClick={handleContact}
               className="text-gray-700 hover:underline"
@@ -291,6 +298,49 @@ export default function Pricing() {
           </div>
         </div>
       </div>
+
+      {/* Skip Confirmation Modal */}
+      {showSkipConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Are you sure?</h3>
+              <button 
+                onClick={() => setShowSkipConfirmation(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="my-4 text-gray-700 space-y-3">
+              <p><span className="font-bold text-pink-600">95% of premium users</span> achieve higher competition scores.</p>
+              <p>Premium members are <span className="font-bold text-pink-600">3x more likely</span> to place in the top 3 of their competitions.</p>
+              <p>You'll miss unlimited access to our most powerful AI coaching features.</p>
+            </div>
+
+            <div className="flex flex-col gap-3 mt-6">
+              <Button
+                onClick={confirmSkip}
+                variant="outline"
+                className="w-full"
+              >
+                Continue with Free Plan
+              </Button>
+              <Button
+                onClick={() => setShowSkipConfirmation(false)}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+              >
+                Go Premium
+              </Button>
+            </div>
+            
+            <p className="text-center text-gray-500 text-sm mt-4">
+              You can always upgrade to premium later in your account settings.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
