@@ -1,26 +1,11 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
-import { Check, Star, Crown, Sparkles, Zap, Target, Heart, Trophy, Gift, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useAuth } from '@/hooks/use-auth';
-
-// Feature component for consistent styling
-const Feature = ({ children, isPremium = false }: { children: React.ReactNode; isPremium?: boolean }) => (
-  <motion.li 
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.5 }}
-    className="flex items-center gap-3"
-  >
-    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isPremium ? 'bg-gradient-to-r from-pink-500 to-purple-600' : 'bg-gray-200'}`}>
-      <Check className={`w-4 h-4 ${isPremium ? 'text-white' : 'text-gray-600'}`} />
-    </div>
-    <span className="text-gray-700 font-medium">{children}</span>
-  </motion.li>
-);
+import { useLocation } from 'wouter';
 
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
@@ -29,26 +14,21 @@ export default function Pricing() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeMessage, setCodeMessage] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [isButtonAnimating, setIsButtonAnimating] = useState(false);
+  const [, setLocation] = useLocation();
   
   const { user } = useAuth();
   const { isPremium, applyCode, createCheckoutSession } = useSubscription();
 
-  const basicFeatures = [
-    "3 AI coaching sessions per month",
-    "Basic walk analysis",
-    "Community access",
-    "Standard support"
-  ];
-
-  const premiumFeatures = [
-    "Unlimited AI coaching sessions",
-    "Advanced walk & posture analysis",
-    "Personalized interview practice",
-    "Virtual dress try-on",
-    "Competition calendar & prep",
-    "Premium inspiration board",
-    "Priority support",
-    "Exclusive masterclasses",
+  // Feature comparison data
+  const featureComparison = [
+    { feature: "Q&A Practice", freeTier: "5/wk", premiumTier: "Unlimited" },
+    { feature: "Walk Analysis", freeTier: "5/mo", premiumTier: "100/mo" },
+    { feature: "Virtual try-ons", freeTier: "3/wk", premiumTier: "75/wk" },
+    { feature: "Talent Feedback", freeTier: "X", premiumTier: "Unlimited" },
+    { feature: "AI Coach", freeTier: "X", premiumTier: "Unlimited" },
+    { feature: "Inspo Save", freeTier: "10/mo", premiumTier: "Unlimited" },
+    { feature: "Smart Calendar", freeTier: "10/yr", premiumTier: "Unlimited" },
   ];
 
   const handleApplyCode = async () => {
@@ -81,227 +61,198 @@ export default function Pricing() {
       return;
     }
     
+    // Start button animation
+    setIsButtonAnimating(true);
     setUpgradeLoading(true);
     
     try {
       const { url } = await createCheckoutSession(planType);
-      window.location.href = url;
+      // Wait a moment for the animation to complete
+      setTimeout(() => {
+        window.location.href = url;
+      }, 800);
     } catch (error) {
       console.error('Failed to create checkout session:', error);
       setUpgradeLoading(false);
+      setIsButtonAnimating(false);
     }
   };
 
+  const handleSkip = () => {
+    setLocation('/app');
+  };
+
+  const handleContact = () => {
+    window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,okandy@uw.edu';
+  };
+
   return (
-    <div className="min-h-screen w-full bg-gray-50 overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <motion.div
-          animate={{
-            background: [
-              'radial-gradient(ellipse 80% 80% at 20% 20%, rgba(236, 72, 153, 0.1), transparent)',
-              'radial-gradient(ellipse 80% 80% at 80% 30%, rgba(139, 92, 246, 0.1), transparent)',
-              'radial-gradient(ellipse 80% 80% at 30% 80%, rgba(59, 130, 246, 0.1), transparent)',
-              'radial-gradient(ellipse 80% 80% at 20% 20%, rgba(236, 72, 153, 0.1), transparent)',
-            ],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            repeatType: "mirror",
-          }}
-          className="absolute inset-0"
-        />
+    <div className="min-h-screen w-full bg-white overflow-hidden flex flex-col justify-center items-center px-4 py-4">
+      {/* Skip Button */}
+      <div className="absolute top-3 right-3">
+        <Button
+          variant="ghost"
+          onClick={handleSkip}
+          className="text-gray-500 hover:text-gray-800 text-sm"
+        >
+          Skip
+        </Button>
       </div>
 
-      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <div className="max-w-2xl w-full">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="max-w-4xl mx-auto text-center"
-        >
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-4 tracking-tighter">
-            <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Choose Your Crown Path
+        <div className="text-center mb-4">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-1">
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+              Path to your Crown
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Every queen deserves the perfect training. Pick the path that matches your ambition.
+          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+            Every queen deserves the perfect training.
           </p>
+        </div>
 
-          {/* Toggle */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="inline-flex items-center justify-center bg-gray-100 p-1 rounded-full gap-2 mb-12"
-          >
-            <Button
-              onClick={() => setIsYearly(false)}
-              variant="ghost"
-              className={`rounded-full px-6 py-2 transition-all text-base font-semibold ${!isYearly ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Monthly
-            </Button>
-            <Button
-              onClick={() => setIsYearly(true)}
-              variant="ghost"
-              className={`rounded-full px-6 py-2 transition-all text-base font-semibold ${isYearly ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Yearly
-            </Button>
-            <AnimatePresence>
-            {isYearly && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap"
-              >
-                Save 20%
-              </motion.div>
-            )}
-            </AnimatePresence>
-          </motion.div>
-        </motion.div>
+        {/* Pricing Table */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
+          <div className="divide-y divide-gray-200">
+            {/* Table Header */}
+            <div className="grid grid-cols-3 font-bold text-lg">
+              <div className="p-2.5 text-gray-700">Feature</div>
+              <div className="p-2.5 text-gray-700">Free</div>
+              <div className="p-2.5 text-green-600">Premium</div>
+            </div>
 
-        {/* Pricing Cards */}
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
-            {/* Basic Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 flex flex-col"
-            >
-              <div className="text-left mb-8">
-                <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full mb-4">
-                  <Target className="w-5 h-5 text-gray-600" />
-                  <span className="font-semibold text-gray-700">Basic</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">Get Started</h3>
-                <p className="text-gray-500">Perfect for exploring pageant training.</p>
-              </div>
-
-              <div className="text-left mb-8">
-                <div className="text-4xl font-extrabold text-gray-800 mb-1">FREE</div>
-                <p className="text-gray-500">Limited access to core features.</p>
-              </div>
-
-              <ul className="space-y-4 mb-8 flex-grow">
-                {basicFeatures.map((feature) => <Feature key={feature}>{feature}</Feature>)}
-              </ul>
-
-              <Button 
-                onClick={() => window.location.href = '/app'}
-                size="lg"
-                className="w-full bg-gray-800 hover:bg-gray-900 text-white text-lg font-semibold rounded-xl"
-              >
-                Start For Free
-              </Button>
-            </motion.div>
-
-            {/* Premium Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              whileHover={{ y: -5 }}
-              className="relative rounded-3xl p-8 border-2 border-pink-500 bg-white shadow-2xl flex flex-col"
-            >
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
-                  <Crown className="w-4 h-4" />
-                  MOST POPULAR
+            {/* Table Content */}
+            {featureComparison.map((row, index) => (
+              <div key={index} className="grid grid-cols-3">
+                <div className="p-2.5 font-medium text-gray-700">{row.feature}</div>
+                <div className="p-2.5 text-gray-500">{row.freeTier}</div>
+                <div className="p-2.5 flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-gray-700">{row.premiumTier}</span>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Pricing Card - SwingVision Style */}
+        <div className="mb-3">
+          <div className="rounded-2xl overflow-hidden">
+            {/* Pricing Toggle */}
+            <div className="flex items-center justify-center mb-3">
+              <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
+                <button
+                  onClick={() => setIsYearly(false)}
+                  className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    !isYearly ? 'bg-white shadow-md text-gray-800' : 'text-gray-500'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setIsYearly(true)}
+                  className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    isYearly ? 'bg-white shadow-md text-gray-800' : 'text-gray-500'
+                  }`}
+                >
+                  Yearly
+                </button>
+                {isYearly && (
+                  <div className="ml-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                    Save 20%
+                  </div>
+                )}
+              </div>
+            </div>
 
-              <div className="text-left mb-8">
-                <div className="inline-flex items-center gap-2 bg-pink-100 text-pink-700 px-3 py-1 rounded-full mb-4">
-                  <Crown className="w-5 h-5" />
-                  <span className="font-semibold">Premium</span>
+            {/* Pricing Box */}
+            <div className="bg-pink-50 text-gray-800 rounded-xl p-3 relative overflow-hidden border border-pink-100">
+              <div className="absolute top-0 right-0 bg-green-500 w-12 h-12 transform rotate-45 translate-x-6 -translate-y-6"></div>
+              <div className="absolute top-2 right-2">
+                <Check className="w-5 h-5 text-white" />
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800">Premium {isYearly ? 'Yearly' : 'Monthly'}</h3>
+                  <p className="text-gray-600 text-sm">
+                    {isYearly ? '12 Months at $10/mo' : 'Billed monthly'}
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">Crown Yourself</h3>
-                <p className="text-gray-500">The complete pageant mastery experience.</p>
+                <div className="text-right">
+                  <span className="text-3xl font-bold text-pink-600">${isYearly ? '10' : '15'}</span>
+                  <span className="text-xl text-gray-700">/mo</span>
+                </div>
               </div>
-
-              <div className="text-left mb-8">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={isYearly ? 'yearly' : 'monthly'}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {isYearly ? (
-                      <>
-                        <span className="text-5xl font-extrabold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">$96</span>
-                        <span className="text-xl font-medium text-gray-500 ml-2">/year</span>
-                        <p className="text-gray-500 mt-1">$8/month, billed yearly</p>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-5xl font-extrabold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">$10</span>
-                        <span className="text-xl font-medium text-gray-500 ml-2">/month</span>
-                         <p className="text-gray-500 mt-1">Billed monthly</p>
-                      </>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              <ul className="space-y-4 mb-8 flex-grow">
-                {premiumFeatures.map((feature) => <Feature key={feature} isPremium>{feature}</Feature>)}
-                 <Feature isPremium>
-                  <span className="font-bold">And much more...</span>
-                </Feature>
-              </ul>
-
-              <Button 
+            </div>
+            
+            {/* CTA Button with Amazing Animation */}
+            <div className="relative mt-2 overflow-hidden rounded-xl">
+              <button
                 onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
                 disabled={upgradeLoading || isPremium}
-                size="lg"
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50"
+                className="w-full py-5 text-white text-lg font-bold rounded-xl flex items-center justify-center relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, #f72585 0%, #b5179e 25%, #7209b7 50%, #560bad 75%, #480ca8 100%)",
+                  boxShadow: "0 4px 20px rgba(123, 9, 183, 0.3)"
+                }}
               >
-                {isPremium ? 'You are Premium' : upgradeLoading ? 'Processing...' : 'Claim Your Crown'}
-                {!isPremium && <ArrowRight className="w-5 h-5 ml-2" />}
-              </Button>
-
-              <div className="text-center mt-4 text-green-700 text-sm font-semibold">
-                30-day money-back guarantee
-              </div>
-            </motion.div>
+                {isPremium ? 'You are Premium' : 
+                  <div className="relative flex items-center justify-center w-full">
+                    <span className="relative z-10">{upgradeLoading ? 'Processing...' : 'Start Now'}</span>
+                    {!isPremium && !upgradeLoading && <ArrowRight className="ml-2 relative z-10" />}
+                    
+                    {/* Enhanced Animation */}
+                    {isButtonAnimating && (
+                      <>
+                        {/* Full height wave with glow */}
+                        <motion.div 
+                          className="absolute inset-0"
+                          initial={{ x: "-100%", opacity: 0.7 }}
+                          animate={{ x: "100%" }}
+                          transition={{ duration: 0.8, ease: "easeInOut" }}
+                          style={{
+                            background: "linear-gradient(90deg, transparent 0%, rgba(255,60,172,0.8) 50%, transparent 100%)",
+                            height: "100%",
+                            filter: "blur(15px)"
+                          }}
+                        />
+                        
+                        {/* Full height solid color wave */}
+                        <motion.div 
+                          className="absolute inset-0"
+                          initial={{ x: "-100%" }}
+                          animate={{ x: "100%" }}
+                          transition={{ duration: 0.8, ease: "easeInOut", delay: 0.1 }}
+                          style={{
+                            background: "linear-gradient(90deg, transparent 0%, #f72585 40%, #f72585 60%, transparent 100%)",
+                            height: "100%"
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
+                }
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Premium Code Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-16"
-        >
+        <div className="text-center">
           {!showCodeInput ? (
-            <Button
-              variant="link"
+            <button
               onClick={() => setShowCodeInput(true)}
-              className="text-gray-600 hover:text-pink-600 text-base"
+              className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              <Gift className="w-4 h-4 mr-2" />
               Have a premium code?
-            </Button>
+            </button>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="max-w-md mx-auto space-y-3 p-6 bg-white rounded-2xl shadow-md border"
-            >
-              <p className="font-semibold text-gray-800">Enter your code for premium access.</p>
+            <div className="max-w-md mx-auto space-y-2 p-3 bg-white rounded-xl shadow-md border">
+              <p className="font-medium text-gray-800 text-sm">Enter your code for premium access.</p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Your premium code"
@@ -309,7 +260,7 @@ export default function Pricing() {
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   onKeyPress={(e) => e.key === 'Enter' && handleApplyCode()}
                   disabled={codeLoading}
-                  className="flex-1"
+                  className="flex-1 text-gray-800 bg-gray-100 border-gray-300"
                 />
                 <Button
                   onClick={handleApplyCode}
@@ -319,29 +270,25 @@ export default function Pricing() {
                   {codeLoading ? 'Applying...' : 'Apply'}
                 </Button>
               </div>
-              <AnimatePresence>
               {codeMessage && (
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={`text-sm font-semibold ${
+                <p className={`text-sm font-medium ${
                   codeMessage.includes('🎉') ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {codeMessage}
-                </motion.p>
+                </p>
               )}
-              </AnimatePresence>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
-        
-        {/* Footer */}
-        <div className="text-center mt-16 text-gray-500 text-sm">
-          Questions? Contact us at{' '}
-          <a href="mailto:arshia.x.kathpalia@gmail.com" className="text-pink-600 hover:underline">
-            arshia.x.kathpalia@gmail.com
-          </a>
+
+          {/* Contact */}
+          <div className="mt-2 text-sm text-gray-500">
+            <button 
+              onClick={handleContact}
+              className="text-gray-700 hover:underline"
+            >
+              Questions? Contact us
+            </button>
+          </div>
         </div>
       </div>
     </div>
