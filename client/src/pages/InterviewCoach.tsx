@@ -1164,47 +1164,28 @@ export default function InterviewCoach() {
               exit={{ opacity: 0, y: -20 }}
             >
               <div className="space-y-4">
-                {/* Mode Banner */}
-                <Card className={`border-0 shadow-lg rounded-2xl ${
-                  mode === 'question' ? 'bg-blue-50' : 'bg-purple-50'
-                }`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          mode === 'question' ? 'bg-blue-500' : 'bg-purple-500'
-                        }`}>
-                          {mode === 'question' ? (
-                            <MessageSquare className="w-5 h-5 text-white" />
-                          ) : (
+                {/* Mode Banner - Only shown in Rounds mode */}
+                {mode === 'rounds' && (
+                  <Card className="border-0 shadow-lg rounded-2xl bg-purple-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
                             <Sparkles className="w-5 h-5 text-white" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className={`font-bold ${
-                            mode === 'question' ? 'text-blue-700' : 'text-purple-700'
-                          }`}>
-                            {mode === 'question' ? 'Questions Mode' : 'Rounds Mode'} - Feedback
-                          </h3>
-                          <p className={`text-xs ${
-                            mode === 'question' ? 'text-blue-600' : 'text-purple-600'
-                          }`}>
-                            {mode === 'question' 
-                              ? `Question ${currentQuestionIndex + 1} of ${numQuestions} completed`
-                              : `All ${numQuestions} questions completed - Comprehensive review`
-                            }
-                          </p>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-purple-700">
+                              Rounds Mode - Feedback
+                            </h3>
+                            <p className="text-xs text-purple-600">
+                              All {numQuestions} questions completed - Comprehensive review
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      {mode === 'question' && currentQuestionIndex < numQuestions - 1 && (
-                        <div className="text-right">
-                          <p className="text-xs text-blue-600">More questions available!</p>
-                          <p className="font-semibold text-blue-700">Choose to continue →</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Summary */}
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
@@ -1228,7 +1209,6 @@ export default function InterviewCoach() {
                       <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
                         <MessageSquare className="w-4 h-4 text-pink-600" />
                         Question {answer.questionNumber}
-                        {mode === 'question' && <span className="text-sm text-blue-600 font-normal">(Current Question)</span>}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -1255,10 +1235,9 @@ export default function InterviewCoach() {
                         </div>
                       </div>
 
-                      {/* Coaching Tip */}
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p className="font-medium text-yellow-800 mb-1 text-xs">Coaching Tip:</p>
-                        <p className="text-yellow-700 text-xs">{answer.coachingTip}</p>
+                      {/* Coaching Tip - shown directly in main content */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-800 text-sm leading-relaxed">{answer.coachingTip}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -1293,7 +1272,7 @@ export default function InterviewCoach() {
                   mode === 'question' ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'
                 }`}>
                   <CardContent className="p-4">
-                    {mode === 'question' ? (
+                                          {mode === 'question' ? (
                       /* QUESTIONS MODE: Individual question controls */
                       <div className="space-y-3">
                         <h4 className="font-semibold text-blue-700 text-center">What would you like to do next?</h4>
@@ -1311,33 +1290,17 @@ export default function InterviewCoach() {
                             Retry This Question
                           </Button>
                           
-                          {currentQuestionIndex < numQuestions - 1 ? (
-                            <Button
-                              onClick={() => {
-                                nextQuestion();
-                                setCurrentStep('question');
-                              }}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                              size="sm"
-                            >
-                              Next Question →
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={() => setCurrentStep('setup')}
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
-                              size="sm"
-                            >
-                              ✓ Finish Practice
-                            </Button>
-                          )}
+                          <Button
+                            onClick={() => {
+                              nextQuestion();
+                              setCurrentStep('question');
+                            }}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                            size="sm"
+                          >
+                            Next Question →
+                          </Button>
                         </div>
-                        <p className="text-xs text-blue-600 text-center">
-                          {currentQuestionIndex < numQuestions - 1 
-                            ? `${numQuestions - currentQuestionIndex - 1} more questions available` 
-                            : 'You\'ve completed all questions!'
-                          }
-                        </p>
                       </div>
                     ) : (
                       /* ROUNDS MODE: Round completion */
