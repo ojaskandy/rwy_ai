@@ -1306,7 +1306,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: 'Failed to fetch activity data' });
       }
 
-      // Get current streak (latest entry)
+      // Get the latest streak value from the database
       const { data: latestActivity, error: streakError } = await supabase
         .from('shifu_logs')
         .select('current_streak')
@@ -1317,18 +1317,9 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       if (streakError) {
         console.error('Streak fetch error:', streakError);
       }
-
-      // Count unique active days by storing them in a Set to prevent duplicates
-      const activeDaySet = new Set();
-      activities?.forEach(activity => {
-        const dateKey = activity.date.split('T')[0];
-        if (activity.session_started || activity.completed) {
-          activeDaySet.add(dateKey);
-        }
-      });
       
-      // Use the unique count for the streak
-      const currentStreak = activeDaySet.size;
+      // Use the stored streak value from the database
+      const currentStreak = latestActivity?.[0]?.current_streak || 0;
 
       // Create activity map for easy lookup
       const activityMap = new Map();
@@ -1395,35 +1386,41 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: 'Failed to fetch existing activity' });
       }
 
-      // Count active days in the past week (modified to match homepage display)
+      // Calculate streak based on consecutive days of activity
       const calculateCurrentStreak = async (userId: string, currentDate: Date) => {
-        // Define the date range for the past week
-        const oneWeekAgo = new Date(currentDate);
-        oneWeekAgo.setDate(currentDate.getDate() - 6);
-        
-        // Use distinct dates to avoid counting multiple logs on the same day
-        const { data: activities, error } = await supabase
+        // Get the latest streak record
+        const { data: latestRecord, error: latestError } = await supabase
           .from('shifu_logs')
-          .select('date, session_started, completed')
+          .select('current_streak, date')
           .eq('user_id', userId)
-          .gte('date', oneWeekAgo.toISOString().split('T')[0])
-          .lte('date', currentDate.toISOString().split('T')[0]);
-
-        if (error || !activities) {
+          .order('date', { ascending: false })
+          .limit(1);
+          
+        if (latestError) {
+          console.error('Error fetching latest streak:', latestError);
           return 1; // Default to 1 if we can't fetch data
         }
         
-        // Count unique active days by storing them in a Set
-        const activeDaySet = new Set();
-        activities.forEach(activity => {
-          const dateKey = activity.date.split('T')[0];
-          if (activity.session_started || activity.completed) {
-            activeDaySet.add(dateKey);
-          }
-        });
+        // If no previous record exists, this is the first day (streak = 1)
+        if (!latestRecord || latestRecord.length === 0) {
+          return 1;
+        }
         
-        // Return the count of unique active days
-        return activeDaySet.size;
+        // Check if there's already an entry for today
+        const todayStr = currentDate.toISOString().split('T')[0];
+        const { data: todayActivity } = await supabase
+          .from('shifu_logs')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('date', todayStr);
+          
+        // If there's already an activity for today, maintain the current streak
+        if (todayActivity && todayActivity.length > 0) {
+          return latestRecord[0].current_streak;
+        }
+        
+        // Otherwise, this is a new day - increment the streak
+        return latestRecord[0].current_streak + 1;
       };
 
       const newStreak = await calculateCurrentStreak(user.id, today);
