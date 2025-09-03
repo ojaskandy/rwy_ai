@@ -237,29 +237,40 @@ const whyRunwayAICards = [
             </motion.div>
           )}
 
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {authMode !== 'landing' && (
               <motion.div
                 key="auth-form-view"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.4, 
+                  ease: [0.22, 1, 0.36, 1],
+                  scale: { type: "spring", stiffness: 150, damping: 15 }
+                }}
                 className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-none border-none p-8 min-w-80 max-w-sm space-y-6 flex flex-col items-center"
               >
                 {/* Back button for form views */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    ease: "easeOut", 
+                    delay: 0.1 
+                  }}
                   className="self-start"
                 >
                   <Button
                     onClick={() => { setAuthMode('landing'); resetForm(); }}
                     variant="ghost"
-                    className="text-pink-600 hover:text-pink-700 p-0 text-sm font-semibold"
+                    className="text-pink-600 hover:text-pink-700 p-2 text-sm font-semibold rounded-full flex items-center gap-1 transition-all hover:bg-pink-100"
                   >
-                    ← Back
+                    <motion.span
+                      whileHover={{ x: -3 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                    >←</motion.span> Back
                   </Button>
                 </motion.div>
 
@@ -416,7 +427,7 @@ const whyRunwayAICards = [
                             id="privacy-agreement"
                             checked={agreedToPolicy}
                             onCheckedChange={(checked) => setAgreedToPolicy(checked as boolean)}
-                            className="mt-1 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                            className="mt-1 h-5 w-5 border-2 border-pink-500 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                             required={authMode === 'signUp'}
                           />
                           <label
@@ -550,42 +561,7 @@ const whyRunwayAICards = [
                   )}
                 </form>
 
-                {/* Terms and Privacy */}
-                <AnimatePresence>
-                  {authMode === 'signUp' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-4"
-                    >
-                      <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <Checkbox
-                          id="privacy-agreement"
-                          checked={agreedToPolicy}
-                          onCheckedChange={(checked) => setAgreedToPolicy(checked as boolean)}
-                          className="mt-1 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
-                          required={authMode === 'signUp'}
-                        />
-                        <label
-                          htmlFor="privacy-agreement"
-                          className="text-sm text-gray-800 leading-relaxed cursor-pointer"
-                        >
-                          I agree to the{' '}
-                          <Link href="/privacy">
-                            <a className="text-pink-600 hover:text-pink-700 font-semibold underline" target="_blank">Terms of Service</a>
-                          </Link>
-                          {' '}and{' '}
-                          <Link href="/privacy">
-                            <a className="text-pink-600 hover:text-pink-700 font-semibold underline" target="_blank">Privacy Policy</a>
-                          </Link>
-                          {' '}and understand how my data will be collected and used.
-                        </label>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Terms and Privacy - Removed duplicate */}
               </motion.div>
             )}
           </AnimatePresence>
@@ -595,10 +571,10 @@ const whyRunwayAICards = [
           {authMode === 'landing' && (
             <motion.div
               key="landing-content"
-              initial={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: 0 }}
+              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
               className="flex flex-col items-center text-center space-y-8 w-full px-4 pt-16 pb-4"
               style={{ minHeight: '33vh' }} // Ensure it occupies bottom 1/3rd
             >
