@@ -426,50 +426,50 @@ export default function Home() {
       {/* Main Content */}
       <div className="px-6 space-y-4 pt-6 h-full overflow-hidden flex flex-col">
         
-        {/* Crown Streak Tracker - Duolingo Style */}
-        <div className="px-4 flex-shrink-0">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 font-medium">Daily Streak</span>
-              {userActivity && userActivity.currentStreak > 0 && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded-full">
-                  <span className="text-yellow-600 text-sm">👑</span>
-                  <span className="text-xs font-bold text-yellow-700">{userActivity.currentStreak}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
+        {/* Crown Streak Tracker - Enhanced Minimalistic Style */}
+        <div className="px-4 flex-shrink-0 py-2">
+          <div className="flex justify-center items-center">
             {userActivity?.weeklyActivity.map((day, index) => (
-              <div key={day.date} className="flex flex-col items-center gap-1.5">
+              <div key={day.date} className="flex flex-col items-center mx-2">
                 <div 
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm transition-all duration-200 ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-base transition-all duration-300 ${
                     day.hasActivity 
                       ? day.completed 
-                        ? 'bg-yellow-500 text-white shadow-lg' 
-                        : 'bg-yellow-300 text-yellow-800 shadow-md'
+                        ? 'bg-yellow-500 text-white shadow-xl ring-2 ring-yellow-300 ring-opacity-50' 
+                        : 'bg-yellow-300 text-yellow-800 shadow-lg'
                       : day.isToday 
-                        ? 'bg-pink-100 text-pink-400 border-2 border-pink-300'
-                        : 'bg-gray-100 text-gray-400'
+                        ? 'bg-pink-100 text-pink-500 border-2 border-pink-300'
+                        : 'bg-gray-100 text-gray-500'
                   }`}
+                  style={{
+                    boxShadow: day.hasActivity ? '0 0 10px rgba(252, 211, 77, 0.5)' : 'none',
+                  }}
                   title={day.hasActivity ? (day.completed ? 'Goal completed!' : 'Active day') : 'No activity'}
                 >
                   {day.hasActivity ? '👑' : day.dayNumber}
                 </div>
-                <span className="text-xs text-gray-500 font-medium">
+                <span className="mt-1 text-xs font-medium text-gray-500">
                   {day.dayName}
                 </span>
               </div>
             )) || (
               // Fallback loading state
               Array.from({ length: 7 }, (_, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5">
-                  <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse"></div>
-                  <span className="text-xs text-gray-400">-</span>
+                <div key={i} className="flex flex-col items-center mx-2">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+                  <span className="mt-1 text-xs text-gray-400">-</span>
                 </div>
               ))
             )}
           </div>
+          {userActivity && userActivity.currentStreak > 0 && (
+            <div className="flex justify-center mt-2">
+              <div className="flex items-center gap-1 px-3 py-1 bg-yellow-100 rounded-full shadow-sm">
+                <span className="text-yellow-600 text-sm">👑</span>
+                <span className="text-sm font-bold text-yellow-700">{userActivity.currentStreak}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Coming Up Section */}
