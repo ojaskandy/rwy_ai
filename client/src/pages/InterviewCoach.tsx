@@ -1506,6 +1506,4 @@ export default function InterviewCoach() {
     </div>
     </>
   );
-} 
-} 
-} 
+}
