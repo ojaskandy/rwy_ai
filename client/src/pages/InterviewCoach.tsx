@@ -564,7 +564,8 @@ export default function InterviewCoach() {
       }
 
       setFeedback(result.feedback);
-      setShowUsage(true);
+      // Usage tracking still happens but popup is disabled
+      // setShowUsage(true);
       
       // Track interview question usage
       try {
@@ -803,7 +804,8 @@ export default function InterviewCoach() {
 
   return (
     <>
-      <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" />
+      {/* Usage popup disabled
+      <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" /> */}
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}
