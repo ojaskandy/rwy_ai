@@ -6,14 +6,54 @@ import { cn } from '@/lib/utils';
 import { 
   Mic, MicOff, Play, RotateCcw, 
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare,
-  Award, Star
+  Award, Star, X
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import UsageAfterAction from '@/components/UsageAfterAction';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+
+// Helper function to get time-appropriate example answers
+const getExampleAnswerForQuestion = (question: string, timeLimit: number): string => {
+  // Short answers (30-60 seconds)
+  if (timeLimit <= 60) {
+    if (question === "What is your stance on mental health awareness?") {
+      return "Mental health is a cause close to my heart. Growing up, I saw my sister struggle with anxiety, which taught me that mental health is just as important as physical health. I believe in breaking the stigma through open conversation. If crowned, I'd partner with local schools to create safe spaces for young people to discuss mental health challenges. Everyone deserves support without judgment.";
+    } else if (question === "Why do you want to win this title?") {
+      return "This title represents a chance to inspire others. As someone who overcame severe stage fright, I want to show that growth comes from facing your fears. With this platform, I can expand my volunteer work teaching confidence to young girls and create more impact in my community. This pageant's values align perfectly with my passion for service and empowerment.";
+    } else if (question.includes("technology")) {
+      return "Technology has transformed how we connect and learn. In my life, it's been both a blessing and a challenge. I've used social media to raise awareness for causes I care about, but I also value unplugged time. I believe in balance – using tech mindfully while maintaining genuine human connections. The key is teaching digital literacy so everyone can benefit from innovations while avoiding potential pitfalls.";
+    } else {
+      return "This issue matters deeply to me because I've experienced its impact firsthand. I've found that listening to different perspectives helps build understanding. Through my volunteer work, I've learned that the most effective solutions come when diverse voices are heard. If given this platform, I'd focus on building bridges and creating positive change through education and compassion.";
+    }
+  }
+  // Medium answers (60-90 seconds)
+  else if (timeLimit <= 90) {
+    if (question === "What is your stance on mental health awareness?") {
+      return "Mental health awareness isn't just important—it's essential. When I was 16, my best friend struggled with depression, and I saw how proper support made all the difference in her recovery. That experience showed me that we need to talk about mental health just as openly as physical health. In my community work, I've partnered with local counselors to bring workshops to high schools, helping students recognize warning signs and develop healthy coping strategies. If crowned, I'd expand these programs and collaborate with mental health professionals to create accessible resources for young people. I believe everyone deserves support without judgment or shame, and I'm committed to creating spaces where seeking help is seen as an act of strength.";
+    } else if (question === "Why do you want to win this title?") {
+      return "I want to win this title because I see it as a microphone, not just a crown. Growing up in a small town, I never saw someone like me represented in leadership positions, which is why I started mentoring young girls in my community. This title would amplify that impact tenfold. I'm passionate about advocating for arts education in public schools—having seen how my own confidence blossomed through theater programs that are now being cut. With this platform, I could build partnerships between schools and local artists to create sustainable programs. Beyond the causes I care about, I've spent years developing the skills needed for this role through public speaking, volunteer work, and community engagement. I'm ready to serve with purpose and heart, creating a legacy that extends far beyond my year of service.";
+    } else if (question.includes("technology")) {
+      return "Technology has fundamentally changed how we live, learn, and connect—I see this as both an opportunity and responsibility. In college, I led a project bringing technology education to seniors in my community, witnessing how digital access can combat isolation and create new possibilities at any age. However, I recognize technology's double-edged nature. As social media became central to teen identity, I saw friends struggle with comparison and anxiety. That's why I now volunteer teaching digital literacy to middle schoolers, helping them navigate online spaces safely. The key is balance—embracing innovation while maintaining meaningful human connection. I believe we must ensure technological advancement serves everyone, bridging divides rather than creating them. In my life, I strive to use technology mindfully, as a tool for positive impact rather than distraction.";
+    } else {
+      return "This topic resonates deeply with me because I've experienced its impact personally. During high school, I volunteered at our local community center where I witnessed diverse perspectives that shaped my understanding. What I learned is that meaningful solutions come when we approach challenges with both empathy and evidence. For example, when our community faced this same issue, I helped organize discussions that brought together different stakeholders—resulting in collaborative action that made real difference. I believe in finding common ground through respectful dialogue, even when opinions differ. If given this platform, I would create spaces for these important conversations while advocating for practical solutions that address root causes. My approach combines listening genuinely to understand different viewpoints, then translating that understanding into positive action.";
+    }
+  }
+  // Long answers (90+ seconds)
+  else {
+    if (question === "What is your stance on mental health awareness?") {
+      return "Mental health awareness isn't just a cause I support—it's personal. When my brother was diagnosed with anxiety disorder in high school, our family faced not only the challenge of finding proper treatment but also the weight of stigma from those who didn't understand. That experience transformed me from a passive supporter into an advocate. For the past three years, I've volunteered with our county's mental health coalition, where we've implemented peer support groups in five local high schools reaching over 2,000 students. These programs have concrete impacts—we've seen a 40% increase in students seeking counseling services when needed. I believe mental health deserves the same attention, understanding, and resources as physical health. If given this platform, I would expand our successful programs by partnering with healthcare providers to create accessible resources for all community members, especially in underserved areas. I'd also work to normalize conversations about mental wellness through social media campaigns featuring diverse stories of resilience and recovery. The message I want to spread is that seeking help isn't weakness—it's one of the bravest things you can do. True beauty includes mental wellbeing, and I want to inspire others to prioritize their mental health with the same dedication they give to other aspects of their lives.";
+    } else if (question === "Why do you want to win this title?") {
+      return "I want to win this title because I see it as a catalyst for the change I'm already working to create in my community. Five years ago, I founded an after-school mentorship program pairing female STEM professionals with middle school girls from underrepresented backgrounds. What started with just 8 participants has grown to serve over 200 students across our state, with 92% reporting increased interest in pursuing STEM careers. While I'm proud of this impact, this title would provide the platform, connections, and resources to scale this program nationally. Beyond my STEM initiative, this role would allow me to address intersecting issues I'm passionate about—educational equity, mental health support for teens, and creating inclusive spaces for all young people to thrive. My preparation for this responsibility has been lifelong: from overcoming a severe speech impediment through years of therapy, to developing leadership skills as student body president and later as a nonprofit board member. I bring not only passion but the practical experience of managing teams, speaking to diverse audiences, and creating sustainable programs that outlast my involvement. This title isn't an endpoint for me—it's a powerful tool to amplify the work I've committed my life to. I want to serve as a role model who demonstrates that leadership comes in many forms, and that one person's dedication can ignite a movement that transforms communities for generations to come.";
+    } else if (question.includes("technology")) {
+      return "Technology shapes virtually every aspect of our modern lives, bringing unprecedented opportunities alongside significant challenges that we must navigate thoughtfully. In my own experience working with a tech literacy nonprofit, I've witnessed how access to technology can transform opportunities—like when we helped a single mother complete online courses that doubled her income, or when we taught coding to kids from underserved neighborhoods who are now pursuing computer science degrees. These experiences showed me technology's power as an equalizer. However, I've also seen its shadow side through my younger sister's struggle with social media anxiety and through research on digital divides affecting rural and low-income communities. I believe we need a balanced approach that maximizes technology's benefits while addressing its risks. This means prioritizing digital literacy education starting in elementary school, ensuring equitable access across all communities, and developing ethical frameworks that guide how we integrate new technologies. In my personal life, I practice this balance by using tech tools that enhance productivity and connection while setting boundaries—like phone-free dinners and outdoor activities—that preserve space for deep thinking and authentic relationships. If selected as titleholder, I would advocate for policies and programs that ensure technology serves humanity's best interests, creating digital citizens who use these powerful tools with awareness, purpose and responsibility.";
+    } else {
+      return "I approach this topic with both personal experience and research-based understanding. Growing up in a diverse community taught me to value multiple perspectives, and my volunteer work has shown me that sustainable solutions emerge when we bring different stakeholders together respectfully. For example, when this issue affected our local school district, I helped organize community conversations that included voices often left out of the decision-making process. By creating space for authentic dialogue, we developed innovative approaches that addressed root causes rather than symptoms. My philosophy centers on three principles: listen first to understand, seek evidence-based solutions, and ensure those most affected have meaningful input. I've applied these principles as a peer mediator and community organizer, consistently finding that even seemingly opposed groups can find common ground when they focus on shared values and goals. If given this platform, I would create opportunities for productive conversation while advocating for practical, compassionate solutions. I believe that leadership in complex issues isn't about having all the answers—it's about asking better questions and bringing people together to find answers collectively. By modeling respectful engagement across differences, I hope to inspire others to approach challenging topics with both open minds and open hearts.";
+    }
+  }
+};
 
 // Interview question data - Real pageant questions
 const INTERVIEW_QUESTIONS = [
@@ -810,44 +850,52 @@ export default function InterviewCoach() {
       {/* Usage popup disabled
       <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" /> */}
       
-      {/* Example Answer Modal */}
+      {/* Example Answer Modal - iOS Style */}
       <Dialog open={showExampleAnswer} onOpenChange={setShowExampleAnswer}>
-        <DialogContent className="max-w-2xl bg-gradient-to-b from-yellow-50 to-white border-yellow-200">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl text-yellow-800">
-              <Award className="h-5 w-5 text-yellow-500" /> 
-              Exemplary Answer
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-md bg-white/90 backdrop-blur-sm rounded-3xl border-0 shadow-lg p-0 overflow-hidden">
+          <div className="relative">
+            {/* Floating close button */}
+            <button
+              onClick={() => setShowExampleAnswer(false)}
+              className="absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm z-10"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+            
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-pink-400 to-purple-400 px-6 py-5">
+              <div className="flex items-center gap-2 mb-1">
+                <Award className="h-5 w-5 text-white" />
+                <h3 className="text-lg font-bold text-white">Example Answer</h3>
+              </div>
+              <p className="text-white/80 text-sm">
+                Speaking time: ~{Math.ceil(getExampleAnswerForQuestion(currentQuestion, timeLimit).split(' ').length / 2.5)} seconds
+              </p>
+            </div>
+          </div>
           
-          <div className="space-y-4 p-1">
-            <div>
-              <p className="font-medium text-gray-700 mb-2">Question:</p>
-              <p className="text-gray-800">{currentQuestion}</p>
+          <div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
+            <div className="mb-3">
+              <p className="text-sm font-medium text-gray-500">Question</p>
+              <p className="text-gray-800 font-medium">{currentQuestion}</p>
             </div>
             
-            <div className="bg-white border border-yellow-100 rounded-xl p-4 shadow-inner">
-              <p className="font-medium text-yellow-700 mb-2">A Great Response:</p>
-              <p className="text-gray-800 leading-relaxed">
-                {currentQuestion === "What is your stance on mental health awareness?" ? (
-                  "Mental health awareness is not just important—it's essential in our society today. I believe in destigmatizing mental health challenges through open conversation and education. As someone who has witnessed the impact of mental health struggles firsthand among my peers, I'm committed to promoting a culture where seeking help is viewed as an act of strength, not weakness. If given the opportunity to serve as a titleholder, I would leverage this platform to collaborate with mental health professionals and organizations to create accessible resources, especially for young people. I envision developing programs that teach emotional resilience and implementing wellness initiatives in schools. True beauty includes mental wellbeing, and I want to inspire others to prioritize their mental health with the same dedication they give to other aspects of their lives."
-                ) : currentQuestion === "Why do you want to win this title?" ? (
-                  "I want to win this title because I see it as a powerful platform to amplify the causes I'm passionate about. Beyond the crown and sash lies an opportunity to be a voice for those who often go unheard. Having spent the last five years mentoring young girls in STEM programs, I've witnessed firsthand how representation and leadership can transform lives. This title would allow me to expand that impact tenfold. My mission isn't just about personal achievement but creating a ripple effect of positive change throughout my community and beyond. I bring a unique combination of dedication, authenticity, and vision that would enable me to serve effectively as an ambassador. This pageant's values of service and empowerment align perfectly with my personal mission, and I'm prepared to dedicate myself fully to fulfilling the responsibilities of this role with grace, integrity, and purpose."
-                ) : (
-                  "This question requires thoughtful consideration of multiple perspectives. I believe in approaching it with both empathy and evidence-based reasoning. From my experience volunteering with organizations addressing this issue, I've learned that sustainable solutions require collaborative approaches involving community stakeholders, experts in the field, and those directly affected. If chosen as a titleholder, I would use my platform to amplify voices that need to be heard on this matter, while advocating for educational initiatives that promote understanding and compassion. I'm committed to being a bridge-builder who listens actively before forming judgments, and who recognizes that complex issues rarely have simple answers. Ultimately, my stance is grounded in respect for human dignity and a dedication to creating positive, lasting change through informed advocacy and genuine connection."
-                )}
+            <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-4 mb-4 shadow-inner">
+              <p className="text-gray-800 text-sm leading-relaxed">
+                {getExampleAnswerForQuestion(currentQuestion, timeLimit)}
               </p>
             </div>
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
-              <p>What makes this answer great:</p>
-              <ul className="list-disc pl-5 space-y-1 mt-2">
-                <li>Demonstrates authentic passion and personal connection</li>
-                <li>Shows depth of thought and nuanced understanding</li>
-                <li>Balances confidence with humility and thoughtfulness</li>
-                <li>Includes specific examples and actionable ideas</li>
-                <li>Maintains excellent structure with clear beginning, middle, and conclusion</li>
-              </ul>
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1.5">What makes this answer effective:</p>
+              <div className="flex flex-wrap gap-2">
+                {["Personal", "Confident", "Specific", "Structured", "Authentic"].map((tag) => (
+                  <span key={tag} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </DialogContent>
