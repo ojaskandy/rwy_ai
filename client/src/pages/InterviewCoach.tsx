@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { 
   Mic, MicOff, Play, RotateCcw, 
-  Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare
+  Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare,
+  Award, Star
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import UsageAfterAction from '@/components/UsageAfterAction';
 import { useSubscription } from '@/hooks/use-subscription';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Interview question data - Real pageant questions
 const INTERVIEW_QUESTIONS = [
@@ -166,6 +168,7 @@ export default function InterviewCoach() {
   const [showUsage, setShowUsage] = useState(false);
   
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [showExampleAnswer, setShowExampleAnswer] = useState(false);
   
   // Practice setup state
   const [mode, setMode] = useState<'question' | 'rounds'>('question');
@@ -806,6 +809,50 @@ export default function InterviewCoach() {
     <>
       {/* Usage popup disabled
       <UsageAfterAction open={showUsage} onOpenChange={setShowUsage} focus="interview" /> */}
+      
+      {/* Example Answer Modal */}
+      <Dialog open={showExampleAnswer} onOpenChange={setShowExampleAnswer}>
+        <DialogContent className="max-w-2xl bg-gradient-to-b from-yellow-50 to-white border-yellow-200">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-yellow-800">
+              <Award className="h-5 w-5 text-yellow-500" /> 
+              Exemplary Answer
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 p-1">
+            <div>
+              <p className="font-medium text-gray-700 mb-2">Question:</p>
+              <p className="text-gray-800">{currentQuestion}</p>
+            </div>
+            
+            <div className="bg-white border border-yellow-100 rounded-xl p-4 shadow-inner">
+              <p className="font-medium text-yellow-700 mb-2">A Great Response:</p>
+              <p className="text-gray-800 leading-relaxed">
+                {currentQuestion === "What is your stance on mental health awareness?" ? (
+                  "Mental health awareness is not just important—it's essential in our society today. I believe in destigmatizing mental health challenges through open conversation and education. As someone who has witnessed the impact of mental health struggles firsthand among my peers, I'm committed to promoting a culture where seeking help is viewed as an act of strength, not weakness. If given the opportunity to serve as a titleholder, I would leverage this platform to collaborate with mental health professionals and organizations to create accessible resources, especially for young people. I envision developing programs that teach emotional resilience and implementing wellness initiatives in schools. True beauty includes mental wellbeing, and I want to inspire others to prioritize their mental health with the same dedication they give to other aspects of their lives."
+                ) : currentQuestion === "Why do you want to win this title?" ? (
+                  "I want to win this title because I see it as a powerful platform to amplify the causes I'm passionate about. Beyond the crown and sash lies an opportunity to be a voice for those who often go unheard. Having spent the last five years mentoring young girls in STEM programs, I've witnessed firsthand how representation and leadership can transform lives. This title would allow me to expand that impact tenfold. My mission isn't just about personal achievement but creating a ripple effect of positive change throughout my community and beyond. I bring a unique combination of dedication, authenticity, and vision that would enable me to serve effectively as an ambassador. This pageant's values of service and empowerment align perfectly with my personal mission, and I'm prepared to dedicate myself fully to fulfilling the responsibilities of this role with grace, integrity, and purpose."
+                ) : (
+                  "This question requires thoughtful consideration of multiple perspectives. I believe in approaching it with both empathy and evidence-based reasoning. From my experience volunteering with organizations addressing this issue, I've learned that sustainable solutions require collaborative approaches involving community stakeholders, experts in the field, and those directly affected. If chosen as a titleholder, I would use my platform to amplify voices that need to be heard on this matter, while advocating for educational initiatives that promote understanding and compassion. I'm committed to being a bridge-builder who listens actively before forming judgments, and who recognizes that complex issues rarely have simple answers. Ultimately, my stance is grounded in respect for human dignity and a dedication to creating positive, lasting change through informed advocacy and genuine connection."
+                )}
+              </p>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+              <p>What makes this answer great:</p>
+              <ul className="list-disc pl-5 space-y-1 mt-2">
+                <li>Demonstrates authentic passion and personal connection</li>
+                <li>Shows depth of thought and nuanced understanding</li>
+                <li>Balances confidence with humility and thoughtfulness</li>
+                <li>Includes specific examples and actionable ideas</li>
+                <li>Maintains excellent structure with clear beginning, middle, and conclusion</li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}
@@ -1321,7 +1368,7 @@ export default function InterviewCoach() {
                       /* QUESTIONS MODE: Individual question controls */
                       <div className="space-y-3">
                         <h4 className="font-semibold text-blue-700 text-center">What would you like to do next?</h4>
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 flex-wrap">
                           <Button
                             onClick={() => {
                               setCurrentStep('question');
@@ -1334,6 +1381,16 @@ export default function InterviewCoach() {
                           >
                             <RotateCcw className="w-4 h-4 mr-1" />
                             Retry This Question
+                          </Button>
+                          
+                          <Button
+                            onClick={() => setShowExampleAnswer(true)}
+                            variant="outline"
+                            className="flex-1 border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                            size="sm"
+                          >
+                            <Star className="w-4 h-4 mr-1 text-yellow-500" />
+                            See a Great Answer
                           </Button>
                           
                           <Button
