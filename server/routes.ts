@@ -1318,11 +1318,17 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         console.error('Streak fetch error:', streakError);
       }
 
-      // Calculate active days in the current week instead of using stored streak
-      const activeCount = activities?.filter(a => a.session_started || a.completed).length || 0;
+      // Count unique active days by storing them in a Set to prevent duplicates
+      const activeDaySet = new Set();
+      activities?.forEach(activity => {
+        const dateKey = activity.date.split('T')[0];
+        if (activity.session_started || activity.completed) {
+          activeDaySet.add(dateKey);
+        }
+      });
       
-      // Override currentStreak with the count of active days this week
-      const currentStreak = activeCount > 0 ? activeCount : 0;
+      // Use the unique count for the streak
+      const currentStreak = activeDaySet.size;
 
       // Create activity map for easy lookup
       const activityMap = new Map();
@@ -1395,6 +1401,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         const oneWeekAgo = new Date(currentDate);
         oneWeekAgo.setDate(currentDate.getDate() - 6);
         
+        // Use distinct dates to avoid counting multiple logs on the same day
         const { data: activities, error } = await supabase
           .from('shifu_logs')
           .select('date, session_started, completed')
@@ -1406,12 +1413,17 @@ Focus on being helpful while maintaining that expert confidence that comes from 
           return 1; // Default to 1 if we can't fetch data
         }
         
-        // Count active days
-        const activeDays = activities.filter(activity => 
-          activity.session_started || activity.completed
-        ).length;
+        // Count unique active days by storing them in a Set
+        const activeDaySet = new Set();
+        activities.forEach(activity => {
+          const dateKey = activity.date.split('T')[0];
+          if (activity.session_started || activity.completed) {
+            activeDaySet.add(dateKey);
+          }
+        });
         
-        return Math.max(activeDays, 1); // Always return at least 1 for today
+        // Return the count of unique active days
+        return activeDaySet.size;
       };
 
       const newStreak = await calculateCurrentStreak(user.id, today);
