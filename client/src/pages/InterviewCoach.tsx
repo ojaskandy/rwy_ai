@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { 
   Mic, MicOff, Play, RotateCcw, 
   Clock, CheckCircle, AlertCircle, Sparkles, MessageSquare,
-  Award, Star, X
+  Award, Star, X, ChevronDown
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -310,6 +310,23 @@ export default function InterviewCoach() {
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Refs for scrolling to per-question feedback and helper to compute averages
+  const answerRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const getAnswerAverage = (ans: FeedbackAnswer) => {
+    const values = Object.values(ans.grades || {});
+    if (values.length === 0) return 0;
+    const avg = values.reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0) / values.length;
+    return Math.round(avg * 10) / 10; // one decimal place
+  };
+
+  // Modal for per-question details
+  const [showAnswerModal, setShowAnswerModal] = useState(false);
+  const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
+  const openAnswerModal = (index: number) => {
+    setSelectedAnswerIndex(index);
+    setShowAnswerModal(true);
+  };
 
   // Audio recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -684,7 +701,21 @@ export default function InterviewCoach() {
         throw new Error(result.error || 'Failed to generate feedback');
       }
 
-      setFeedback(result.feedback);
+      // Accumulate answers across the round in rounds mode
+      if (mode === 'rounds' && feedback?.answers) {
+        const merged = {
+          summary: result.feedback.summary || feedback.summary,
+          overallScore: result.feedback.overallScore || feedback.overallScore,
+          overallTips: Array.from(new Set([...(feedback.overallTips || []), ...((result.feedback.overallTips) || [])])),
+          answers: [...feedback.answers, ...result.feedback.answers.map((a: any) => ({
+            ...a,
+            questionNumber: feedback.answers.length + 1
+          }))]
+        } as InterviewFeedback as any;
+        setFeedback(merged);
+      } else {
+        setFeedback(result.feedback);
+      }
       // Usage tracking still happens but popup is disabled
       // setShowUsage(true);
       
@@ -989,13 +1020,13 @@ export default function InterviewCoach() {
       <AnimatePresence>
         {showAudioVisualizer && <AudioVisualizer />}
       </AnimatePresence>
-      <div className="min-h-screen p-3 flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFB6C1' }}>
       {/* Header at the top */}
       <div className="text-center mb-10 pt-8">
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-bold text-gray-800 mb-2"
+          className="text-3xl font-sora text-gray-800 mb-2"
         >
           Interview Coach
         </motion.h1>
@@ -1003,14 +1034,14 @@ export default function InterviewCoach() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-gray-600 text-sm"
+          className="text-gray-600 text-sm font-roboto"
         >
           Practice your pageant interview skills
         </motion.p>
       </div>
       
       {/* Content centered but higher up */}
-      <div className="w-full max-w-md mx-auto mt-4 flex-grow flex flex-col justify-start items-center">
+      <div className="w-full px-6 space-y-4 pt-6 flex-grow flex flex-col">
 
         {/* Error Display */}
         {error && (
@@ -1048,9 +1079,9 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-3xl overflow-hidden transform transition-all duration-300">
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-xl overflow-hidden transform transition-all duration-300">
                   <CardHeader className="pb-4 pt-8">
-                   <CardTitle className="text-gray-800 text-2xl font-bold text-center">
+                   <CardTitle className="text-gray-800 text-2xl font-bold text-center font-sora">
                       Pick Your Style
                     </CardTitle>
                   </CardHeader>
@@ -1087,9 +1118,9 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-3xl overflow-hidden transform transition-all duration-300">
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-xl overflow-hidden transform transition-all duration-300">
                  <CardHeader className="pb-4 pt-8">
-                   <CardTitle className="text-gray-800 text-2xl font-bold text-center">
+                   <CardTitle className="text-gray-800 text-2xl font-bold text-center font-sora">
                     {mode === 'question' ? 'Rapid Fire Settings' : 'Full Run Settings'}
                   </CardTitle>
                 </CardHeader>
@@ -1379,7 +1410,7 @@ export default function InterviewCoach() {
               <div className="space-y-4">
                 {/* Mode Banner - Only shown in Rounds mode */}
                 {mode === 'rounds' && (
-                  <Card className="border-0 shadow-lg rounded-2xl bg-purple-50">
+                  <Card className="border-0 shadow-lg rounded-xl bg-purple-50">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -1387,7 +1418,7 @@ export default function InterviewCoach() {
                             <Sparkles className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-purple-700">
+                            <h3 className="font-sora text-purple-700">
                               Rounds Mode - Feedback
                             </h3>
                             <p className="text-xs text-purple-600">
@@ -1400,10 +1431,40 @@ export default function InterviewCoach() {
                   </Card>
                 )}
 
+                {/* Rounds summary list with per-question averages */}
+                {mode === 'rounds' && feedback.answers && feedback.answers.length > 0 && (
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg font-sora">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        Round Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {feedback.answers.map((ans, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => openAnswerModal(idx)}
+                          className="w-full text-left bg-pink-50 hover:bg-pink-100 transition-colors rounded-xl p-3 flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-pink-600" />
+                            <span className="text-sm font-medium text-gray-800">Question {idx + 1}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-pink-700">{getAnswerAverage(ans)}/10</span>
+                            <span className="text-xs font-semibold text-pink-700 bg-pink-100 px-2 py-0.5 rounded-full">Expand</span>
+                          </div>
+                        </button>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Card for question coaching tip or rounds summary */}
                 <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
                   <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                    <CardTitle className="flex items-center gap-2 text-gray-800 font-sora">
                       <Sparkles className="w-5 h-5 text-green-600" />
                       {mode === 'question' ? 'Question Feedback' : 'Interview Summary'}
                     </CardTitle>
@@ -1415,34 +1476,11 @@ export default function InterviewCoach() {
                         : feedback.summary // Show summary for rounds mode
                       }
                     </p>
-                  </CardContent>
-                </Card>
-
-                {/* Individual Answer Feedback */}
-                {feedback.answers.map((answer, index) => (
-                  <Card key={index} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
-                        <MessageSquare className="w-4 h-4 text-pink-600" />
-                        Question {currentQuestionNumber}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="font-medium text-gray-800 mb-1 text-sm">Question:</p>
-                        <p className="text-gray-700 text-sm">{answer.question}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="font-medium text-gray-800 mb-1 text-sm">Your Response:</p>
-                        <p className="text-gray-700 bg-gray-50 p-2 rounded text-xs">{answer.transcript}</p>
-                      </div>
-
-                      {/* Grades */}
-                      <div>
+                    {mode === 'question' && feedback.answers[0] && (
+                      <div className="mt-4">
                         <p className="font-medium text-gray-800 mb-2 text-sm">Scores:</p>
                         <div className="grid grid-cols-3 gap-2">
-                          {Object.entries(answer.grades).map(([key, value]) => (
+                          {Object.entries(feedback.answers[0].grades).map(([key, value]) => (
                             <div key={key} className="text-center bg-pink-50 p-2 rounded">
                               <div className="text-sm font-bold text-pink-600">{value}/10</div>
                               <div className="text-xs text-gray-600 capitalize">{key}</div>
@@ -1450,22 +1488,17 @@ export default function InterviewCoach() {
                           ))}
                         </div>
                       </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                      {/* Remove duplicate coaching tip from individual answer card in question mode */}
-                      {mode === 'rounds' && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-gray-800 text-sm leading-relaxed">{answer.coachingTip}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                {/* Removed duplicate per-question cards to avoid repetition */}
 
                 {/* Overall Tips - Only show in Rounds mode */}
                 {mode === 'rounds' && feedback.overallTips && feedback.overallTips.length > 0 && (
-                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+                  <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg">
+                      <CardTitle className="flex items-center gap-2 text-gray-800 text-lg font-sora">
                         <Sparkles className="w-4 h-4 text-blue-600" />
                         Overall Improvement Tips
                       </CardTitle>
@@ -1485,8 +1518,53 @@ export default function InterviewCoach() {
                   </Card>
                 )}
 
+                {/* Per-question modal */}
+                <Dialog open={showAnswerModal} onOpenChange={setShowAnswerModal}>
+                  <DialogContent className="relative max-w-md bg-white/95 backdrop-blur-sm rounded-3xl border-0 shadow-lg p-0 overflow-hidden">
+                    {selectedAnswerIndex !== null && feedback && feedback.answers[selectedAnswerIndex] && (
+                      <div>
+                        <div className="relative bg-gradient-to-r from-pink-400 to-purple-400 pl-6 pr-12 py-5">
+                          <h3 className="text-lg font-sora text-white">Question {selectedAnswerIndex + 1}</h3>
+                          <div className="absolute right-12 top-1/2 -translate-y-1/2 text-white text-sm font-semibold">Avg {getAnswerAverage(feedback.answers[selectedAnswerIndex])}/10</div>
+                          <button
+                            aria-label="Close"
+                            onClick={() => setShowAnswerModal(false)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1 text-sm">Question</p>
+                            <p className="text-gray-700 text-sm">{feedback.answers[selectedAnswerIndex].question}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1 text-sm">Your Response</p>
+                            <p className="text-gray-700 bg-gray-50 p-2 rounded text-xs">{feedback.answers[selectedAnswerIndex].transcript}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800 mb-2 text-sm">Scores</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {Object.entries(feedback.answers[selectedAnswerIndex].grades).map(([key, value]) => (
+                                <div key={key} className="text-center bg-pink-50 p-2 rounded">
+                                  <div className="text-sm font-bold text-pink-600">{value}/10</div>
+                                  <div className="text-xs text-gray-600 capitalize">{key}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-gray-800 text-sm leading-relaxed">{feedback.answers[selectedAnswerIndex].coachingTip}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 {/* Navigation Buttons - CLEARLY DIFFERENT FOR EACH MODE */}
-                <Card className={`border-0 shadow-lg rounded-2xl ${
+                <Card className={`border-0 shadow-lg rounded-xl ${
                   mode === 'question' ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'
                 }`}>
                   <CardContent className="p-4">

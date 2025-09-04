@@ -17,8 +17,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Increased payload size limits to handle larger image uploads (25MB for mobile cameras)
-app.use(express.json({ limit: '25mb' }));
+// Increased payload size limits to handle larger audio/image uploads (100MB for long recordings)
+app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve the public directory for static assets in both development and production

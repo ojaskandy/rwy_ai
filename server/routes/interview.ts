@@ -46,63 +46,59 @@ export async function transcribeAudio(req: Request, res: Response) {
       return res.status(400).json({ error: 'Audio data is required' });
     }
 
-    console.log(`[Interview] Transcribing audio for question ${questionNumber}`);
-    console.log(`[Interview] Audio data length: ${audio.length} characters`);
+    console.log(`[Interview] (Deepgram) Transcribing audio for question ${questionNumber}`);
 
-    // Convert base64 to buffer
+    // Convert base64 from client into raw bytes
     const audioBuffer = Buffer.from(audio, 'base64');
-    console.log(`[Interview] Audio buffer size: ${audioBuffer.length} bytes`);
-
-    // Validate audio buffer
     if (audioBuffer.length < 1000) {
       return res.status(400).json({ error: 'Audio data too small. Please record a longer response.' });
     }
 
-    // Create a temporary file for OpenAI
-    const tempDir = path.join(process.cwd(), 'temp');
-    
-    // Ensure temp directory exists
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    // Use appropriate file extension based on audio format
-    const tempFilePath = path.join(tempDir, `audio_${Date.now()}.webm`);
-    fs.writeFileSync(tempFilePath, audioBuffer);
-    console.log(`[Interview] Temporary file created: ${tempFilePath}, size: ${fs.statSync(tempFilePath).size} bytes`);
-
-    try {
-      const transcription = await openai.audio.transcriptions.create({
-        file: fs.createReadStream(tempFilePath),
-        model: 'whisper-1',
-        language: 'en',
-      });
-
-      // Clean up temp file
-      fs.unlinkSync(tempFilePath);
-
-      console.log(`[Interview] Transcription completed for question ${questionNumber}`);
-
-      res.json({
-        success: true,
-        transcript: transcription.text,
-        questionNumber,
-        question,
-        duration
-      });
-    } catch (transcriptionError) {
-      // Clean up temp file on error
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-      throw transcriptionError;
+    const apiKey = process.env.DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Missing DEEPGRAM_API_KEY' });
     }
 
+    const apiUrl = (process.env.DEEPGRAM_API_URL || 'https://api.deepgram.com/v1/listen').trim();
+    const model = (process.env.DEEPGRAM_MODEL || 'nova-2').trim();
+    const language = (process.env.DEEPGRAM_LANGUAGE || 'en-US').trim();
+    const smart = (process.env.DEEPGRAM_SMART_FORMAT || 'true').toString();
+
+    const url = `${apiUrl}?model=${encodeURIComponent(model)}&language=${encodeURIComponent(language)}&smart_format=${encodeURIComponent(smart)}`;
+
+    // Send binary audio to Deepgram (treating input as webm by default)
+    const dgResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        'Content-Type': 'audio/webm;codecs=opus',
+        'Accept': 'application/json'
+      },
+      body: audioBuffer
+    });
+
+    if (!dgResponse.ok) {
+      const errText = await dgResponse.text();
+      console.error('[Interview] Deepgram API error:', dgResponse.status, errText);
+      return res.status(502).json({ error: 'Deepgram transcription failed', status: dgResponse.status, details: errText });
+    }
+
+    const dgJson: any = await dgResponse.json();
+    // Deepgram format: results.channels[0].alternatives[0].transcript
+    const transcript = dgJson?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+
+    res.json({
+      success: true,
+      transcript,
+      questionNumber,
+      question,
+      duration
+    });
   } catch (error: any) {
-    console.error('[Interview] Transcription error:', error);
-    res.status(500).json({ 
+    console.error('[Interview] Transcription error (Deepgram):', error);
+    res.status(500).json({
       error: 'Failed to transcribe audio',
-      details: error.message 
+      details: error.message
     });
   }
 }

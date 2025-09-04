@@ -1306,20 +1306,49 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: 'Failed to fetch activity data' });
       }
 
-      // Get the latest streak value from the database
-      const { data: latestActivity, error: streakError } = await supabase
-        .from('shifu_logs')
-        .select('current_streak')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(1);
-
-      if (streakError) {
-        console.error('Streak fetch error:', streakError);
+      // Compute current streak based on consecutive days ending today
+      let currentStreak = 0;
+      try {
+        const todayKey = today.toISOString().split('T')[0];
+        const cutoff = new Date(today);
+        cutoff.setDate(today.getDate() - 90);
+        const cutoffKey = cutoff.toISOString().split('T')[0];
+        const { data: recent, error: recentErr } = await supabase
+          .from('shifu_logs')
+          .select('date, session_started, completed')
+          .eq('user_id', user.id)
+          .gte('date', cutoffKey)
+          .lte('date', todayKey)
+          .order('date', { ascending: false });
+        if (recentErr) {
+          console.error('Recent activity fetch error:', recentErr);
+        } else {
+          const activeDays = new Set(
+            (recent || [])
+              .filter(r => r.session_started || r.completed)
+              .map(r => (r.date as string).split('T')[0])
+          );
+          // Count consecutive days ending today
+          let streak = 0;
+          for (let i = 0; ; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const key = d.toISOString().split('T')[0];
+            if (i === 0) {
+              // We count today as active if today is in activeDays
+              if (!activeDays.has(key)) break;
+              streak++;
+            } else if (activeDays.has(key)) {
+              streak++;
+            } else {
+              break;
+            }
+          }
+          currentStreak = streak;
+        }
+      } catch (e) {
+        console.error('Error computing current streak for GET:', e);
       }
-      
-      // Use the stored streak value from the database
-      const currentStreak = latestActivity?.[0]?.current_streak || 0;
 
       // Create activity map for easy lookup
       const activityMap = new Map();
@@ -1386,41 +1415,45 @@ Focus on being helpful while maintaining that expert confidence that comes from 
         return res.status(500).json({ error: 'Failed to fetch existing activity' });
       }
 
-      // Calculate streak based on consecutive days of activity
+      // Calculate streak by scanning recent activity backwards from today
       const calculateCurrentStreak = async (userId: string, currentDate: Date) => {
-        // Get the latest streak record
-        const { data: latestRecord, error: latestError } = await supabase
+        const todayStr = currentDate.toISOString().split('T')[0];
+        const cutoff = new Date(currentDate);
+        cutoff.setDate(currentDate.getDate() - 90);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+
+        const { data: recent, error: recentErr } = await supabase
           .from('shifu_logs')
-          .select('current_streak, date')
+          .select('date, session_started, completed')
           .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .limit(1);
-          
-        if (latestError) {
-          console.error('Error fetching latest streak:', latestError);
-          return 1; // Default to 1 if we can't fetch data
-        }
-        
-        // If no previous record exists, this is the first day (streak = 1)
-        if (!latestRecord || latestRecord.length === 0) {
+          .gte('date', cutoffStr)
+          .lte('date', todayStr)
+          .order('date', { ascending: false });
+
+        if (recentErr) {
+          console.error('Error fetching recent activity for streak:', recentErr);
           return 1;
         }
-        
-        // Check if there's already an entry for today
-        const todayStr = currentDate.toISOString().split('T')[0];
-        const { data: todayActivity } = await supabase
-          .from('shifu_logs')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('date', todayStr);
-          
-        // If there's already an activity for today, maintain the current streak
-        if (todayActivity && todayActivity.length > 0) {
-          return latestRecord[0].current_streak;
+
+        const activeDays = new Set(
+          (recent || [])
+            .filter(r => r.session_started || r.completed)
+            .map(r => (r.date as string).split('T')[0])
+        );
+
+        // We consider today as active because we are recording activity now
+        let streak = 1;
+        for (let i = 1; ; i++) {
+          const d = new Date(currentDate);
+          d.setDate(currentDate.getDate() - i);
+          const key = d.toISOString().split('T')[0];
+          if (activeDays.has(key)) {
+            streak++;
+          } else {
+            break;
+          }
         }
-        
-        // Otherwise, this is a new day - increment the streak
-        return latestRecord[0].current_streak + 1;
+        return streak;
       };
 
       const newStreak = await calculateCurrentStreak(user.id, today);

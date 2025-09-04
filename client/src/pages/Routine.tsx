@@ -159,7 +159,7 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
         {/* Next Steps */}
         {feedbackData.nextSteps && (
           <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-            <h3 className="text-lg font-semibold text-black mb-4">🎯 Next Steps</h3>
+            <h3 className="text-lg text-black mb-4">🎯 Next Steps</h3>
             <div className="space-y-3">
               {feedbackData.nextSteps.map((step: string, index: number) => (
                 <div key={index} className="flex items-start">
@@ -457,9 +457,14 @@ export default function Routine() {
   // Send frames to API for analysis
   const sendFramesForAnalysis = async (frames: string[], isSequenceSummary = false) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
       const response = await fetch('/api/pageant-coaching', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ frames, isSequenceSummary })
       });
 
