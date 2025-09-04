@@ -194,7 +194,7 @@ const whyRunwayAICards = [
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 4.5 }}
-              className="absolute top-[7%] left-[12%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center space-y-4 w-full max-w-xs px-4 py-4"
+              className="absolute top-[7%] left-[9%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center space-y-4 w-full max-w-xs px-4 py-4"
             >
               <div className="space-y-4 w-full">
                 {whyRunwayAICards.map((card, index) => (
