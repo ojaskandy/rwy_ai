@@ -435,12 +435,20 @@ const whyRunwayAICards = [
                             className="text-sm text-gray-800 leading-relaxed cursor-pointer"
                           >
                             I agree to the{' '}
-                            <Link href="/privacy">
-                              <a className="text-pink-600 hover:text-pink-700 font-semibold underline" target="_blank">Terms of Service</a>
+                            <Link
+                              href="/privacy"
+                              className="text-pink-600 hover:text-pink-700 font-semibold underline"
+                              target="_blank"
+                            >
+                              Terms of Service
                             </Link>
                             {' '}and{' '}
-                            <Link href="/privacy">
-                              <a className="text-pink-600 hover:text-pink-700 font-semibold underline" target="_blank">Privacy Policy</a>
+                            <Link
+                              href="/privacy"
+                              className="text-pink-600 hover:text-pink-700 font-semibold underline"
+                              target="_blank"
+                            >
+                              Privacy Policy
                             </Link>
                             {' '}and understand how my data will be collected and used.
                           </label>
@@ -545,15 +553,23 @@ const whyRunwayAICards = [
                       {authMode === 'signIn' ? (
                         <p className="text-sm text-pink-800">
                           Don't have an account?{' '}
-                          <Link href="#" onClick={() => { setAuthMode('signUp'); resetForm(); }}>
-                            <a className="text-pink-600 hover:text-pink-700 font-semibold underline">Sign Up</a>
+                          <Link
+                            href="#"
+                            onClick={() => { setAuthMode('signUp'); resetForm(); }}
+                            className="text-pink-600 hover:text-pink-700 font-semibold underline"
+                          >
+                            Sign Up
                           </Link>
                         </p>
                       ) : (
                         <p className="text-sm text-pink-800">
                           Already have an account?{' '}
-                          <Link href="#" onClick={() => { setAuthMode('signIn'); resetForm(); }}>
-                            <a className="text-pink-600 hover:text-pink-700 font-semibold underline">Sign In</a>
+                          <Link
+                            href="#"
+                            onClick={() => { setAuthMode('signIn'); resetForm(); }}
+                            className="text-pink-600 hover:text-pink-700 font-semibold underline"
+                          >
+                            Sign In
                           </Link>
                         </p>
                       )}
@@ -600,8 +616,12 @@ const whyRunwayAICards = [
 
               <p className="text-base text-gray-600 mt-4">
                 Already have an account?{' '}
-                <Link href="#" onClick={() => { setAuthMode('signIn'); resetForm(); }}>
-                  <a className="text-pink-600 hover:text-pink-700 font-semibold underline">Sign In</a>
+                <Link
+                  href="#"
+                  onClick={() => { setAuthMode('signIn'); resetForm(); }}
+                  className="text-pink-600 hover:text-pink-700 font-semibold underline"
+                >
+                  Sign In
                 </Link>
               </p>
             </motion.div>

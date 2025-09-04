@@ -726,8 +726,11 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
         return res.status(400).json({ error: 'Description is required' });
       }
 
-      const apiKey = process.env.OPENAI_API_KEY || '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';
-      console.log('AI Parse Event - Using API key:', apiKey ? 'Present' : 'Missing');
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        console.error('AI Parse Event - Missing OpenAI API key');
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
 
       // Use OpenAI to parse the event description
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
