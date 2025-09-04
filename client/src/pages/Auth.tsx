@@ -183,7 +183,7 @@ const whyRunwayAICards = [
                   times: [0, 0.1, 0.3, 0.5, 1],
                   delay: 1
                 }}
-                className="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain mt-4 sm:mt-8 md:mt-12"
+                className="w-96 h-96 object-contain mt-12"
               />
             )}
           </AnimatePresence>
@@ -194,7 +194,7 @@ const whyRunwayAICards = [
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 4.5 }}
-              className="absolute top-[5%] left-1/2 -translate-x-1/2 flex flex-col items-center space-y-2 sm:space-y-3 md:space-y-4 w-full max-w-[280px] sm:max-w-xs px-2 sm:px-4 py-2 sm:py-4"
+              className="absolute top-[7%] left-[12%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center space-y-4 w-full max-w-xs px-4 py-4"
             >
               <div className="space-y-4 w-full">
                 {whyRunwayAICards.map((card, index) => (
@@ -218,14 +218,14 @@ const whyRunwayAICards = [
                       rotate: index % 2 === 0 ? -3 : 3,
                       transition: { duration: 0.3 }
                     }}
-                    className={`max-w-[260px] sm:max-w-2xl ${index % 2 === 0 ? 'ml-0 mr-auto' : 'ml-auto mr-0'} bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-2 sm:p-3 md:p-4 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-300`}
+                    className={`max-w-sm ${index % 2 === 0 ? 'ml-0 mr-auto' : 'ml-auto mr-0'} bg-white/95 backdrop-blur-sm rounded-3xl p-3 shadow-xl border border-pink-200 hover:shadow-2xl transition-all duration-300`}
                   >
-                    <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
-                      <div className="text-lg sm:text-xl md:text-2xl flex-shrink-0">{card.emoji}</div>
+                    <div className="flex items-start gap-3">
+                      <div className="text-xl flex-shrink-0">{card.emoji}</div>
                       <div>
-                        <p className="text-xs sm:text-sm md:text-base text-gray-700 leading-relaxed">
+                        <p className="text-sm text-gray-700 leading-relaxed">
                           {card.text}{" "}
-                          <span className="text-pink-600 font-bold bg-pink-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-xs sm:text-sm md:text-base">
+                          <span className="text-pink-600 font-bold bg-pink-100 px-2 py-1 rounded-lg text-sm">
                             {card.highlight}
                           </span>
                         </p>
@@ -591,10 +591,10 @@ const whyRunwayAICards = [
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
               transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-              className="flex flex-col items-center text-center space-y-4 sm:space-y-6 md:space-y-8 w-full px-4 pt-8 sm:pt-12 md:pt-16 pb-4"
-              style={{ minHeight: 'auto' }} // Let it size naturally on mobile
+              className="flex flex-col items-center text-center space-y-8 w-full px-4 pt-16 pb-4"
+              style={{ minHeight: '33vh' }} // Ensure it occupies bottom 1/3rd
             >
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight tracking-tighter">
+              <h1 className="text-5xl font-extrabold text-gray-900 leading-tight tracking-tighter">
                 Win Your Crown
               </h1>
               
@@ -608,7 +608,7 @@ const whyRunwayAICards = [
               >
                 <Button
                   onClick={() => { setAuthMode('signUp'); resetForm(); }}
-                  className="w-full min-h-[56px] sm:min-h-[64px] h-14 sm:h-16 bg-black hover:bg-gray-800 text-white font-bold text-lg sm:text-xl rounded-full shadow-lg transition-all duration-300 tracking-wide uppercase"
+                  className="w-full min-h-[64px] h-16 bg-black hover:bg-gray-800 text-white font-bold text-xl rounded-full shadow-lg transition-all duration-300 tracking-wide uppercase"
                 >
                   Get Started
                 </Button>
