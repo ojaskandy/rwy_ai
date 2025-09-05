@@ -6,7 +6,7 @@ import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Mail, X } from 'lucide-react';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Copy, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -400,8 +400,8 @@ export default function Routine() {
   }]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailAddress, setEmailAddress] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
   
   // Summary modal state
   const [showSummary, setShowSummary] = useState(false);
@@ -601,23 +601,21 @@ export default function Routine() {
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!emailAddress || !emailAddress.includes('@')) {
-      alert('Please enter a valid email address');
-      return;
-    }
+  const handleSummarizeAndCopy = async () => {
+    if (chatMessages.length <= 1) return;
+    
+    setIsSummarizing(true);
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await fetch('/api/email-plan-summary', {
+      const response = await fetch('/api/summarize-conversation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
         },
         body: JSON.stringify({
-          email: emailAddress,
           conversation: chatMessages.map(msg => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.isUser ? msg.message : msg.reply
@@ -629,11 +627,21 @@ export default function Routine() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      setShowEmailModal(false);
-      alert('Summary has been sent to your email!');
+      const data = await response.json();
+      
+      if (data.summary) {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(data.summary);
+        
+        // Show success indicator
+        setShowCopySuccess(true);
+        setTimeout(() => setShowCopySuccess(false), 2000);
+      }
     } catch (error) {
-      console.error('Email error:', error);
-      alert('Failed to send email. Please try again.');
+      console.error('Summarize error:', error);
+      alert('Failed to summarize conversation. Please try again.');
+    } finally {
+      setIsSummarizing(false);
     }
   };
 
@@ -908,11 +916,20 @@ export default function Routine() {
               <div className="flex justify-center mb-3">
                 <button 
                   className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium px-4 py-1.5 rounded-full text-sm flex items-center gap-1.5 shadow-sm"
-                  onClick={() => setShowEmailModal(true)}
-                  disabled={chatMessages.length <= 1}
+                  onClick={handleSummarizeAndCopy}
+                  disabled={chatMessages.length <= 1 || isSummarizing}
                 >
-                  <Mail className="w-4 h-4" />
-                  Summarize and Email
+                  {showCopySuccess ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Copied to Clipboard!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      {isSummarizing ? 'Summarizing...' : 'Summarize and Copy'}
+                    </>
+                  )}
                 </button>
               </div>
               <div className="relative">
@@ -942,47 +959,7 @@ export default function Routine() {
         </div>
       )}
 
-      {/* Email Summary Modal */}
-      <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
-        <DialogContent className="bg-white rounded-xl p-6 max-w-md mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Email Your Plan</DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
-              We'll send a summary of this planning session to your email.  
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mt-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={emailAddress}
-              onChange={(e) => setEmailAddress(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full"
-            />
-          </div>
-          
-          <div className="mt-6 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowEmailModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSendEmail} 
-              className="bg-pink-600 hover:bg-pink-700 text-white"
-              disabled={!emailAddress.includes('@')}
-            >
-              Send Email
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Removed Email Summary Modal */}
       
       {/* Summary Modal */}
       <UsageAfterAction open={!isActive && showSummary} onOpenChange={(open) => { if (!open) setShowSummary(false); }} focus="routine" />
@@ -1033,7 +1010,7 @@ export default function Routine() {
                 <ul className="list-disc pl-5 space-y-2">
                   <li>Type your questions or ideas in the chat</li>
                   <li>Get AI suggestions and guidance</li>
-                  <li>Use the email button to send a summary to yourself</li>
+                  <li>Use the copy button to get a summary of your conversation</li>
                 </ul>
               </>
             )}
