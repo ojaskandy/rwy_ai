@@ -6,7 +6,7 @@ import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Play, Square, Camera, Send, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 
 interface CameraPermissionOverlayProps {
@@ -54,6 +55,7 @@ interface ChatMessage {
   message: string;
   reply: string;
   timestamp: Date;
+  isUser: boolean;
 }
 
 function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps) {
@@ -88,7 +90,8 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
         id: Date.now().toString(),
         message: messageText,
         reply: data.reply,
-        timestamp: new Date()
+        timestamp: new Date(),
+        isUser: true
       };
 
       setChatMessages(prev => [...prev, newMessage]);
@@ -383,6 +386,23 @@ export default function Routine() {
   const [isActive, setIsActive] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
+  // Mode selection state
+  const [mode, setMode] = useState<'catwalk' | 'talent' | 'plan'>('catwalk');
+  const [showModeSelection, setShowModeSelection] = useState(true);
+  
+  // Plan chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
+    id: 'welcome',
+    message: '',
+    reply: 'Welcome to the Planning Assistant! I\'m here to help you plan your talent or catwalk performance. What would you like to discuss today?',
+    timestamp: new Date(),
+    isUser: false
+  }]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  
   // Summary modal state
   const [showSummary, setShowSummary] = useState(false);
   const [summaryFeedback, setSummaryFeedback] = useState('');
@@ -459,13 +479,19 @@ export default function Routine() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch('/api/pageant-coaching', {
+      const endpoint = mode === 'talent' ? '/api/talent-coaching' : '/api/pageant-coaching';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
         },
-        body: JSON.stringify({ frames, isSequenceSummary })
+        body: JSON.stringify({ 
+          frames, 
+          isSequenceSummary,
+          mode: mode // Send the current mode to the backend
+        })
       });
 
       if (!response.ok) {
@@ -487,9 +513,108 @@ export default function Routine() {
     }
   };
 
+  // Plan chat functions
+  const handleSendPlanMessage = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+
+    const messageText = chatInput.trim();
+    setChatInput('');
+    setIsChatLoading(true);
+
+    // Add user message to chat
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      message: messageText,
+      reply: '',
+      timestamp: new Date(),
+      isUser: true
+    };
+    
+    setChatMessages(prev => [...prev, userMessage]);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/plan-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({ 
+          message: messageText,
+          planType: mode,
+          history: chatMessages.map(msg => ({
+            role: msg.isUser ? 'user' : 'assistant',
+            content: msg.isUser ? msg.message : msg.reply
+          })).slice(-10) // Send last 10 messages for context
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      const botMessage: ChatMessage = {
+        id: `response-${Date.now()}`,
+        message: '',
+        reply: data.reply || 'I\'m sorry, I couldn\'t process your request right now.',
+        timestamp: new Date(),
+        isUser: false
+      };
+      
+      setChatMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Show error message
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailAddress || !emailAddress.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/email-plan-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          email: emailAddress,
+          conversation: chatMessages.map(msg => ({
+            role: msg.isUser ? 'user' : 'assistant',
+            content: msg.isUser ? msg.message : msg.reply
+          }))
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      setShowEmailModal(false);
+      alert('Summary has been sent to your email!');
+    } catch (error) {
+      console.error('Email error:', error);
+      alert('Failed to send email. Please try again.');
+    }
+  };
+
   // Start practice session
   const startPractice = async () => {
-    const usage = await checkUsage('walk_routine');
+    const usageType = mode === 'talent' ? 'talent_routine' : 'walk_routine';
+    const usage = await checkUsage(usageType);
     if (!usage.allowed) {
       setIsLimitModalOpen(true);
       return;
@@ -581,67 +706,123 @@ export default function Routine() {
       <LimitReachedModal
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}
-        limitType="Walk Routines"
-        limit={limits.walkRoutinesMonthly}
+        limitType={mode === 'talent' ? "Talent Routines" : "Walk Routines"}
+        limit={mode === 'talent' ? limits.walkRoutinesMonthly : limits.walkRoutinesMonthly}
         timePeriod="month"
       />
       <div className="h-screen w-screen overflow-hidden relative bg-black">
+      {/* Mode Selection Screen */}
+      {showModeSelection && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black">
+          <h2 className="text-3xl font-bold text-white mb-12">Select Mode</h2>
+          <div className="grid grid-cols-1 gap-6 w-full max-w-sm px-4">
+            <Button 
+              onClick={() => {
+                setMode('catwalk');
+                setShowModeSelection(false);
+              }}
+              className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
+            >
+              <Camera className="w-6 h-6 mr-3" />
+              Catwalk
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                setMode('talent');
+                setShowModeSelection(false);
+              }}
+              className="bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-600 hover:to-purple-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
+            >
+              <Sparkles className="w-6 h-6 mr-3" />
+              Talent
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                setMode('plan');
+                setShowModeSelection(false);
+              }}
+              className="bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
+            >
+              <MessageCircle className="w-6 h-6 mr-3" />
+              Plan
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Video Element - Full Screen */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="w-full h-full object-contain"
-      />
+      {!showModeSelection && mode !== 'plan' && (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-contain"
+        />
+      )}
       
       {/* Hidden canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Camera Permission Overlay */}
-      {hasPermission === false && (
+      {hasPermission === false && !showModeSelection && mode !== 'plan' && (
         <CameraPermissionOverlay onRequestPermission={requestCameraPermission} />
       )}
 
       {/* Back Button - Top Left */}
       <div className="absolute top-6 left-6 z-20">
-        <Link href="/">
+        {showModeSelection ? (
+          <Link href="/">
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-pink-300 hover:bg-white/10 backdrop-blur-sm border border-white/20"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back
+            </Button>
+          </Link>
+        ) : (
           <Button 
             variant="ghost" 
             className="text-white hover:text-pink-300 hover:bg-white/10 backdrop-blur-sm border border-white/20"
+            onClick={() => setShowModeSelection(true)}
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
-        </Link>
+        )}
       </div>
 
-      {/* Start/Stop Button - Center Top */}
-      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
-        <Button
-          onClick={isActive ? stopPractice : startPractice}
-          disabled={hasPermission === false}
-          className={`
-            px-8 py-4 rounded-2xl font-semibold shadow-lg text-white backdrop-blur-sm
-            ${isActive 
-              ? 'bg-gradient-to-r from-red-500/90 to-red-400/90 hover:from-red-600/90 hover:to-red-500/90' 
-              : 'bg-gradient-to-r from-pink-500/90 to-pink-400/90 hover:from-pink-600/90 hover:to-pink-500/90'
-            }
-          `}
-        >
-          {isActive ? (
-            <>
-              <Square className="w-5 h-5 mr-2" />
-              Stop Practice
-            </>
-          ) : (
-            <>
-              <Play className="w-5 h-5 mr-2" />
-              Start Practice
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Start/Stop Button - Center Top (Only for Catwalk and Talent modes) */}
+      {!showModeSelection && (mode === 'catwalk' || mode === 'talent') && (
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
+          <Button
+            onClick={isActive ? stopPractice : startPractice}
+            disabled={hasPermission === false}
+            className={`
+              px-8 py-4 rounded-2xl font-semibold shadow-lg text-white backdrop-blur-sm
+              ${isActive 
+                ? 'bg-gradient-to-r from-red-500/90 to-red-400/90 hover:from-red-600/90 hover:to-red-500/90' 
+                : 'bg-gradient-to-r from-pink-500/90 to-pink-400/90 hover:from-pink-600/90 hover:to-pink-500/90'
+              }
+            `}
+          >
+            {isActive ? (
+              <>
+                <Square className="w-5 h-5 mr-2" />
+                Stop {mode === 'catwalk' ? 'Catwalk' : 'Talent'}
+              </>
+            ) : (
+              <>
+                <Play className="w-5 h-5 mr-2" />
+                Start {mode === 'catwalk' ? 'Catwalk' : 'Talent'}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Recording Indicator */}
       {isActive && (
@@ -657,6 +838,157 @@ export default function Routine() {
         </motion.div>
       )}
 
+      {/* Camera Mode Selection Buttons - Bottom */}
+      {!showModeSelection && (mode === 'catwalk' || mode === 'talent') && (
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20 px-4">
+          <div className="bg-black/50 backdrop-blur-md rounded-full p-1.5 flex items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              className={`px-6 py-5 rounded-full flex flex-col items-center ${mode === 'catwalk' ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}
+              onClick={() => {
+                if (isActive) stopPractice();
+                setMode('catwalk');
+              }}
+            >
+              <Camera className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium">Catwalk</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className={`px-6 py-5 rounded-full flex flex-col items-center ${mode === 'talent' ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}
+              onClick={() => {
+                if (isActive) stopPractice();
+                setMode('talent');
+              }}
+            >
+              <Sparkles className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium">Talent</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className="px-6 py-5 rounded-full flex flex-col items-center text-white hover:bg-white/20"
+              onClick={() => {
+                if (isActive) stopPractice();
+                setMode('plan');
+              }}
+            >
+              <MessageCircle className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium">Plan</span>
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Plan Mode Content */}
+      {!showModeSelection && mode === 'plan' && (
+        <div className="absolute inset-0 bg-gradient-to-b from-pink-800 to-purple-900 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col p-4">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl flex-1 mb-4 p-4 overflow-y-auto">
+              <div className="flex flex-col space-y-4" id="chat-container">
+                {chatMessages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={`${msg.isUser ? 'self-end bg-pink-500/70' : 'self-start bg-white/20'} backdrop-blur-sm rounded-xl p-4 max-w-[85%]`}
+                  >
+                    <p className="text-white">
+                      {msg.isUser ? msg.message : msg.reply}
+                    </p>
+                  </div>
+                ))}
+                
+                {isChatLoading && (
+                  <div className="self-start bg-white/20 backdrop-blur-sm rounded-xl p-4 max-w-[85%]">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Input area with email button */}
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Type your message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendPlanMessage()}
+                disabled={isChatLoading}
+                className="w-full bg-white/20 backdrop-blur-md text-white rounded-full pl-4 pr-24 py-3 border border-white/30 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+              />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-2">
+                <button 
+                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2" 
+                  title="Email summary"
+                  onClick={() => setShowEmailModal(true)}
+                  disabled={chatMessages.length <= 1}
+                >
+                  <Mail className="w-5 h-5" />
+                </button>
+                <button 
+                  className="bg-pink-500 hover:bg-pink-600 text-white rounded-full p-2"
+                  onClick={handleSendPlanMessage}
+                  disabled={isChatLoading || !chatInput.trim()}
+                >
+                  {isChatLoading ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Summary Modal */}
+      <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
+        <DialogContent className="bg-white rounded-xl p-6 max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Email Your Plan</DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              We'll send a summary of this planning session to your email.  
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full"
+            />
+          </div>
+          
+          <div className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowEmailModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail} 
+              className="bg-pink-600 hover:bg-pink-700 text-white"
+              disabled={!emailAddress.includes('@')}
+            >
+              Send Email
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       {/* Summary Modal */}
       <UsageAfterAction open={!isActive && showSummary} onOpenChange={(open) => { if (!open) setShowSummary(false); }} focus="routine" />
       <SummaryModal
