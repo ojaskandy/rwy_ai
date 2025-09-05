@@ -420,6 +420,11 @@ export default function Routine() {
   // Request camera permission
   const requestCameraPermission = async () => {
     try {
+      // Stop any existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
@@ -443,6 +448,10 @@ export default function Routine() {
   useEffect(() => {
     if (mode !== 'plan') {
       requestCameraPermission();
+    } else if (streamRef.current) {
+      // Stop camera when switching to plan mode
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
     
     return () => {
@@ -711,34 +720,36 @@ export default function Routine() {
         limit={mode === 'talent' ? limits.walkRoutinesMonthly : limits.walkRoutinesMonthly}
         timePeriod="month"
       />
-      <div className="h-screen w-screen overflow-hidden relative bg-black">
+      <div className="h-[100dvh] w-screen overflow-hidden relative bg-black">
       {/* Main Camera Screen - Always shown */}
-      <div className="absolute inset-0 z-10 bg-black">
-        {/* Camera frame corner brackets */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-full h-full max-w-lg max-h-lg">
-            {/* Top Left */}
-            <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-white"></div>
-            {/* Top Right */}
-            <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-white"></div>
-            {/* Bottom Left */}
-            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-white"></div>
-            {/* Bottom Right */}
-            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-white"></div>
+      <div className="absolute inset-0 z-10 bg-black overflow-hidden">
+        {/* Camera frame corner brackets - Show only when not in plan mode */}
+        {mode !== 'plan' && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <div className="relative w-full h-full">
+              {/* Top Left */}
+              <div className="absolute top-16 left-6 w-20 h-20 border-t-2 border-l-2 border-white"></div>
+              {/* Top Right */}
+              <div className="absolute top-16 right-6 w-20 h-20 border-t-2 border-r-2 border-white"></div>
+              {/* Bottom Left */}
+              <div className="absolute bottom-40 left-6 w-20 h-20 border-b-2 border-l-2 border-white"></div>
+              {/* Bottom Right */}
+              <div className="absolute bottom-40 right-6 w-20 h-20 border-b-2 border-r-2 border-white"></div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Top navigation buttons (X and ?) */}
-        <div className="absolute top-6 left-6 z-20">
+        <div className="absolute top-12 left-6 z-20">
           <Link href="/">
-            <div className="w-16 h-16 bg-gray-800/80 rounded-full flex items-center justify-center">
-              <X className="w-8 h-8 text-white" />
+            <div className="w-14 h-14 bg-gray-800/80 rounded-full flex items-center justify-center">
+              <X className="w-7 h-7 text-white" />
             </div>
           </Link>
         </div>
-        <div className="absolute top-6 right-6 z-20">
-          <div className="w-16 h-16 bg-gray-800/80 rounded-full flex items-center justify-center">
-            <div className="w-8 h-8 text-white font-bold text-2xl flex items-center justify-center">?</div>
+        <div className="absolute top-12 right-6 z-20">
+          <div className="w-14 h-14 bg-gray-800/80 rounded-full flex items-center justify-center">
+            <div className="w-7 h-7 text-white font-bold text-2xl flex items-center justify-center">?</div>
           </div>
         </div>
       </div>
@@ -749,7 +760,8 @@ export default function Routine() {
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover z-10"
+        style={{ display: mode !== 'plan' ? 'block' : 'none' }}
       />
       
       {/* Hidden canvas for frame capture */}
@@ -761,7 +773,7 @@ export default function Routine() {
       )}
 
       {/* Bottom Mode Selection Buttons */}
-      <div className="absolute bottom-36 left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
+      <div className="absolute bottom-[120px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
         <button 
           onClick={() => setMode('catwalk')}
           className={`px-6 py-3 rounded-full bg-white flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-200'}`}
@@ -788,7 +800,7 @@ export default function Routine() {
       </div>
       
       {/* Capture Button */}
-      <div className="absolute bottom-10 left-0 right-0 flex justify-center z-30">
+      <div className="absolute bottom-[70px] left-0 right-0 flex justify-center z-30">
         <button 
           onClick={mode !== 'plan' ? (isActive ? stopPractice : startPractice) : undefined}
           disabled={hasPermission === false}
@@ -802,7 +814,7 @@ export default function Routine() {
         </button>
         
         {/* Flash Button */}
-        <button className="absolute left-10 bottom-2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
+        <button className="absolute left-10 bottom-0 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
           <div className="w-6 h-6 text-white">⚡</div>
         </button>
       </div>
@@ -843,7 +855,7 @@ export default function Routine() {
           </div>
           
           {/* Input area with email button - fixed at bottom */}
-          <div className="absolute bottom-36 left-0 right-0 px-4"> {/* Positioned above the mode buttons */}
+          <div className="absolute bottom-[120px] left-0 right-0 px-4"> {/* Positioned above the mode buttons */}
             <div className="relative">
               <input 
                 type="text" 
