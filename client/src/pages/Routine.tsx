@@ -425,16 +425,25 @@ export default function Routine() {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
 
+      console.log('Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
           width: { min: 640, ideal: 1280, max: 1920 },
           height: { min: 480, ideal: 720, max: 1080 }
-        } 
+        },
+        audio: false 
       });
       
+      console.log('Camera access granted, setting up video element');
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Force play after setting source
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch(err => console.error('Error playing video:', err));
+          }
+        };
         streamRef.current = stream;
         setHasPermission(true);
       }
@@ -722,7 +731,7 @@ export default function Routine() {
       />
       <div className="h-[100dvh] w-screen overflow-hidden relative bg-black">
       {/* Main Camera Screen - Always shown */}
-      <div className="absolute inset-0 z-10 bg-black overflow-hidden">
+      <div className="absolute inset-0 z-5 bg-black overflow-hidden">
         {/* Camera frame corner brackets - Show only when not in plan mode */}
         {mode !== 'plan' && (
           <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
@@ -760,7 +769,7 @@ export default function Routine() {
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover z-10"
+        className="w-full h-full object-cover absolute inset-0 z-10"
         style={{ display: mode !== 'plan' ? 'block' : 'none' }}
       />
       
@@ -773,49 +782,44 @@ export default function Routine() {
       )}
 
       {/* Bottom Mode Selection Buttons */}
-      <div className="absolute bottom-[120px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
+      <div className="absolute bottom-[140px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
         <button 
           onClick={() => setMode('catwalk')}
-          className={`px-6 py-3 rounded-full bg-white flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
-          <Camera className="w-4 h-4 mr-2 text-black" />
-          <span className="text-black font-medium">Catwalk</span>
+          <Camera className="w-3 h-3 mr-1 text-black" />
+          <span className="text-black text-sm">Catwalk</span>
         </button>
         
         <button 
           onClick={() => setMode('talent')}
-          className={`px-6 py-3 rounded-full flex items-center justify-center ${mode === 'talent' ? 'bg-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'talent' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
-          <Sparkles className="w-4 h-4 mr-2 text-black" />
-          <span className="text-black font-medium">Talent</span>
+          <Sparkles className="w-3 h-3 mr-1 text-black" />
+          <span className="text-black text-sm">Talent</span>
         </button>
         
         <button 
           onClick={() => setMode('plan')}
-          className={`px-6 py-3 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
-          <MessageCircle className="w-4 h-4 mr-2 text-black" />
-          <span className="text-black font-medium">Plan</span>
+          <MessageCircle className="w-3 h-3 mr-1 text-black" />
+          <span className="text-black text-sm">Plan</span>
         </button>
       </div>
       
       {/* Capture Button */}
-      <div className="absolute bottom-[70px] left-0 right-0 flex justify-center z-30">
+      <div className="absolute bottom-[90px] left-0 right-0 flex justify-center z-30">
         <button 
           onClick={mode !== 'plan' ? (isActive ? stopPractice : startPractice) : undefined}
           disabled={hasPermission === false}
-          className="w-20 h-20 bg-white rounded-full border-4 border-gray-300 focus:outline-none focus:ring-4 focus:ring-white/50 transform transition-transform active:scale-95"
+          className="w-16 h-16 bg-white rounded-full border-4 border-gray-300 focus:outline-none focus:ring-4 focus:ring-white/50 transform transition-transform active:scale-95"
         >
           {isActive && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 bg-red-600 rounded-full"></div>
+              <div className="w-10 h-10 bg-red-600 rounded-full"></div>
             </div>
           )}
-        </button>
-        
-        {/* Flash Button */}
-        <button className="absolute left-10 bottom-0 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-          <div className="w-6 h-6 text-white">⚡</div>
         </button>
       </div>
 
