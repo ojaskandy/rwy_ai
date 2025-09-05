@@ -715,6 +715,94 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
       });
     }
   });
+  
+  // Plan Chat endpoint - AI Pageant Coach for planning catwalk/talent performances
+  app.post('/api/plan-chat', async (req, res) => {
+    console.log('Plan Chat endpoint called');
+    try {
+      const { message, history, instructions, planType } = req.body;
+      console.log('Plan Chat - Received:', {
+        message: message?.substring(0, 50) + '...',
+        historyLength: history?.length || 0,
+        planType: planType || 'general',
+        timestamp: new Date().toISOString()
+      });
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('No OpenAI API key found');
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
+
+      // Prepare the system prompt for pageant planning
+      const systemPrompt = `You are an AI Pageant Coach, an expert in helping contestants prepare for pageant competitions, particularly focusing on catwalk performances and talent rounds. You provide concise, helpful advice that is specific and actionable.\n\n
+      ${instructions && Array.isArray(instructions) ? instructions.join('\n') : ''}\n\nFocus on being encouraging, supportive, and professional. Keep your responses brief but impactful.`;
+
+      // Prepare the messages array
+      const messages = [
+        {
+          role: "system",
+          content: systemPrompt
+        }
+      ];
+      
+      // Add conversation history if provided
+      if (history && Array.isArray(history) && history.length > 0) {
+        messages.push(...history);
+      }
+      
+      // Add current user message
+      messages.push({
+        role: "user",
+        content: message
+      });
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: messages,
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
+        return res.status(500).json({ error: 'Failed to get AI response' });
+      }
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || 'I\'m your AI Pageant Coach! How can I help you plan your performance today?';
+
+      console.log('Plan Chat - Response sent:', {
+        reply: reply.substring(0, 50) + '...',
+        tokens: data.usage?.total_tokens || 0
+      });
+
+      res.json({ 
+        success: true, 
+        reply,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Plan chat error:', error);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   // AI event parsing endpoint
   app.post('/api/ai/parse-event', async (req, res) => {
@@ -1511,6 +1599,118 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       } else {
         res.status(500).json({ error: 'Internal server error' });
       }
+    }
+  });
+
+  // Email Plan Summary endpoint
+  app.post('/api/email-plan-summary', async (req, res) => {
+    try {
+      const { email, conversation } = req.body;
+      console.log('Email Plan Summary - Received:', {
+        email: email,
+        conversationLength: conversation?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ error: 'Valid email address is required' });
+      }
+
+      if (!conversation || !Array.isArray(conversation) || conversation.length === 0) {
+        return res.status(400).json({ error: 'Conversation data is required' });
+      }
+
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('No OpenAI API key found');
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
+
+      if (!resend) {
+        return res.status(500).json({ error: 'Email service not configured' });
+      }
+
+      // Generate a summary of the conversation
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an AI assistant tasked with summarizing a conversation between a pageant coach and a contestant. Create a concise but thorough summary that captures the key advice, strategies, and action items discussed. Format your summary with clear sections, bullet points for action items, and a professional tone."
+            },
+            {
+              role: "user",
+              content: `Please summarize the following conversation about pageant preparation and provide a structured plan: ${JSON.stringify(conversation)}`
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.5
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
+        return res.status(500).json({ error: 'Failed to generate summary' });
+      }
+
+      const data = await response.json();
+      const summary = data.choices?.[0]?.message?.content || 'Summary could not be generated.';
+
+      // Create a nicely formatted HTML email
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <div style="background: linear-gradient(to right, #ec4899, #8b5cf6); padding: 15px; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; text-align: center;">Your Pageant Plan</h1>
+          </div>
+          
+          <div style="background-color: #fff; border-radius: 0 0 10px 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 20px;">
+              <h2 style="color: #ec4899; margin-top: 0;">Plan Summary</h2>
+              <div style="white-space: pre-line; line-height: 1.6;">${summary}</div>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+              <p style="color: #666; font-style: italic; text-align: center;">
+                This summary was generated by your AI Pageant Coach.<br>
+                Good luck with your preparations!
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Send the email
+      const emailData = await resend.emails.send({
+        from: 'Runway AI Pageant Coach <hello@runwayai.com>',
+        to: [email],
+        subject: 'Your Pageant Plan Summary',
+        html: htmlContent
+      });
+
+      console.log('Email Plan Summary - Email sent:', {
+        emailId: emailData.data?.id,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Summary email sent successfully',
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Email plan summary error:', error);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
