@@ -394,7 +394,7 @@ export default function Routine() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
     id: 'welcome',
     message: '',
-    reply: 'Welcome to the Planning Assistant! I\'m here to help you plan your talent or catwalk performance. What would you like to discuss today?',
+    reply: 'Hi! I\'m your AI pageant coach. I can help with runway walking, interview prep, confidence tips, and pageant strategies. What would you like to work on? 👑',
     timestamp: new Date(),
     isUser: false
   }]);
@@ -567,7 +567,13 @@ export default function Routine() {
           history: chatMessages.map(msg => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.isUser ? msg.message : msg.reply
-          })).slice(-10) // Send last 10 messages for context
+          })).slice(-10), // Send last 10 messages for context
+          instructions: [
+            'Focus responses on catwalk and talent rounds for pageants',
+            'Keep responses brief, concise and helpful',
+            'Occasionally encourage the user to use the "Summarize and Email" feature to save their plan',
+            'Provide specific, actionable advice for pageant performances'
+          ]
         })
       });
 
@@ -836,60 +842,91 @@ export default function Routine() {
 
       {/* We've replaced this with the new bottom UI */}
       
-      {/* Plan Mode Content */}
+      {/* Plan Mode Content - AI Pageant Coach */}
       {mode === 'plan' && (
-        <div className="absolute inset-0 z-20 bg-black flex flex-col overflow-hidden">
-          {/* Chat messages area */}
-          <div className="flex-1 overflow-hidden flex flex-col p-4 pb-40"> {/* Extra padding at bottom to make room for buttons */}
-            <div className="bg-black/90 flex-1 overflow-y-auto">
-              <div className="flex flex-col space-y-4 p-4" id="chat-container">
-                {chatMessages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    className={`${msg.isUser ? 'self-end bg-blue-500' : 'self-start bg-gray-700'} rounded-2xl p-4 max-w-[85%]`}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ height: '600px' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-pink-200/50 bg-gradient-to-r from-pink-100 to-purple-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-lg">👑</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">AI Pageant Coach</h3>
+                  <p className="text-xs text-gray-600">Your personal runway mentor</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMode('catwalk')}
+                className="h-8 w-8 p-0 hover:bg-pink-100"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </Button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-xs px-4 py-2 rounded-2xl ${
+                      msg.isUser
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                        : 'bg-gray-800 text-white shadow-sm'
+                    }`}
                   >
-                    <p className="text-white">
-                      {msg.isUser ? msg.message : msg.reply}
-                    </p>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{msg.isUser ? msg.message : msg.reply}</p>
                   </div>
-                ))}
-                
-                {isChatLoading && (
-                  <div className="self-start bg-gray-700 rounded-2xl p-4 max-w-[85%]">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              ))}
+              
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-800 text-white rounded-2xl px-4 py-2 shadow-sm max-w-xs">
+                    <div className="flex items-center space-x-2 h-5">
+                      <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          </div>
-          
-          {/* Input area with email button - fixed at bottom */}
-          <div className="absolute bottom-[120px] left-0 right-0 px-4"> {/* Positioned above the mode buttons */}
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Type your message..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendPlanMessage()}
-                disabled={isChatLoading}
-                className="w-full bg-gray-800 text-white rounded-full pl-4 pr-24 py-3 border border-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-2">
+
+            {/* Input area with controls */}
+            <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-pink-100">
+              <div className="flex justify-center mb-3">
                 <button 
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2" 
-                  title="Email summary"
+                  className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium px-4 py-1.5 rounded-full text-sm flex items-center gap-1.5 shadow-sm"
                   onClick={() => setShowEmailModal(true)}
                   disabled={chatMessages.length <= 1}
                 >
-                  <Mail className="w-5 h-5" />
+                  <Mail className="w-4 h-4" />
+                  Summarize and Email
                 </button>
+              </div>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Ask about pageant tips, runway walks, interview prep..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendPlanMessage()}
+                  disabled={isChatLoading}
+                  className="w-full bg-white text-gray-700 rounded-full pl-4 pr-12 py-2.5 border border-pink-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
+                />
                 <button 
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full p-2"
                   onClick={handleSendPlanMessage}
                   disabled={isChatLoading || !chatInput.trim()}
                 >
