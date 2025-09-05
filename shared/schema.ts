@@ -508,3 +508,60 @@ export const oneTimeCodes = pgTable("one_time_codes", {
   usedAt: timestamp("used_at"),
   usedByUserId: text("used_by_user_id"),
 });
+
+// Referral system tables
+export const referralCreators = pgTable("referral_creators", {
+  id: serial("id").primaryKey(),
+  creatorCode: text("creator_code").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  email: text("email"),
+  commissionRate: text("commission_rate").default("0.20"), // Using text for decimal
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const referralConversions = pgTable("referral_conversions", {
+  id: serial("id").primaryKey(),
+  creatorCode: text("creator_code").notNull().references(() => referralCreators.creatorCode),
+  userId: text("user_id").notNull(), // UUID from Supabase auth.users
+  userEmail: text("user_email").notNull(),
+  attributedAt: timestamp("attributed_at").defaultNow(),
+  convertedAt: timestamp("converted_at"),
+  conversionType: text("conversion_type"), // 'stripe_subscription', 'premium_code'
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  planType: text("plan_type"), // 'monthly', 'yearly'
+  subscriptionAmount: text("subscription_amount"), // Using text for decimal
+  commissionEarned: text("commission_earned"), // Using text for decimal
+  payoutStatus: text("payout_status").default("pending"), // 'pending', 'paid', 'cancelled'
+  payoutDate: timestamp("payout_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Schemas for referral system
+export const insertReferralCreatorSchema = createInsertSchema(referralCreators).pick({
+  creatorCode: true,
+  displayName: true,
+  email: true,
+  commissionRate: true,
+  isActive: true,
+});
+
+export const insertReferralConversionSchema = createInsertSchema(referralConversions).pick({
+  creatorCode: true,
+  userId: true,
+  userEmail: true,
+  attributedAt: true,
+  convertedAt: true,
+  conversionType: true,
+  stripeSubscriptionId: true,
+  planType: true,
+  subscriptionAmount: true,
+  commissionEarned: true,
+  payoutStatus: true,
+});
+
+export type ReferralCreator = typeof referralCreators.$inferSelect;
+export type ReferralConversion = typeof referralConversions.$inferSelect;
+export type InsertReferralCreator = z.infer<typeof insertReferralCreatorSchema>;
+export type InsertReferralConversion = z.infer<typeof insertReferralConversionSchema>;

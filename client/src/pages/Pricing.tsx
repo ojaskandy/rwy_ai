@@ -6,6 +6,7 @@ import { Check, ArrowRight, X } from 'lucide-react';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
+import ReferralModal from '@/components/ReferralModal';
 
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
@@ -16,9 +17,11 @@ export default function Pricing() {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [isButtonAnimating, setIsButtonAnimating] = useState(false);
   const [showSkipConfirmation, setShowSkipConfirmation] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [pendingPlanType, setPendingPlanType] = useState<'monthly' | 'yearly' | null>(null);
   const [, setLocation] = useLocation();
   
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { isPremium, applyCode, createCheckoutSession } = useSubscription();
 
   // Feature comparison data
@@ -62,12 +65,32 @@ export default function Pricing() {
       return;
     }
     
+    // Store the plan type and show referral modal
+    setPendingPlanType(planType);
+    setShowReferralModal(true);
+  };
+
+  const proceedWithCheckout = async (creatorCode: string | null) => {
+    if (!pendingPlanType) return;
+
     // Start button animation
     setIsButtonAnimating(true);
     setUpgradeLoading(true);
     
     try {
-      const { url } = await createCheckoutSession(planType);
+      // Save referral attribution if a creator was selected
+      if (creatorCode && creatorCode !== 'other') {
+        await fetch('/api/referral/attribute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ creatorCode }),
+        });
+      }
+
+      const { url } = await createCheckoutSession(pendingPlanType);
       // Wait a moment for the animation to complete
       setTimeout(() => {
         window.location.href = url;
@@ -349,6 +372,17 @@ export default function Pricing() {
           </div>
         </div>
       )}
+
+      {/* Referral Modal */}
+      <ReferralModal
+        isOpen={showReferralModal}
+        onClose={() => {
+          setShowReferralModal(false);
+          setUpgradeLoading(false);
+          setIsButtonAnimating(false);
+        }}
+        onSelect={proceedWithCheckout}
+      />
     </div>
   );
 }

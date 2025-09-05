@@ -72,6 +72,33 @@ export async function verifyCode(req: Request, res: Response) {
           .where(eq(users.email, user.email));
     }
 
+    // Track referral conversion for premium code usage
+    try {
+      const { data: referralData } = await supabase
+        .from('referral_conversions')
+        .select('*')
+        .eq('user_id', userId)
+        .is('converted_at', null)
+        .single();
+
+      if (referralData) {
+        // Update referral conversion with code usage details
+        await supabase
+          .from('referral_conversions')
+          .update({
+            converted_at: new Date().toISOString(),
+            conversion_type: 'premium_code',
+            plan_type: 'code',
+            // No commission for code usage unless you want to track it differently
+            commission_earned: '0',
+          })
+          .eq('id', referralData.id);
+      }
+    } catch (error) {
+      console.error('Error tracking referral conversion:', error);
+      // Don't fail the request if referral tracking fails
+    }
+
     return res.json({ success: true, message: 'Code verified and premium access granted.' });
 
   } catch (error) {

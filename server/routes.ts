@@ -27,6 +27,7 @@ import Lmnt from 'lmnt-node';
 import * as fashnAI from './routes/fashnAI';
 import * as interview from './routes/interview';
 import * as billing from './routes/billing';
+import * as referralRoutes from './routes/referral';
 import { 
   requireUsageLimit, 
   trackUsageAfterAction,
@@ -471,6 +472,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Billing routes
   app.post("/api/billing/verify-code", billing.verifyCode);
+
+  // Referral routes
+  app.get("/api/referral/creators", referralRoutes.getCreators);
+  app.post("/api/referral/attribute", referralRoutes.attributeReferral);
+  app.get("/api/referral/stats/:creatorCode", referralRoutes.getCreatorStats);
+  app.post("/api/referral/create-creator", referralRoutes.createCreator);
 
   // Pageant Coaching endpoint - Real-time AI coaching with vision
   app.post('/api/pageant-coaching', async (req, res, next) => {
@@ -2939,6 +2946,39 @@ Focus on being helpful while maintaining that expert confidence that comes from 
                 .from('users')
                 .update({ has_paid: true })
                 .eq('id', userData.id);
+
+              // Track referral conversion
+              const { data: authUser } = await supabase.auth.admin.getUserById(userData.id);
+              if (authUser?.user) {
+                // Check if user has an attributed referral
+                const { data: referralData } = await supabase
+                  .from('referral_conversions')
+                  .select('*')
+                  .eq('user_id', userData.id)
+                  .is('converted_at', null)
+                  .single();
+
+                if (referralData) {
+                  // Calculate commission (assuming 20% of first month)
+                  const planType = subscription.items.data[0]?.price.id === STRIPE_PLANS.YEARLY ? 'yearly' : 'monthly';
+                  const monthlyAmount = planType === 'yearly' ? 10 : 15; // $10/mo yearly, $15/mo monthly
+                  const commissionRate = 0.20; // 20% commission
+                  const commissionEarned = monthlyAmount * commissionRate;
+
+                  // Update referral conversion with payment details
+                  await supabase
+                    .from('referral_conversions')
+                    .update({
+                      converted_at: new Date().toISOString(),
+                      conversion_type: 'stripe_subscription',
+                      stripe_subscription_id: subscription.id,
+                      plan_type: planType,
+                      subscription_amount: monthlyAmount.toString(),
+                      commission_earned: commissionEarned.toString(),
+                    })
+                    .eq('id', referralData.id);
+                }
+              }
             }
 
             // Update subscription status
