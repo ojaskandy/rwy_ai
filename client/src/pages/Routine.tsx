@@ -411,6 +411,11 @@ export default function Routine() {
   const [summaryFeedback, setSummaryFeedback] = useState('');
   const [summaryLoading, setSummaryLoading] = useState(false);
   
+  // Timer state
+  const [timeRemaining, setTimeRemaining] = useState(60); // 60 seconds = 1:00 minute
+  const [timerActive, setTimerActive] = useState(false);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -671,6 +676,27 @@ export default function Routine() {
     frameBufferRef.current = [];
     allFramesRef.current = [];
     
+    // Reset and start the timer
+    setTimeRemaining(60); // Reset to 60 seconds
+    setTimerActive(true);
+    
+    // Start the timer countdown
+    timerIntervalRef.current = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          // Time's up - stop recording
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+          setTimerActive(false);
+          stopPractice(); // Auto-stop when timer ends
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
     // Capture frame every 1 second
     captureIntervalRef.current = setInterval(() => {
       const frame = captureFrame();
@@ -719,6 +745,13 @@ export default function Routine() {
       clearInterval(sendIntervalRef.current);
       sendIntervalRef.current = null;
     }
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    
+    // Stop the timer
+    setTimerActive(false);
     
     // Generate final summary
     if (allFramesRef.current.length > 0) {
@@ -770,6 +803,15 @@ export default function Routine() {
               <div className="absolute bottom-40 left-6 w-20 h-20 border-b-2 border-l-2 border-white"></div>
               {/* Bottom Right */}
               <div className="absolute bottom-40 right-6 w-20 h-20 border-b-2 border-r-2 border-white"></div>
+              
+              {/* Timer display - only show when active in catwalk or talent mode */}
+              {isActive && (mode === 'catwalk' || mode === 'talent') && (
+                <div className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-black/70 px-6 py-2 rounded-full border border-white/30">
+                  <div className="text-white text-2xl font-bold">
+                    {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -997,9 +1039,15 @@ export default function Routine() {
                 <ul className="list-disc pl-5 space-y-2">
                   <li>Position yourself so your full body is visible</li>
                   <li>Press the white circle button to start recording</li>
+                  <li>A 1-minute timer will count down automatically</li>
                   <li>Walk naturally as you would on a runway</li>
-                  <li>Press the button again to stop and receive AI feedback</li>
+                  <li>Press the button again to stop early, or wait for timer to end</li>
+                  <li>You'll receive AI feedback when the session ends</li>
                 </ul>
+                
+                <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-700"><strong>Usage Information:</strong> Each minute costs 1 usage credit. If you practice for 3 minutes daily, that's 90 credits per month.</p>
+                </div>
               </>
             )}
             
@@ -1009,9 +1057,15 @@ export default function Routine() {
                 <ul className="list-disc pl-5 space-y-2">
                   <li>Position yourself appropriately for your talent</li>
                   <li>Press the white circle button to start recording</li>
+                  <li>A 1-minute timer will count down automatically</li>
                   <li>Perform your talent routine</li>
-                  <li>Press the button again to stop and receive AI feedback</li>
+                  <li>Press the button again to stop early, or wait for timer to end</li>
+                  <li>You'll receive AI feedback when the session ends</li>
                 </ul>
+                
+                <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-700"><strong>Usage Information:</strong> Each minute costs 1 usage credit. If you practice for 3 minutes daily, that's 90 credits per month.</p>
+                </div>
               </>
             )}
             
