@@ -6,7 +6,7 @@ import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Mail } from 'lucide-react';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Mail, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -388,7 +388,6 @@ export default function Routine() {
   
   // Mode selection state
   const [mode, setMode] = useState<'catwalk' | 'talent' | 'plan'>('catwalk');
-  const [showModeSelection, setShowModeSelection] = useState(true);
   
   // Plan chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
@@ -440,9 +439,11 @@ export default function Routine() {
     }
   };
 
-  // Initialize camera on component mount
+  // Initialize camera on component mount and when mode changes (except for 'plan')
   useEffect(() => {
-    requestCameraPermission();
+    if (mode !== 'plan') {
+      requestCameraPermission();
+    }
     
     return () => {
       if (streamRef.current) {
@@ -455,7 +456,7 @@ export default function Routine() {
         clearInterval(sendIntervalRef.current);
       }
     };
-  }, []);
+  }, [mode]);
 
   // Capture frame from video
   const captureFrame = (): string | null => {
@@ -711,186 +712,116 @@ export default function Routine() {
         timePeriod="month"
       />
       <div className="h-screen w-screen overflow-hidden relative bg-black">
-      {/* Mode Selection Screen */}
-      {showModeSelection && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black">
-          <h2 className="text-3xl font-bold text-white mb-12">Select Mode</h2>
-          <div className="grid grid-cols-1 gap-6 w-full max-w-sm px-4">
-            <Button 
-              onClick={() => {
-                setMode('catwalk');
-                setShowModeSelection(false);
-              }}
-              className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
-            >
-              <Camera className="w-6 h-6 mr-3" />
-              Catwalk
-            </Button>
-            
-            <Button 
-              onClick={() => {
-                setMode('talent');
-                setShowModeSelection(false);
-              }}
-              className="bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-600 hover:to-purple-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
-            >
-              <Sparkles className="w-6 h-6 mr-3" />
-              Talent
-            </Button>
-            
-            <Button 
-              onClick={() => {
-                setMode('plan');
-                setShowModeSelection(false);
-              }}
-              className="bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white py-8 rounded-xl flex items-center justify-center text-xl font-semibold shadow-lg"
-            >
-              <MessageCircle className="w-6 h-6 mr-3" />
-              Plan
-            </Button>
+      {/* Main Camera Screen - Always shown */}
+      <div className="absolute inset-0 z-10 bg-black">
+        {/* Camera frame corner brackets */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative w-full h-full max-w-lg max-h-lg">
+            {/* Top Left */}
+            <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-white"></div>
+            {/* Top Right */}
+            <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-white"></div>
+            {/* Bottom Left */}
+            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-white"></div>
+            {/* Bottom Right */}
+            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-white"></div>
           </div>
         </div>
-      )}
+
+        {/* Top navigation buttons (X and ?) */}
+        <div className="absolute top-6 left-6 z-20">
+          <Link href="/">
+            <div className="w-16 h-16 bg-gray-800/80 rounded-full flex items-center justify-center">
+              <X className="w-8 h-8 text-white" />
+            </div>
+          </Link>
+        </div>
+        <div className="absolute top-6 right-6 z-20">
+          <div className="w-16 h-16 bg-gray-800/80 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 text-white font-bold text-2xl flex items-center justify-center">?</div>
+          </div>
+        </div>
+      </div>
 
       {/* Video Element - Full Screen */}
-      {!showModeSelection && mode !== 'plan' && (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-contain"
-        />
-      )}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="w-full h-full object-cover"
+      />
       
       {/* Hidden canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Camera Permission Overlay */}
-      {hasPermission === false && !showModeSelection && mode !== 'plan' && (
+      {hasPermission === false && (
         <CameraPermissionOverlay onRequestPermission={requestCameraPermission} />
       )}
 
-      {/* Back Button - Top Left */}
-      <div className="absolute top-6 left-6 z-20">
-        {showModeSelection ? (
-          <Link href="/">
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-pink-300 hover:bg-white/10 backdrop-blur-sm border border-white/20"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back
-            </Button>
-          </Link>
-        ) : (
-          <Button 
-            variant="ghost" 
-            className="text-white hover:text-pink-300 hover:bg-white/10 backdrop-blur-sm border border-white/20"
-            onClick={() => setShowModeSelection(true)}
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back
-          </Button>
-        )}
+      {/* Bottom Mode Selection Buttons */}
+      <div className="absolute bottom-36 left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
+        <button 
+          onClick={() => setMode('catwalk')}
+          className={`px-6 py-3 rounded-full bg-white flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-200'}`}
+        >
+          <Camera className="w-4 h-4 mr-2 text-black" />
+          <span className="text-black font-medium">Catwalk</span>
+        </button>
+        
+        <button 
+          onClick={() => setMode('talent')}
+          className={`px-6 py-3 rounded-full flex items-center justify-center ${mode === 'talent' ? 'bg-white' : 'bg-gray-200'}`}
+        >
+          <Sparkles className="w-4 h-4 mr-2 text-black" />
+          <span className="text-black font-medium">Talent</span>
+        </button>
+        
+        <button 
+          onClick={() => setMode('plan')}
+          className={`px-6 py-3 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-200'}`}
+        >
+          <MessageCircle className="w-4 h-4 mr-2 text-black" />
+          <span className="text-black font-medium">Plan</span>
+        </button>
+      </div>
+      
+      {/* Capture Button */}
+      <div className="absolute bottom-10 left-0 right-0 flex justify-center z-30">
+        <button 
+          onClick={mode !== 'plan' ? (isActive ? stopPractice : startPractice) : undefined}
+          disabled={hasPermission === false}
+          className="w-20 h-20 bg-white rounded-full border-4 border-gray-300 focus:outline-none focus:ring-4 focus:ring-white/50 transform transition-transform active:scale-95"
+        >
+          {isActive && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 bg-red-600 rounded-full"></div>
+            </div>
+          )}
+        </button>
+        
+        {/* Flash Button */}
+        <button className="absolute left-10 bottom-2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
+          <div className="w-6 h-6 text-white">⚡</div>
+        </button>
       </div>
 
-      {/* Start/Stop Button - Center Top (Only for Catwalk and Talent modes) */}
-      {!showModeSelection && (mode === 'catwalk' || mode === 'talent') && (
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
-          <Button
-            onClick={isActive ? stopPractice : startPractice}
-            disabled={hasPermission === false}
-            className={`
-              px-8 py-4 rounded-2xl font-semibold shadow-lg text-white backdrop-blur-sm
-              ${isActive 
-                ? 'bg-gradient-to-r from-red-500/90 to-red-400/90 hover:from-red-600/90 hover:to-red-500/90' 
-                : 'bg-gradient-to-r from-pink-500/90 to-pink-400/90 hover:from-pink-600/90 hover:to-pink-500/90'
-              }
-            `}
-          >
-            {isActive ? (
-              <>
-                <Square className="w-5 h-5 mr-2" />
-                Stop {mode === 'catwalk' ? 'Catwalk' : 'Talent'}
-              </>
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-2" />
-                Start {mode === 'catwalk' ? 'Catwalk' : 'Talent'}
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+      {/* Recording Indicator is now shown as a red circle in the capture button */}
 
-      {/* Recording Indicator */}
-      {isActive && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute top-6 right-6 z-20"
-        >
-          <div className="flex items-center space-x-2 bg-red-500/90 text-white px-3 py-2 rounded-full backdrop-blur-sm">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium">LIVE</span>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Camera Mode Selection Buttons - Bottom */}
-      {!showModeSelection && (mode === 'catwalk' || mode === 'talent') && (
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20 px-4">
-          <div className="bg-black/50 backdrop-blur-md rounded-full p-1.5 flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              className={`px-6 py-5 rounded-full flex flex-col items-center ${mode === 'catwalk' ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}
-              onClick={() => {
-                if (isActive) stopPractice();
-                setMode('catwalk');
-              }}
-            >
-              <Camera className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium">Catwalk</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className={`px-6 py-5 rounded-full flex flex-col items-center ${mode === 'talent' ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}
-              onClick={() => {
-                if (isActive) stopPractice();
-                setMode('talent');
-              }}
-            >
-              <Sparkles className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium">Talent</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="px-6 py-5 rounded-full flex flex-col items-center text-white hover:bg-white/20"
-              onClick={() => {
-                if (isActive) stopPractice();
-                setMode('plan');
-              }}
-            >
-              <MessageCircle className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium">Plan</span>
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* We've replaced this with the new bottom UI */}
       
       {/* Plan Mode Content */}
-      {!showModeSelection && mode === 'plan' && (
-        <div className="absolute inset-0 bg-gradient-to-b from-pink-800 to-purple-900 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden flex flex-col p-4">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl flex-1 mb-4 p-4 overflow-y-auto">
-              <div className="flex flex-col space-y-4" id="chat-container">
+      {mode === 'plan' && (
+        <div className="absolute inset-0 z-20 bg-black flex flex-col overflow-hidden">
+          {/* Chat messages area */}
+          <div className="flex-1 overflow-hidden flex flex-col p-4 pb-40"> {/* Extra padding at bottom to make room for buttons */}
+            <div className="bg-black/90 flex-1 overflow-y-auto">
+              <div className="flex flex-col space-y-4 p-4" id="chat-container">
                 {chatMessages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`${msg.isUser ? 'self-end bg-pink-500/70' : 'self-start bg-white/20'} backdrop-blur-sm rounded-xl p-4 max-w-[85%]`}
+                    className={`${msg.isUser ? 'self-end bg-blue-500' : 'self-start bg-gray-700'} rounded-2xl p-4 max-w-[85%]`}
                   >
                     <p className="text-white">
                       {msg.isUser ? msg.message : msg.reply}
@@ -899,7 +830,7 @@ export default function Routine() {
                 ))}
                 
                 {isChatLoading && (
-                  <div className="self-start bg-white/20 backdrop-blur-sm rounded-xl p-4 max-w-[85%]">
+                  <div className="self-start bg-gray-700 rounded-2xl p-4 max-w-[85%]">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                       <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -909,8 +840,10 @@ export default function Routine() {
                 )}
               </div>
             </div>
-            
-            {/* Input area with email button */}
+          </div>
+          
+          {/* Input area with email button - fixed at bottom */}
+          <div className="absolute bottom-36 left-0 right-0 px-4"> {/* Positioned above the mode buttons */}
             <div className="relative">
               <input 
                 type="text" 
@@ -919,7 +852,7 @@ export default function Routine() {
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendPlanMessage()}
                 disabled={isChatLoading}
-                className="w-full bg-white/20 backdrop-blur-md text-white rounded-full pl-4 pr-24 py-3 border border-white/30 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full bg-gray-800 text-white rounded-full pl-4 pr-24 py-3 border border-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-2">
                 <button 
@@ -931,7 +864,7 @@ export default function Routine() {
                   <Mail className="w-5 h-5" />
                 </button>
                 <button 
-                  className="bg-pink-500 hover:bg-pink-600 text-white rounded-full p-2"
+                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2"
                   onClick={handleSendPlanMessage}
                   disabled={isChatLoading || !chatInput.trim()}
                 >
