@@ -636,6 +636,170 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
     }
   });
 
+  // Talent Coaching endpoint - Similar to pageant coaching but focused on talent performance
+  app.post('/api/talent-coaching', async (req, res, next) => {
+    // For routines, we treat each request as 1 minute unless flagged as sequence summary
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { isSequenceSummary = false } = req.body || {};
+      if (!isSequenceSummary) {
+        const status = await canUserPerformAction(user.id, 'walk_routine', 1); // Using same limit type for now
+        if (!status.allowed) return res.status(403).json({ error: 'Usage limit exceeded.' });
+        // Pre-attach for post tracking
+        (req as any).user = user;
+        (req as any).usageInfo = { action: 'walk_routine', minutes: 1 };
+      } else {
+        (req as any).user = user;
+      }
+      next();
+    } catch (e) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+  }, trackUsageAfterAction(), async (req, res) => {
+    try {
+      const { frames, isSequenceSummary = false } = req.body;
+      console.log('Talent Coaching - Received:', {
+        frameCount: frames?.length || 0,
+        isSequenceSummary,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!frames || !Array.isArray(frames) || frames.length === 0) {
+        return res.status(400).json({ error: 'Frames array is required' });
+      }
+
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        console.error('No OpenAI API key found');
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
+
+      // Prepare the prompt based on whether this is real-time or final summary
+      const systemPrompt = isSequenceSummary 
+        ? `You are an expert talent coach providing comprehensive performance analysis. Structure your feedback clearly without using any bold text, headers, or markdown formatting. Write in flowing, natural paragraphs that are easy to read. Focus on being specific, actionable, and encouraging while maintaining professional coaching standards. This is for a pageant talent round.`
+        : "Talent coach for pageant. Max 10 words. One tip only.";
+
+      const userPrompt = isSequenceSummary
+        ? `Analyze this complete talent performance for a pageant and provide structured feedback. Return your response as valid JSON with this exact structure:
+
+{
+  "overview": "Overall impression and performance summary in 2-3 sentences",
+  "sceneAnalysis": [
+    {
+      "scene": "Opening/Beginning",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    },
+    {
+      "scene": "Middle Section",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    },
+    {
+      "scene": "Closing/Finale",
+      "strengths": ["Specific strength 1", "Specific strength 2"],
+      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+    }
+  ],
+  "nextSteps": [
+    "Specific actionable step 1",
+    "Specific actionable step 2",
+    "Specific actionable step 3",
+    "Specific actionable step 4"
+  ]
+}
+
+Be specific, constructive, and supportive. Focus on performance quality, artistic expression, technique, stage presence, and audience engagement. Use plain language without formatting.`
+        : "Quick tip for this talent performance?";
+
+      // Prepare image content for OpenAI
+      const imageContent = frames.map((frame: string) => ({
+        type: "image_url",
+        image_url: {
+          url: frame,
+          detail: "low" // Use low detail for speed and cost efficiency
+        }
+      }));
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini", // Cheapest vision model
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: userPrompt
+                },
+                ...imageContent
+              ]
+            }
+          ],
+          max_tokens: isSequenceSummary ? 800 : 20,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
+        return res.status(500).json({ error: 'Failed to get AI feedback' });
+      }
+
+      const data = await response.json();
+      let feedback = data.choices?.[0]?.message?.content || 'Great work! Keep practicing your talent performance.';
+
+      // Parse JSON response for sequence summaries
+      let parsedFeedback = null;
+      if (isSequenceSummary) {
+        try {
+          // Clean response if it has markdown code blocks
+          let cleanResponse = feedback.trim();
+          if (cleanResponse.startsWith('```json')) {
+            cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          parsedFeedback = JSON.parse(cleanResponse);
+        } catch (parseError) {
+          console.error('Failed to parse structured feedback, falling back to plain text');
+          // Keep the original feedback as fallback
+        }
+      }
+
+      console.log('Talent Coaching - AI Response:', {
+        feedback: feedback.substring(0, 100) + '...',
+        tokens: data.usage?.total_tokens || 0,
+        structured: !!parsedFeedback
+      });
+
+      res.json({ 
+        success: true, 
+        feedback: parsedFeedback || feedback,
+        isSequenceSummary,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Talent coaching error:', error);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Routine Chat endpoint - Chat about specific routine feedback
   app.post('/api/routine-chat', async (req, res) => {
     try {
