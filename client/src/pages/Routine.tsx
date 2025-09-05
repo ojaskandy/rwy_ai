@@ -388,6 +388,7 @@ export default function Routine() {
   
   // Mode selection state
   const [mode, setMode] = useState<'catwalk' | 'talent' | 'plan'>('catwalk');
+  const [showHelpModal, setShowHelpModal] = useState(false);
   
   // Plan chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
@@ -749,17 +750,20 @@ export default function Routine() {
         )}
 
         {/* Top navigation buttons (X and ?) */}
-        <div className="absolute top-12 left-6 z-20">
+        <div className="absolute top-6 left-6 z-20">
           <Link href="/">
-            <div className="w-14 h-14 bg-gray-800/80 rounded-full flex items-center justify-center">
-              <X className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 bg-gray-800/80 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700/80 transition-all duration-200">
+              <X className="w-6 h-6 text-white" />
             </div>
           </Link>
         </div>
-        <div className="absolute top-12 right-6 z-20">
-          <div className="w-14 h-14 bg-gray-800/80 rounded-full flex items-center justify-center">
-            <div className="w-7 h-7 text-white font-bold text-2xl flex items-center justify-center">?</div>
-          </div>
+        <div className="absolute top-6 right-6 z-20">
+          <button 
+            onClick={() => setShowHelpModal(true)} 
+            className="w-12 h-12 bg-gray-800/80 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700/80 transition-all duration-200"
+          >
+            <div className="w-6 h-6 text-white font-bold text-2xl flex items-center justify-center">?</div>
+          </button>
         </div>
       </div>
 
@@ -782,7 +786,7 @@ export default function Routine() {
       )}
 
       {/* Bottom Mode Selection Buttons */}
-      <div className="absolute bottom-[140px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
+      <div className="absolute bottom-[170px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
         <button 
           onClick={() => setMode('catwalk')}
           className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-300/70'}`}
@@ -813,12 +817,17 @@ export default function Routine() {
         <button 
           onClick={mode !== 'plan' ? (isActive ? stopPractice : startPractice) : undefined}
           disabled={hasPermission === false}
-          className="w-16 h-16 bg-white rounded-full border-4 border-gray-300 focus:outline-none focus:ring-4 focus:ring-white/50 transform transition-transform active:scale-95"
+          className="w-16 h-16 bg-white rounded-full border-[3px] border-gray-100 shadow-lg focus:outline-none transform transition-all duration-300 hover:shadow-xl active:shadow-inner"
+          style={{
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            transition: 'all 0.2s ease-in-out'
+          }}
         >
-          {isActive && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 bg-red-600 rounded-full"></div>
-            </div>
+          {isActive ? (
+            <div className="w-10 h-10 bg-red-500 rounded-full m-auto transition-all duration-300 ease-in-out shadow-inner" 
+                 style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.2)' }} />
+          ) : (
+            <div className="w-10 h-10 bg-gray-50 rounded-full m-auto border-2 border-gray-200 transition-all duration-300" />
           )}
         </button>
       </div>
@@ -946,6 +955,67 @@ export default function Routine() {
         feedback={summaryFeedback}
         isLoading={summaryLoading}
       />
+
+      {/* Help Modal */}
+      <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
+        <DialogContent className="bg-white rounded-xl p-6 max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">
+              How to use {mode === 'catwalk' ? 'Catwalk' : mode === 'talent' ? 'Talent' : 'Plan'} Mode
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-2 text-gray-700 space-y-4">
+            {mode === 'catwalk' && (
+              <>
+                <p>In <strong>Catwalk Mode</strong>, you can practice and receive feedback on your runway walk.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Position yourself so your full body is visible</li>
+                  <li>Press the white circle button to start recording</li>
+                  <li>Walk naturally as you would on a runway</li>
+                  <li>Press the button again to stop and receive AI feedback</li>
+                </ul>
+              </>
+            )}
+            
+            {mode === 'talent' && (
+              <>
+                <p>In <strong>Talent Mode</strong>, you can practice and receive feedback on your talent performance.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Position yourself appropriately for your talent</li>
+                  <li>Press the white circle button to start recording</li>
+                  <li>Perform your talent routine</li>
+                  <li>Press the button again to stop and receive AI feedback</li>
+                </ul>
+              </>
+            )}
+            
+            {mode === 'plan' && (
+              <>
+                <p>In <strong>Plan Mode</strong>, you can chat with AI to plan your pageant performance.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Type your questions or ideas in the chat</li>
+                  <li>Get AI suggestions and guidance</li>
+                  <li>Use the email button to send a summary to yourself</li>
+                </ul>
+              </>
+            )}
+            
+            <div className="pt-4">
+              <p className="font-medium">Tip: Switch between modes using the buttons at the bottom of the screen.</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end">
+            <Button 
+              onClick={() => setShowHelpModal(false)} 
+              className="bg-pink-600 hover:bg-pink-700 text-white"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </>
   );
