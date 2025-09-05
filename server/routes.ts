@@ -740,7 +740,7 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
 
       // Prepare the system prompt for pageant planning
       const systemPrompt = `You are an AI Pageant Coach, an expert in helping contestants prepare for pageant competitions, particularly focusing on catwalk performances and talent rounds. You provide concise, helpful advice that is specific and actionable.\n\n
-      ${instructions && Array.isArray(instructions) ? instructions.join('\n') : ''}\n\nFocus on being encouraging, supportive, and professional. Keep your responses brief but impactful.`;
+      ${instructions && Array.isArray(instructions) ? instructions.join('\n') : ''}\n\nFocus on being encouraging, supportive, and professional. Keep your responses brief but impactful. When suggesting ways to save the conversation, always mention using the "Summarize and Copy" button, never reference emailing.`;
 
       // Prepare the messages array
       const messages = [

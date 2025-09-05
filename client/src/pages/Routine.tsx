@@ -403,6 +403,9 @@ export default function Routine() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   
+  // Ref for chat container to enable auto-scrolling
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  
   // Summary modal state
   const [showSummary, setShowSummary] = useState(false);
   const [summaryFeedback, setSummaryFeedback] = useState('');
@@ -476,6 +479,14 @@ export default function Routine() {
       }
     };
   }, [mode]);
+  
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current && chatMessages.length > 0) {
+      const chatContainer = chatContainerRef.current;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  }, [chatMessages, isChatLoading]);
 
   // Capture frame from video
   const captureFrame = (): string | null => {
@@ -571,7 +582,7 @@ export default function Routine() {
           instructions: [
             'Focus responses on catwalk and talent rounds for pageants',
             'Keep responses brief, concise and helpful',
-            'Occasionally encourage the user to use the "Summarize and Email" feature to save their plan',
+            'Occasionally encourage the user to use the "Summarize and Copy" feature to save their plan',
             'Provide specific, actionable advice for pageant performances'
           ]
         })
@@ -880,7 +891,7 @@ export default function Routine() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {chatMessages.map((msg) => (
                 <div
                   key={msg.id}
