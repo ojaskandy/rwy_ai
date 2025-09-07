@@ -431,7 +431,7 @@ export default function RunwayAIWelcome() {
         }}>
           <div style={{
             position: "fixed",
-            top: "25px", /* Minimized space at the top */
+            top: "10px", /* Minimal space at the top */
             left: "50%",
             transform: "translateX(-50%)",
             width: "360px",
