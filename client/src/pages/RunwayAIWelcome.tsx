@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Send, MessageCircle, Sparkles } from "lucide-react";
+import { Send, MessageCircle, Sparkles, Menu, Download, Crown } from "lucide-react";
 import partnershipHero from "@assets/partnership_hero.jpeg";
 import challengesImage from "@assets/partnership_challenges.png";
 import practiceLibraryImage from "@assets/partnership_practicelibrary.png";
@@ -186,13 +186,341 @@ function InteractiveHelpChat() {
   );
 }
 
+// Floating Navigation Bar Component
+function FloatingNavBar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  // Always visible now, and persists when scrolling
+
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <motion.div 
+      className="floating-nav"
+      style={{ 
+        opacity: 1,
+        backgroundColor: 'rgba(255, 240, 245, 0.98)'
+      }}
+    >
+      <div className="flex items-center justify-between px-5 py-2">
+        <div className="flex items-center pl-1">
+          <img 
+            src="/rwyai_favicon.png" 
+            alt="Crown Logo" 
+            className="h-7 w-7" 
+          />
+        </div>
+        
+        <a 
+          href="https://apps.apple.com/us/app/runway-ai/id6749021607" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="bg-black text-white hover:bg-gray-900 px-6 py-2 rounded-full flex items-center justify-center transition duration-200 text-sm font-medium mx-4"
+        >
+          <span>Download</span>
+        </a>
+        
+        <div className="relative pr-1">
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1.5 rounded-full hover:bg-black/5"
+          >
+            <Menu className="h-6 w-6 text-black" />
+          </button>
+          
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute right-0 mt-2 bg-white rounded-xl shadow-md border border-pink-100 z-50 min-w-[160px] overflow-hidden"
+            >
+              <div className="py-1">
+                <button
+                  onClick={scrollToFeatures}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium"
+                >
+                  Features
+                </button>
+                <Link href="/pricing-preview" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                  Pricing
+                </Link>
+                <Link href="/privacy-policy" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                  Privacy
+                </Link>
+                <Link href="/team" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                  Team
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Popup component for desktop users
+function DesktopPopup({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  if (!isOpen) return null;
+  
+  return (
+    <div 
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+      }}
+      onClick={onClose}
+    >
+      <div 
+        style={{
+          width: "90%",
+          maxWidth: "400px",
+          backgroundColor: "white",
+          borderRadius: "16px",
+          padding: "24px",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+          position: "relative",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button 
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            background: "none",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+            color: "#888"
+          }}
+          onClick={onClose}
+        >
+          &times;
+        </button>
+        
+        <img 
+          src="/rwyai_favicon.png" 
+          alt="Runway AI Logo"
+          style={{
+            width: "60px",
+            height: "60px",
+            margin: "0 auto 16px auto",
+            display: "block"
+          }}
+        />
+        
+        <h3 style={{
+          textAlign: "center",
+          fontSize: "20px",
+          marginBottom: "16px",
+          color: "#333",
+          fontWeight: "bold"
+        }}>
+          Get the best experience on mobile
+        </h3>
+        
+        <p style={{
+          textAlign: "center",
+          marginBottom: "20px",
+          color: "#666",
+          fontSize: "16px",
+          lineHeight: 1.5
+        }}>
+          RunwayAI is optimized for mobile devices. For the best experience, please download our app from the App Store.
+        </p>
+        
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "24px"
+        }}>
+          <button
+            style={{
+              flex: 1,
+              padding: "10px",
+              marginRight: "8px",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+              background: "none",
+              color: "#333",
+              fontWeight: "medium",
+              cursor: "pointer"
+            }}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          
+          <a 
+            href="https://apps.apple.com/us/app/runway-ai/id6749021607"
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              flex: 2,
+              padding: "10px",
+              marginLeft: "8px",
+              borderRadius: "8px",
+              background: "black",
+              color: "white",
+              textAlign: "center",
+              fontWeight: "bold",
+              textDecoration: "none",
+              cursor: "pointer"
+            }}
+          >
+            Go to App Store
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RunwayAIWelcome() {
+  const [showPopup, setShowPopup] = useState(false);
+  
+  // Function to check if user is on mobile
+  const isMobileDevice = () => {
+    if (typeof window === 'undefined') return false;
+    
+    return (
+      navigator.userAgent.match(/Android/i) ||
+      navigator.userAgent.match(/webOS/i) ||
+      navigator.userAgent.match(/iPhone/i) ||
+      navigator.userAgent.match(/iPad/i) ||
+      navigator.userAgent.match(/iPod/i) ||
+      navigator.userAgent.match(/BlackBerry/i) ||
+      navigator.userAgent.match(/Windows Phone/i)
+    );
+  };
+  
+  // Handle download button click
+  const handleDownloadClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isMobileDevice()) {
+      e.preventDefault();
+      setShowPopup(true);
+    }
+    // If mobile, the default link behavior will work
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100">
-
-
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-50 min-h-screen">
+        {/* Fixed navbar that follows user's screen */}
+        <div style={{ 
+          width: "100%",
+          height: "1px",  /* Height placeholder for layout */
+        }}>
+          <div style={{
+            position: "fixed",
+            top: "60px", /* Moved even higher up */
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "360px",
+            maxWidth: "90%",
+            backgroundColor: "rgba(255, 240, 245, 0.97)",
+            backdropFilter: "blur(12px)",
+            borderRadius: "999px",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+            border: "1px solid rgba(255, 182, 193, 0.2)",
+            padding: "3px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            zIndex: "999",
+            margin: "0 auto",
+            right: "auto", /* Ensure it doesn't get pulled right */
+            willChange: "transform", /* Optimize for animations */
+            transition: "transform 0.1s ease" /* Smooth any position changes */
+          }}>
+            <div className="flex items-center pl-3" style={{padding: "0 12px"}}>
+              <img 
+                src="/rwyai_favicon.png" 
+                alt="Crown Logo" 
+                className="h-7 w-7" 
+              />
+            </div>
+            
+            <a 
+              href="https://apps.apple.com/us/app/runway-ai/id6749021607" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={handleDownloadClick}
+              style={{
+                backgroundColor: "black",
+                color: "white",
+                padding: "8px 24px",
+                borderRadius: "999px",
+                textDecoration: "none",
+                fontSize: "14px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <span>Download</span>
+            </a>
+            
+            <div className="relative pr-3" style={{padding: "0 12px"}}>
+              <button 
+                onClick={() => document.getElementById('menu-dropdown')?.classList.toggle('hidden')}
+                style={{padding: "6px", borderRadius: "50%"}}
+              >
+                <Menu className="h-6 w-6 text-black" />
+              </button>
+              
+              <div 
+                id="menu-dropdown"
+                className="hidden absolute right-0 mt-2 bg-white rounded-xl shadow-md border border-pink-100 z-50"
+                style={{minWidth: "160px", overflow: "hidden"}}
+              >
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      const featuresSection = document.getElementById('features');
+                      if (featuresSection) {
+                        featuresSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                      document.getElementById('menu-dropdown')?.classList.add('hidden');
+                    }}
+                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium"
+                  >
+                    Features
+                  </button>
+                  <Link href="/pricing-preview" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                    Pricing
+                  </Link>
+                  <Link href="/privacy-policy" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                    Privacy
+                  </Link>
+                  <Link href="/team" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                    Team
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
         <div className="relative z-10 px-4 pt-8 pb-16 text-center flex flex-col items-center justify-start min-h-screen">
           
           {/* Cursor-Inspired Gradient Box */}
@@ -754,6 +1082,12 @@ export default function RunwayAIWelcome() {
           </p>
         </div>
       </footer>
+      
+      {/* Desktop popup */}
+      <DesktopPopup 
+        isOpen={showPopup} 
+        onClose={() => setShowPopup(false)} 
+      />
     </div>
   );
 } 
