@@ -434,7 +434,7 @@ export default function RunwayAIWelcome() {
             top: "10px", /* Minimal space at the top */
             left: "50%",
             transform: "translateX(-50%)",
-            width: "360px",
+            width: "420px",
             maxWidth: "90%",
             backgroundColor: "rgba(255, 240, 245, 0.97)",
             backdropFilter: "blur(12px)",
