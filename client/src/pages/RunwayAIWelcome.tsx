@@ -577,17 +577,17 @@ export default function RunwayAIWelcome() {
                     {/* Prominent Get Started and Contact Us Buttons */}
                     <div className="absolute inset-0 flex items-center justify-center pt-16">
                       <div className="flex flex-col gap-4">
-                        {/* Y Combinator Badge - Subtle */}
+                        {/* Y Combinator Badge - Subtle but clear */}
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: 0.5, duration: 0.5 }}
-                          className="mb-2 flex justify-center"
+                          className="mb-4 flex justify-center"
                         >
-                          <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 border border-gray-100 shadow-sm flex items-center">
-                            <span className="text-gray-400 text-sm mr-1 font-normal">backed by</span>
+                          <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 border border-gray-100 shadow-sm flex items-center">
+                            <span className="text-gray-400 text-sm mr-1 font-normal">rejected by</span>
                             <span className="bg-orange-500 text-white px-2 py-0.5 rounded-md font-semibold text-sm mx-1">Y</span>
-                            <span className="text-gray-700 font-medium text-sm">Combinator*</span>
+                            <span className="text-gray-700 font-medium text-sm">Combinator</span>
                           </div>
                         </motion.div>
                         
@@ -1091,12 +1091,9 @@ export default function RunwayAIWelcome() {
 
       {/* Footer */}
       <footer className="py-16 px-6 border-t border-pink-200 bg-white/50">
-        <div className="max-w-6xl mx-auto flex flex-col justify-center items-center text-center space-y-4">
+        <div className="max-w-6xl mx-auto flex justify-center items-center text-center">
           <p className="text-gray-600 text-sm">
             Questions? Reach out to <a href="mailto:arshia.x.kathpalia@gmail.com" className="text-pink-600 underline">arshia.x.kathpalia@gmail.com</a> or <a href="mailto:okandy@uw.edu" className="text-pink-600 underline">okandy@uw.edu</a> anytime.
-          </p>
-          <p className="text-gray-400 text-xs">
-            * Not actually backed by Y Combinator. We applied and they said no. Their loss! 😉
           </p>
         </div>
       </footer>
