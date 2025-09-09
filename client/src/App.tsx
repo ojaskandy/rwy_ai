@@ -33,6 +33,7 @@ import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
 import AuthCallback from "@/pages/AuthCallback";
 import ResetPassword from "@/pages/ResetPassword";
 import UsagePage from "@/pages/Usage";
+import Team from "@/pages/Team";
 
 // Component that requires onboarding completion before accessing protected routes
 function OnboardingRequiredRoute({ children }: { children: React.ReactNode }) {
@@ -90,6 +91,9 @@ function Router() {
         {/* Privacy Policy - accessible without login */}
         <Route path="/privacy-policy" component={PrivacyPolicy} />
         <Route path="/privacy" component={Privacy} />
+        
+        {/* Team page - accessible without login */}
+        <Route path="/team" component={Team} />
 
         {/* Health Monitor - accessible without login but password protected */}
         <Route path="/health" component={Health} />
