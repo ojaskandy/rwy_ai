@@ -249,7 +249,7 @@ function FloatingNavBar() {
                 >
                   Features
                 </button>
-                <Link href="/pricing-preview" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                <Link href="/pricing-details" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
                   Pricing
                 </Link>
                 <Link href="/privacy-policy" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
@@ -507,7 +507,7 @@ export default function RunwayAIWelcome() {
                   >
                     Features
                   </button>
-                  <Link href="/pricing-preview" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
+                  <Link href="/pricing-details" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">
                     Pricing
                   </Link>
                   <Link href="/privacy-policy" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 transition-colors duration-150 text-sm font-medium">

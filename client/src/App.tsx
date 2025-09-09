@@ -27,6 +27,7 @@ import Onboarding from "@/pages/Onboarding";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Privacy from "@/pages/Privacy";
 import Pricing from "@/pages/Pricing";
+import PricingDetails from "@/pages/PricingDetails";
 import Health from "@/pages/Health";
 import Early from "@/pages/Early";
 import EarlyAccessAdmin from "@/pages/EarlyAccessAdmin";
@@ -67,7 +68,7 @@ function OnboardingRequiredRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const [location] = useLocation();
-  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome') && !location.includes('/onboarding') && !location.includes('/pricing');
+  const shouldShowDock = !location.includes('/privacy') && !location.includes('/health') && !location.includes('/early') && !location.includes('/auth') && !location.includes('/welcome') && !location.includes('/onboarding') && !location.includes('/pricing') && !location.includes('/team');
 
   return (
     <>
@@ -83,8 +84,9 @@ function Router() {
         {/* Onboarding page - accessible without login */}
         <Route path="/onboarding" component={Onboarding} />
         
-        {/* Pricing page - accessible without login */}
+        {/* Pricing pages - accessible without login */}
         <Route path="/pricing" component={Pricing} />
+        <Route path="/pricing-details" component={PricingDetails} />
         {/* Usage page - protected */}
         <Route path="/usage" component={() => <ProtectedRoute><OnboardingRequiredRoute><UsagePage /></OnboardingRequiredRoute></ProtectedRoute>} />
 
