@@ -65,27 +65,7 @@ export default function PricingDetails() {
     },
   ];
 
-  // Testimonials from pageant contestants
-  const testimonials = [
-    {
-      name: "Sophia R.",
-      title: "Miss Teen California Finalist",
-      quote: "Runway AI transformed my pageant preparation. The walk analysis helped me perfect my posture and the Q&A practice gave me the confidence to shine on stage.",
-      avatar: "https://i.pravatar.cc/100?img=1"
-    },
-    {
-      name: "Madison T.",
-      title: "Miss Junior America Winner",
-      quote: "The virtual try-ons saved me thousands of dollars on dresses that wouldn't have worked. I found my perfect gown and the judges loved it!",
-      avatar: "https://i.pravatar.cc/100?img=5"
-    },
-    {
-      name: "Olivia K.",
-      title: "State Pageant Contestant",
-      quote: "Having an AI coach available 24/7 made all the difference in my preparation. The personalized feedback helped me improve faster than I ever thought possible.",
-      avatar: "https://i.pravatar.cc/100?img=9"
-    }
-  ];
+  // No testimonials - removed as requested
 
   // FAQ items
   const faqItems = [
@@ -103,11 +83,7 @@ export default function PricingDetails() {
     },
     {
       question: "Can I share my account with others?",
-      answer: "Each subscription is for individual use only. Sharing accounts is not permitted and may result in account suspension."
-    },
-    {
-      question: "Do you offer refunds?",
-      answer: "We offer a 7-day money-back guarantee if you're not satisfied with your premium subscription."
+      answer: "Each subscription is for individual use only. Account sharing is strictly prohibited and will result in immediate account deletion without refund. Our systems actively monitor for unauthorized sharing."
     }
   ];
 
@@ -357,38 +333,7 @@ export default function PricingDetails() {
           </div>
         </motion.div>
 
-        {/* Testimonials */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-bold text-center mb-10">
-            <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              Success Stories
-            </span>
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                <div className="flex items-center mb-4">
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name} 
-                    className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-pink-200"
-                  />
-                  <div>
-                    <h4 className="font-bold text-gray-800">{testimonial.name}</h4>
-                    <p className="text-sm text-pink-600">{testimonial.title}</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 italic">"{testimonial.quote}"</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+        {/* Success Stories section removed as requested */}
 
         {/* FAQ Section */}
         <motion.div
