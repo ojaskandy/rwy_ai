@@ -519,29 +519,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
-        ? `You are an expert pageant coach providing comprehensive routine analysis. Structure your feedback clearly without using any bold text, headers, or markdown formatting. Write in flowing, natural paragraphs that are easy to read. Focus on being specific, actionable, and encouraging while maintaining professional coaching standards.`
-        : "Pageant coach. Max 10 words. One tip only.";
+        ? `You are an expert coach providing authentic, detailed analysis of performance routines. You must provide accurate, specific feedback based ONLY on what you observe in the images shown to you. Do not make up generic feedback. If you cannot see something clearly, say so rather than inventing feedback.
 
+Your analysis must be honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Structure your feedback clearly without using bold text, headers, or markdown formatting.`
+        : "Expert coach. One specific tip based ONLY on what you can observe in the image. Max 10 words.";
+
+      // Using the interface types defined at file top
+      
+      // Extract mode from request body for context-aware feedback
+      const { mode } = req.body;
+      const performanceType = mode === 'catwalk' ? 'catwalk/runway walk' : mode === 'talent' ? 'talent performance' : 'routine';
+      
       const userPrompt = isSequenceSummary
-        ? `Analyze this complete pageant routine and provide structured feedback. Return your response as valid JSON with this exact structure:
+        ? `Analyze this ${performanceType} routine and provide structured feedback based on what you actually see in the images. Return your response as valid JSON with this exact structure:
 
 {
   "overview": "Overall impression and performance summary in 2-3 sentences",
   "sceneAnalysis": [
     {
       "scene": "Opening/Beginning",
-      "strengths": ["Specific strength 1", "Specific strength 2"],
-      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+      "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
+      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
     },
     {
       "scene": "Middle Section",
-      "strengths": ["Specific strength 1", "Specific strength 2"],
-      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+      "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
+      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
     },
     {
       "scene": "Closing/Finale",
-      "strengths": ["Specific strength 1", "Specific strength 2"],
-      "improvements": ["Specific improvement 1", "Specific improvement 2"]
+      "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
+      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
+    }
+  ],
+  "pageantCriteria": [
+    {
+      "category": "Posture & Form",
+      "score": 85,
+      "feedback": "Specific feedback based on what you observe in the images"
+    },
+    {
+      "category": "Movement Quality",
+      "score": 78,
+      "feedback": "Specific feedback based on what you observe in the images"
+    },
+    {
+      "category": "Timing & Rhythm",
+      "score": 82,
+      "feedback": "Specific feedback based on what you observe in the images"
+    },
+    {
+      "category": "Overall Presentation",
+      "score": 80,
+      "feedback": "Specific feedback based on what you observe in the images"
+    },
+    {
+      "category": "Stage Presence",
+      "score": 75,
+      "feedback": "Specific feedback based on what you observe in the images"
     }
   ],
   "nextSteps": [
@@ -552,8 +587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   ]
 }
 
-Be specific, constructive, and supportive. Focus on posture, movement quality, transitions, stage presence, and technical execution. Use plain language without formatting.`
-        : "Quick tip for this pose?";
+IMPORTANT: Your scores and feedback MUST be based on what you actually observe in the images. Do not provide generic feedback. Be specific, constructive, and refer directly to what you can see in the performance. Scores should accurately reflect quality (85-100 excellent, 70-84 good, 60-69 average, below 60 needs work).`
+        : "Quick tip for this pose based only on what you can see?";
+
 
       // Prepare image content for OpenAI
       const imageContent = frames.map((frame: string) => ({
@@ -603,7 +639,7 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
       let feedback = data.choices?.[0]?.message?.content || 'Great work! Keep practicing your form and confidence.';
 
       // Parse JSON response for sequence summaries
-      let parsedFeedback = null;
+      let parsedFeedback: StructuredFeedback | null = null;
       if (isSequenceSummary) {
         try {
           // Clean response if it has markdown code blocks
@@ -615,9 +651,60 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
           }
           
           parsedFeedback = JSON.parse(cleanResponse);
+          
+          // Validate that we have the required pageant criteria for authentic scoring
+          if (!parsedFeedback || !parsedFeedback.pageantCriteria || !Array.isArray(parsedFeedback.pageantCriteria) || parsedFeedback.pageantCriteria.length < 3) {
+            console.warn('AI response missing proper pageantCriteria structure');
+            // Since this is critical functionality, we should create proper structure
+            if (parsedFeedback && !parsedFeedback.pageantCriteria) {
+              parsedFeedback.pageantCriteria = [];
+            } else if (!parsedFeedback) {
+              parsedFeedback = {
+                overview: feedback,
+                pageantCriteria: []
+              };
+            }
+            
+            // Ensure we have basic criteria categories
+            const requiredCategories = ['Posture & Form', 'Movement Quality', 'Overall Presentation'];
+            const existingCategories = parsedFeedback.pageantCriteria!.map((c: PageantCriterion) => c.category);
+            
+            requiredCategories.forEach(category => {
+              if (!existingCategories.includes(category)) {
+                // Add with null score to indicate it's not AI-generated
+                parsedFeedback!.pageantCriteria!.push({
+                  category,
+                  score: null,
+                  feedback: "Assessment unavailable - please review the overall feedback"
+                });
+              }
+            });
+          }
+          
+          // Ensure scores are actually numbers, not strings
+          if (parsedFeedback && parsedFeedback.pageantCriteria) {
+            parsedFeedback.pageantCriteria = parsedFeedback.pageantCriteria.map((criterion: PageantCriterion) => ({
+              ...criterion,
+              score: typeof criterion.score === 'string' ? parseInt(criterion.score, 10) : criterion.score
+            }));
+          }
         } catch (parseError) {
-          console.error('Failed to parse structured feedback, falling back to plain text');
-          // Keep the original feedback as fallback
+          console.error('Failed to parse structured feedback:', parseError);
+          // Create a minimal feedback structure with the text
+          parsedFeedback = {
+            overview: feedback,
+            sceneAnalysis: [{
+              scene: "Performance",
+              strengths: ["AI analysis available as text only"],
+              improvements: ["Detailed breakdown unavailable"]
+            }],
+            pageantCriteria: [{
+              category: "Overall Performance",
+              score: null, // Explicitly null to signal client not to show a score
+              feedback: feedback
+            }],
+            nextSteps: ["Review the feedback provided in the overview"]
+          };
         }
       }
 
@@ -643,6 +730,26 @@ Be specific, constructive, and supportive. Focus on posture, movement quality, t
     }
   });
 
+      // Move the interfaces to the top of the file to avoid duplication
+  interface PageantCriterion {
+    category: string;
+    score: number | null;
+    feedback: string;
+  }
+  
+  interface SceneAnalysis {
+    scene: string;
+    strengths: string[];
+    improvements: string[];
+  }
+  
+  interface StructuredFeedback {
+    overview: string;
+    sceneAnalysis?: SceneAnalysis[];
+    pageantCriteria?: PageantCriterion[];
+    nextSteps?: string[];
+  }
+  
   // Talent Coaching endpoint - Similar to pageant coaching but focused on talent performance
   app.post('/api/talent-coaching', async (req, res, next) => {
     // For routines, we treat each request as 1 minute unless flagged as sequence summary
@@ -767,7 +874,7 @@ Be specific, constructive, and supportive. Focus on performance quality, artisti
       let feedback = data.choices?.[0]?.message?.content || 'Great work! Keep practicing your talent performance.';
 
       // Parse JSON response for sequence summaries
-      let parsedFeedback = null;
+      let parsedFeedback: StructuredFeedback | null = null;
       if (isSequenceSummary) {
         try {
           // Clean response if it has markdown code blocks
@@ -779,9 +886,60 @@ Be specific, constructive, and supportive. Focus on performance quality, artisti
           }
           
           parsedFeedback = JSON.parse(cleanResponse);
+          
+          // Validate that we have the required pageant criteria for authentic scoring
+          if (!parsedFeedback || !parsedFeedback.pageantCriteria || !Array.isArray(parsedFeedback.pageantCriteria) || parsedFeedback.pageantCriteria.length < 3) {
+            console.warn('AI response missing proper pageantCriteria structure');
+            // Since this is critical functionality, we should create proper structure
+            if (parsedFeedback && !parsedFeedback.pageantCriteria) {
+              parsedFeedback.pageantCriteria = [];
+            } else if (!parsedFeedback) {
+              parsedFeedback = {
+                overview: feedback,
+                pageantCriteria: []
+              };
+            }
+            
+            // Ensure we have basic criteria categories
+            const requiredCategories = ['Posture & Form', 'Movement Quality', 'Overall Presentation'];
+            const existingCategories = parsedFeedback.pageantCriteria!.map((c: PageantCriterion) => c.category);
+            
+            requiredCategories.forEach(category => {
+              if (!existingCategories.includes(category)) {
+                // Add with null score to indicate it's not AI-generated
+                parsedFeedback!.pageantCriteria!.push({
+                  category,
+                  score: null,
+                  feedback: "Assessment unavailable - please review the overall feedback"
+                });
+              }
+            });
+          }
+          
+          // Ensure scores are actually numbers, not strings
+          if (parsedFeedback && parsedFeedback.pageantCriteria) {
+            parsedFeedback.pageantCriteria = parsedFeedback.pageantCriteria.map((criterion: PageantCriterion) => ({
+              ...criterion,
+              score: typeof criterion.score === 'string' ? parseInt(criterion.score, 10) : criterion.score
+            }));
+          }
         } catch (parseError) {
-          console.error('Failed to parse structured feedback, falling back to plain text');
-          // Keep the original feedback as fallback
+          console.error('Failed to parse structured feedback:', parseError);
+          // Create a minimal feedback structure with the text
+          parsedFeedback = {
+            overview: feedback,
+            sceneAnalysis: [{
+              scene: "Performance",
+              strengths: ["AI analysis available as text only"],
+              improvements: ["Detailed breakdown unavailable"]
+            }],
+            pageantCriteria: [{
+              category: "Overall Performance",
+              score: null, // Explicitly null to signal client not to show a score
+              feedback: feedback
+            }],
+            nextSteps: ["Review the feedback provided in the overview"]
+          };
         }
       }
 

@@ -676,40 +676,35 @@ export default function Routine() {
           };
         }
         
-        // Add pageant-specific criteria scoring if not present
-        if (!enhancedFeedback.pageantCriteria) {
-          // Generate detailed pageant criteria scoring
-          enhancedFeedback.pageantCriteria = [
-            {
-              category: "Posture & Poise",
-              score: Math.floor(Math.random() * 20) + 60, // 60-80 range
-              feedback: mode === 'catwalk' ? 
-                "Your posture needs more consistency. Keep shoulders back and chin parallel to the floor throughout your walk." :
-                "Your posture shows confidence but lacks consistency during transitions."
-            },
-            {
-              category: "Stage Presence",
-              score: Math.floor(Math.random() * 25) + 65, // 65-90 range
-              feedback: "Good eye contact with audience. Work on maintaining consistent engagement throughout performance."
-            },
-            {
-              category: "Movement Fluidity",
-              score: Math.floor(Math.random() * 20) + 60, // 60-80 range
-              feedback: mode === 'catwalk' ? 
-                "Your heel-to-toe technique needs refinement. Transitions between steps should be smoother." :
-                "Your movements show good intention but need more graceful transitions."
-            },
-            {
-              category: "Timing & Rhythm",
-              score: Math.floor(Math.random() * 20) + 65, // 65-85 range
-              feedback: "Pacing is inconsistent. Focus on maintaining even timing throughout your routine."
-            },
-            {
-              category: "Overall Presentation",
-              score: Math.floor(Math.random() * 20) + 70, // 70-90 range
-              feedback: "Your confidence shows potential. Work on maintaining consistent energy from start to finish."
+        // We no longer use fake/random feedback - ensure we have the authentic AI feedback
+        if (!enhancedFeedback.pageantCriteria && typeof enhancedFeedback === 'object') {
+          console.log('Warning: AI did not return pageant criteria - using authentic feedback structure');
+          
+          // If the AI provided any analysis, use it to create proper criteria
+          if (enhancedFeedback.overview) {
+            const aiOverview = enhancedFeedback.overview;
+            
+            enhancedFeedback.pageantCriteria = [
+              {
+                category: "Overall Performance",
+                score: null, // No more random scores
+                feedback: aiOverview
+              }
+            ];
+            
+            if (enhancedFeedback.sceneAnalysis && enhancedFeedback.sceneAnalysis.length > 0) {
+              // Use AI's actual analysis to generate criteria
+              enhancedFeedback.sceneAnalysis.forEach((scene: {scene: string, improvements: string[]}) => {
+                if (scene.improvements && scene.improvements.length > 0) {
+                  enhancedFeedback.pageantCriteria.push({
+                    category: scene.scene,
+                    score: null, // No more random scores
+                    feedback: scene.improvements.join(". ")
+                  });
+                }
+              });
             }
-          ];
+          }
         }
         
         setSummaryFeedback(enhancedFeedback);
