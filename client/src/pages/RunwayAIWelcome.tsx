@@ -422,6 +422,49 @@ export default function RunwayAIWelcome() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100">
+      {/* YC Rejection Badge */}
+      <div style={{
+        display: "flex", 
+        justifyContent: "center", 
+        width: "100%", 
+        paddingTop: "25px",
+        paddingBottom: "15px",
+        position: "relative",
+        zIndex: "5"
+      }}>
+        <div style={{
+          backgroundColor: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: "9999px",
+          padding: "10px 20px",
+          display: "flex",
+          alignItems: "center",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+        }}>
+          <span style={{
+            fontFamily: "sans-serif",
+            color: "#6b7280",
+            fontWeight: "500",
+            fontSize: "16px",
+            display: "flex",
+            alignItems: "center"
+          }}>
+            Rejected by 
+            <span style={{
+              backgroundColor: "#ff6600",
+              color: "white",
+              padding: "2px 8px",
+              borderRadius: "4px",
+              margin: "0 6px",
+              fontWeight: "600"
+            }}>
+              Y
+            </span>
+            Combinator
+          </span>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-50 min-h-screen">
         {/* Fixed navbar that follows user's screen */}
