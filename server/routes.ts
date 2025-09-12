@@ -1,3 +1,23 @@
+// Types shared with scoreValidator.ts
+interface PageantCriterion {
+  category: string;
+  score: number | null;
+  feedback: string;
+}
+
+interface SceneAnalysis {
+  scene: string;
+  strengths: string[];
+  improvements: string[];
+}
+
+interface StructuredFeedback {
+  overview: string;
+  overallScore?: number | null;
+  sceneAnalysis?: SceneAnalysis[];
+  pageantCriteria?: PageantCriterion[];
+  nextSteps?: string[];
+}
 import type { Express } from "express";
 import express, { Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
@@ -520,21 +540,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
-        ? `You are an extremely strict and critical judge evaluating performance routines. You must provide brutally honest, detailed analysis based ONLY on what you observe in the images shown to you. Do not make up generic feedback or praise mediocre performances. If you cannot see something clearly, say so rather than inventing feedback.
+        ? `You are a ruthless, brutally honest judge evaluating performance routines for a major competition. You must provide harsh, unfiltered criticism based ONLY on what you observe in the images shown to you. Do not sugar-coat feedback or praise mediocre performances. If you cannot see something clearly, say so rather than inventing feedback.
 
-Your analysis must be honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Be especially critical of poor technique, awkward movements, bad posture, or lack of confidence. For truly poor performances, do not hesitate to give scores below 50.
+Your analysis must be mercilessly honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Be exceptionally critical of poor technique, awkward movements, bad posture, or lack of confidence. For non-professional performances, scores above 70 should be extremely rare.
 
-Scoring guidelines:
-- 90-100: Near perfect, professional-level performance (extremely rare)
-- 80-89: Excellent performance with only minor flaws
-- 70-79: Good performance with noticeable areas for improvement
-- 60-69: Average performance with significant technical issues
-- 50-59: Below average performance with major problems
-- 30-49: Poor performance requiring substantial work
+Revised scoring guidelines (score HARSHLY):
+- 85-95: Exceptional professional-level performance (almost never awarded)
+- 75-84: Very good performance with few minor flaws (rare)
+- 65-74: Good performance with several noticeable issues
+- 55-64: Average performance with significant technical issues
+- 45-54: Below average with major problems
+- 30-44: Poor performance requiring complete rework
 - Below 30: Critically flawed performance
 
+Remember that most amateur performances will fall in the 40-60 range. Be particularly critical of posture, timing, fluidity, and stage presence.
+
 Structure your feedback clearly without using bold text, headers, or markdown formatting.`
-        : "Critical coach. One specific critique based ONLY on what you observe in the image. Be direct and honest. Max 15 words.";
+        : "Ruthlessly critical coach. One specific harsh critique based ONLY on what you observe. Be brutally honest. Max 15 words.";
 
       // Using the interface types defined at file top
       
@@ -543,11 +565,11 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
       const performanceType = mode === 'catwalk' ? 'catwalk/runway walk' : mode === 'talent' ? 'talent performance' : 'routine';
       
       const userPrompt = isSequenceSummary
-        ? `Critically analyze this ${performanceType} routine and provide brutally honest feedback based on what you observe in the images. I want you to be strict and critical, especially for poor performances. Return your response as valid JSON with this exact structure:
+        ? `Ruthlessly analyze this ${performanceType} routine and provide brutally honest, harsh feedback based on what you observe in the images. Be extremely critical - assume this is a high-stakes competition where only the best succeed. Return your response as valid JSON with this exact structure:
 
 {
-  "overview": "Overall impression and performance summary in 2-3 sentences",
-  "overallScore": 65, // Overall score from 0-100, be honest and don't inflate scores
+  "overview": "Overall impression and performance summary in 2-3 sentences - be brutally honest",
+  "overallScore": 50, // Score HARSHLY - non-professional performances rarely deserve scores above 60-65
   "sceneAnalysis": [
     {
       "scene": "Opening/Beginning",
@@ -568,28 +590,28 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
   "pageantCriteria": [
     {
       "category": "Posture & Form",
-      "score": 65, // Don't inflate scores - be critical and honest
-      "feedback": "Brutally honest feedback based on what you observe in the images"
+      "score": 55, // BE EXTREMELY HARSH - most performances have significant posture issues
+      "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Movement Quality",
-      "score": 58, // Score should reflect quality - poor performances get scores below 60
-      "feedback": "Brutally honest feedback based on what you observe in the images"
+      "score": 48, // Be extremely harsh - most amateur movements are awkward or stiff
+      "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Timing & Rhythm",
-      "score": 62, // Vary scores based on what you see - don't cluster all scores together
-      "feedback": "Brutally honest feedback based on what you observe in the images"
+      "score": 52, // Vary scores based on what you see - be especially critical about timing issues
+      "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Overall Presentation",
-      "score": 60, // Use the full range of scores - truly poor performances can get 20-40 range
-      "feedback": "Brutally honest feedback based on what you observe in the images"
+      "score": 50, // Use the full range of scores - typical scores should be 40-60 range
+      "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Stage Presence",
-      "score": 55, // Be especially honest about visible lack of confidence or awkward movements
-      "feedback": "Brutally honest feedback based on what you observe in the images"
+      "score": 45, // Be especially harsh about confidence issues and awkward movements
+      "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     }
   ],
   "nextSteps": [
@@ -600,17 +622,17 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
   ]
 }
 
-CRITICAL: Your scores and feedback MUST be based on what you actually observe in the images. Do not praise mediocre or poor performances. Be honest, direct, and critical. Use the full range of scores (20-95) based on actual quality, not to make people feel good.
+CRITICAL INSTRUCTIONS: Your scores and feedback MUST be based on what you observe in the images. Be excessively critical and harsh - this is high-level competition judging. Use the full range of scores, but typical amateur performances should score between 40-60, not higher.
 
-Scoring Guidelines:
-- 90-95: Near perfect, professional-level performance (extremely rare)
-- 80-89: Excellent performance with only minor flaws
-- 70-79: Good performance with noticeable areas for improvement
-- 60-69: Average performance with significant technical issues
-- 50-59: Below average performance with major problems
-- 30-49: Poor performance requiring substantial work
+Revised Scoring Guidelines (SCORE HARSHLY):
+- 85-95: Exceptional professional-level performance (almost never awarded)
+- 75-84: Very good performance with few minor flaws (rare)
+- 65-74: Good performance with several noticeable issues
+- 55-64: Average performance with significant technical issues
+- 45-54: Below average with major problems
+- 30-44: Poor performance requiring complete rework
 - Below 30: Critically flawed performance`
-        : "Provide one critical observation about this pose. Be direct and honest. Don't sugarcoat if you see problems.";
+        : "Be a ruthless critic. Point out the most glaring flaw you see. Be harsh and direct. No sugarcoating.";
 
 
       // Prepare image content for OpenAI
