@@ -170,7 +170,18 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100 flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen relative flex flex-col items-center justify-center px-6">
+      {/* Top gradient overlay */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Solid pink color at the very top to ensure we get the exact #FFB6C1 */}
+        <div className="h-8 bg-[#FFB6C1]" />
+        {/* Gradient that stretches down further (now 1/3 of the screen) */}
+        <div className="h-1/3 bg-gradient-to-b from-[#FFB6C1] to-white" />
+        <div className="h-[calc(100%-8px-33.333%)] bg-white" />
+      </div>
+      
+      {/* Content with relative positioning to appear above gradient */}
+      <div className="relative z-10 w-full flex flex-col items-center">
       {/* Progress Bar */}
       <div className="w-full max-w-md mb-8">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -316,14 +327,12 @@ export default function Onboarding() {
       {/* Footer Links - Moved to bottom */}
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex gap-8 text-sm text-gray-500 z-50">
         <button 
-          onClick={() => window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,ojaskandy@gmail.com?subject=Runway AI Contact'}
+          onClick={() => window.location.href = 'mailto:arshia.x.kathpalia@gmail.com,okandy@uw.edu?subject=Runway AI Contact'}
           className="hover:text-pink-600 transition-colors"
         >
           Contact Us
         </button>
-        <Link href="/privacy" className="hover:text-pink-600 transition-colors">
-          Learn about your privacy
-        </Link>
+      </div>
       </div>
     </div>
   );
