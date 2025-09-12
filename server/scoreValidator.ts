@@ -92,10 +92,20 @@ export function validateScores(feedback: StructuredFeedback | null): StructuredF
     });
   }
   
-  // Calculate overall score as average of all criteria scores
-  if (validScoresCount > 0) {
-    feedback.overallScore = Math.round(scoreSum / validScoresCount);
-    console.log(`Calculated overall score as ${feedback.overallScore} (average of ${validScoresCount} criteria)`);
+  // Calculate overall score as average of only Pageant Judge scores
+  let pageantJudgeScoreSum = 0;
+  let pageantJudgeScoreCount = 0;
+  
+  feedback.pageantCriteria.forEach(criterion => {
+    if (criterion.score !== null && criterion.score !== undefined && criterion.category.toLowerCase().includes('judge')) {
+      pageantJudgeScoreSum += criterion.score;
+      pageantJudgeScoreCount++;
+    }
+  });
+
+  if (pageantJudgeScoreCount > 0) {
+    feedback.overallScore = Math.round(pageantJudgeScoreSum / pageantJudgeScoreCount);
+    console.log(`Calculated overall score as ${feedback.overallScore} (average of ${pageantJudgeScoreCount} pageant judge criteria)`);
   } else {
     feedback.overallScore = null;
   }

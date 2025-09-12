@@ -6,7 +6,8 @@ import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Copy, Check, X, ChevronDown, ChevronRight, Image } from 'lucide-react';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Copy, Check, X, ChevronDown, ChevronRight, Image, Share2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -63,8 +64,92 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const storyRef = useRef<HTMLDivElement>(null);
   // Track if the modal is in compact mode (no header)
   const [compactMode, setCompactMode] = useState(true);
+  
+  const funnyMessages = [
+    'maybe next time 😅',
+    'practice makes perfect 💪',
+    'keep strutting 🚶‍♀️',
+    'work that runway 👠',
+    'confidence is key 🔑'
+  ];
+  
+  const randomFunny = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+  
+  const handleShare = async () => {
+    // Show beta warning
+    if (!window.confirm('This is a beta feature that is still under development. The generated image may not include all frames or may have visual issues. Continue?')) {
+      return;
+    }
+    
+    try {
+      setIsSharing(true);
+      
+      // Get performance score from feedback
+      const performanceScore = typeof feedback === 'object' && feedback.overallScore ? feedback.overallScore : 0;
+      
+      // Try to get frames from the feedback
+      let frames: string[] = [];
+      if (typeof feedback === 'object' && feedback.frames && Array.isArray(feedback.frames)) {
+        frames = feedback.frames.slice(0, 3);
+      }
+      
+      // Create a story card element for sharing
+      const storyCard = document.createElement('div');
+      storyCard.id = 'story-card';
+      storyCard.style.cssText = 'width:1080px;height:1920px;padding:120px 80px;background-color:#ff00bf;color:white;font-family:Helvetica,Arial,sans-serif;position:fixed;left:-9999px;top:0;z-index:-1';
+      document.body.appendChild(storyCard);
+      
+      // Add content to the story card
+      storyCard.innerHTML = `
+        <div style="font-size:96px;font-weight:bold;text-align:center">${performanceScore}/100</div>
+        <div id="frames-container" style="display:flex;justify-content:center;margin-top:160px;gap:40px">
+          ${[0,1,2].map(i => `<div id="frame-${i}" style="width:400px;height:600px;background-color:white;border-radius:40px;transform:rotate(${i===1?0:i===0?-15:15}deg);overflow:hidden;position:relative"></div>`).join('')}
+        </div>
+        <div style="font-size:64px;text-align:center;margin-top:160px;font-style:italic">${randomFunny}</div>
+        <div style="position:absolute;bottom:60px;width:calc(100% - 160px);text-align:center;font-size:48px">RunwayAI</div>
+      `;
+      
+      // If we have frames from the feedback, add them to the story card
+      const loadImages = async () => {
+        // If no frames are available, use placeholder images
+        if (frames.length === 0) {
+          return;
+        }
+        
+        // Load each frame into the corresponding frame container
+        for (let i = 0; i < Math.min(frames.length, 3); i++) {
+          const frameContainer = document.getElementById(`frame-${i}`);
+          if (frameContainer) {
+            const img = document.createElement('img');
+            img.src = frames[i];
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+            frameContainer.appendChild(img);
+          }
+        }
+        
+        // Wait a bit to ensure images are loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+      };
+      
+      await loadImages();
+      
+      const canvas = await html2canvas(storyCard, { backgroundColor: '#ff00bf', scale: 2 });
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'RunwayAI_story.png';
+      link.click();
+      document.body.removeChild(storyCard);
+    } catch (e) {
+      console.error('Share error', e);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const sendChatMessage = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -124,9 +209,11 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
       );
     }
 
-    // Extract score from feedback if available
-    // We no longer generate random scores
-    const performanceScore = feedbackData.score || null;
+    // Calculate overall performance score as average of pageant judge criteria (if available)
+    const criteriaWithScores = (feedbackData.pageantCriteria || []).filter((c: any) => c.score !== null && c.score !== undefined);
+    const performanceScore = criteriaWithScores.length > 0
+      ? Math.round(criteriaWithScores.reduce((sum: number, c: any) => sum + c.score, 0) / criteriaWithScores.length)
+      : (feedbackData.overallScore ?? null);
     
     const getScoreColor = (score: number | null) => {
       if (score === null) return 'text-gray-500';
@@ -444,12 +531,23 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
               </div>
             </div>
             
-            <Button 
-              onClick={onClose}
-              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 px-6 py-2 text-sm font-medium rounded-full"
-            >
-              Done
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleShare}
+                disabled={isSharing}
+                className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white hover:from-amber-500 hover:to-yellow-600 px-6 py-2 text-sm font-medium rounded-full flex items-center"
+              >
+                <Share2 className="w-4 h-4 mr-1" />
+                {isSharing ? 'Sharing...' : 'Share'}
+              </Button>
+              
+              <Button 
+                onClick={onClose}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 px-6 py-2 text-sm font-medium rounded-full"
+              >
+                Done
+              </Button>
+            </div>
           </div>
 
           {/* Display Last Chat Response */}

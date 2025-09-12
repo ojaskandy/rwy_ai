@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, TrendingUp, Target, Lightbulb, BarChart3, MessageCircle, X, Sparkles, CheckCircle, Copy, Check, Volume2, VolumeX, Loader2, Home, ArrowLeft, Settings, User, MessageSquare } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 interface JointScore {
   joint: string;
@@ -83,9 +84,31 @@ export default function ResultsModal({
   const [copied, setCopied] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const funnyMessages = [
+    'maybe next time 😅',
+    'practice makes perfect 💪',
+    'keep strutting 🚶‍♀️',
+    'work that runway 👠',
+    'confidence is key 🔑'
+  ];
+  const randomFunny = funnyMessages[Math.floor(Math.random()*funnyMessages.length)];
 
-  // Calculate performance metrics - ensure score is capped at 100
-  const rawScore = fastDtwResults?.overallScore || overallScore || 0;
+  // Parse the feedback to get structured data if available
+  const parsedFeedback = typeof feedback === 'string' ? JSON.parse(feedback) : feedback;
+  const structuredFeedback = parsedFeedback?.feedback || parsedFeedback;
+  
+  // Extract pageant criteria scores
+  const pageantScores = structuredFeedback?.pageantCriteria?.map(c => c.score).filter(score => score !== null && score !== undefined) as number[] || [];
+  
+  // Log for debugging
+  console.log('Feedback structure:', { parsedFeedback, structuredFeedback, pageantScores });
+  
+  // Calculate average of pageant scores
+  const rawScore = pageantScores.length > 0 
+    ? pageantScores.reduce((a, b) => a + b, 0) / pageantScores.length 
+    : (fastDtwResults?.overallScore || overallScore || 0);
+    
   const performanceScore = Math.min(100, Math.max(0, Math.round(rawScore)));
   const performanceLevel = performanceScore >= 85 ? 'excellent' : 
                           performanceScore >= 70 ? 'good' : 
@@ -265,6 +288,33 @@ export default function ResultsModal({
 
   const navigateToHomepage = () => {
     window.location.href = '/app';
+  };
+
+  const handleShare = async () => {
+    try {
+      setIsSharing(true);
+      const card = document.getElementById('story-card');
+      if (!card) return;
+      const canvas = await html2canvas(card, { backgroundColor: '#ff00bf', scale: 2 });
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'story.png', { type: 'image/png' });
+        if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+          await (navigator as any).share({ files: [file], title: 'RunwayAI Score', text: 'Check out my routine score!' });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'RunwayAI_story.png';
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error('Share error', e);
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -656,9 +706,26 @@ export default function ResultsModal({
             >
               Try Again
             </Button>
+            <Button onClick={handleShare} disabled={isSharing} className="bg-pink-600 hover:bg-pink-700 text-white">
+              {isSharing ? 'Preparing...' : 'Share Story'}
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* hidden story layout */}
+      <div id="story-card" style={{ width: '1080px', height: '1920px', padding: '120px 80px', backgroundColor: '#ff00bf', color: 'white', fontFamily: 'Helvetica, Arial, sans-serif', position: 'absolute', left: '-9999px', top: 0 }}>
+        <div style={{ fontSize: '96px', fontWeight: 'bold', textAlign: 'center' }}>{performanceScore}/100</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '160px', gap: '40px' }}>
+          {[0,1,2].map((i)=> (
+            <div key={i} style={{ width: '400px', height: '600px', backgroundColor: 'white', borderRadius: '40px', transform: `rotate(${i===1?0:i===0?-15:15}deg)` }} />
+          ))}
+        </div>
+        <div style={{ fontSize: '64px', textAlign: 'center', marginTop: '160px', fontStyle:'italic' }}>
+          {randomFunny}
+        </div>
+        <div style={{ position: 'absolute', bottom: '60px', width: '100%', textAlign: 'center', fontSize: '48px' }}>RunwayAI</div>
+      </div>
 
 
     </div>

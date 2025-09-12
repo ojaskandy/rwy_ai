@@ -760,10 +760,16 @@ Revised Scoring Guidelines (SCORE HARSHLY):
         tokens: data.usage?.total_tokens || 0,
         structured: !!parsedFeedback
       });
-
+      
+      // Include the first 3 frames in the response for sharing
+      const responseFrames = frames.slice(0, 3);
+      
       res.json({ 
         success: true, 
-        feedback: parsedFeedback || feedback,
+        feedback: parsedFeedback ? {
+          ...parsedFeedback,
+          frames: responseFrames
+        } : feedback,
         isSequenceSummary,
         timestamp: new Date().toISOString()
       });
