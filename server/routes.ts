@@ -18,6 +18,7 @@ import {
   type DiscountCode
 } from "@shared/schema";
 import { z } from "zod";
+import { validateScores } from "./scoreValidator";
 import * as fs from 'fs';
 import * as path from 'path';
 import { Resend } from 'resend';
@@ -519,10 +520,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
-        ? `You are an expert coach providing authentic, detailed analysis of performance routines. You must provide accurate, specific feedback based ONLY on what you observe in the images shown to you. Do not make up generic feedback. If you cannot see something clearly, say so rather than inventing feedback.
+        ? `You are an extremely strict and critical judge evaluating performance routines. You must provide brutally honest, detailed analysis based ONLY on what you observe in the images shown to you. Do not make up generic feedback or praise mediocre performances. If you cannot see something clearly, say so rather than inventing feedback.
 
-Your analysis must be honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Structure your feedback clearly without using bold text, headers, or markdown formatting.`
-        : "Expert coach. One specific tip based ONLY on what you can observe in the image. Max 10 words.";
+Your analysis must be honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Be especially critical of poor technique, awkward movements, bad posture, or lack of confidence. For truly poor performances, do not hesitate to give scores below 50.
+
+Scoring guidelines:
+- 90-100: Near perfect, professional-level performance (extremely rare)
+- 80-89: Excellent performance with only minor flaws
+- 70-79: Good performance with noticeable areas for improvement
+- 60-69: Average performance with significant technical issues
+- 50-59: Below average performance with major problems
+- 30-49: Poor performance requiring substantial work
+- Below 30: Critically flawed performance
+
+Structure your feedback clearly without using bold text, headers, or markdown formatting.`
+        : "Critical coach. One specific critique based ONLY on what you observe in the image. Be direct and honest. Max 15 words.";
 
       // Using the interface types defined at file top
       
@@ -531,64 +543,74 @@ Your analysis must be honest, specific to the routine type (catwalk/runway walk,
       const performanceType = mode === 'catwalk' ? 'catwalk/runway walk' : mode === 'talent' ? 'talent performance' : 'routine';
       
       const userPrompt = isSequenceSummary
-        ? `Analyze this ${performanceType} routine and provide structured feedback based on what you actually see in the images. Return your response as valid JSON with this exact structure:
+        ? `Critically analyze this ${performanceType} routine and provide brutally honest feedback based on what you observe in the images. I want you to be strict and critical, especially for poor performances. Return your response as valid JSON with this exact structure:
 
 {
   "overview": "Overall impression and performance summary in 2-3 sentences",
+  "overallScore": 65, // Overall score from 0-100, be honest and don't inflate scores
   "sceneAnalysis": [
     {
       "scene": "Opening/Beginning",
       "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
-      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
+      "improvements": ["Critical improvement 1 based on what you see", "Critical improvement 2 based on what you see"]
     },
     {
       "scene": "Middle Section",
       "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
-      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
+      "improvements": ["Critical improvement 1 based on what you see", "Critical improvement 2 based on what you see"]
     },
     {
       "scene": "Closing/Finale",
       "strengths": ["Specific strength 1 that you observe", "Specific strength 2 that you observe"],
-      "improvements": ["Specific improvement 1 based on what you see", "Specific improvement 2 based on what you see"]
+      "improvements": ["Critical improvement 1 based on what you see", "Critical improvement 2 based on what you see"]
     }
   ],
   "pageantCriteria": [
     {
       "category": "Posture & Form",
-      "score": 85,
-      "feedback": "Specific feedback based on what you observe in the images"
+      "score": 65, // Don't inflate scores - be critical and honest
+      "feedback": "Brutally honest feedback based on what you observe in the images"
     },
     {
       "category": "Movement Quality",
-      "score": 78,
-      "feedback": "Specific feedback based on what you observe in the images"
+      "score": 58, // Score should reflect quality - poor performances get scores below 60
+      "feedback": "Brutally honest feedback based on what you observe in the images"
     },
     {
       "category": "Timing & Rhythm",
-      "score": 82,
-      "feedback": "Specific feedback based on what you observe in the images"
+      "score": 62, // Vary scores based on what you see - don't cluster all scores together
+      "feedback": "Brutally honest feedback based on what you observe in the images"
     },
     {
       "category": "Overall Presentation",
-      "score": 80,
-      "feedback": "Specific feedback based on what you observe in the images"
+      "score": 60, // Use the full range of scores - truly poor performances can get 20-40 range
+      "feedback": "Brutally honest feedback based on what you observe in the images"
     },
     {
       "category": "Stage Presence",
-      "score": 75,
-      "feedback": "Specific feedback based on what you observe in the images"
+      "score": 55, // Be especially honest about visible lack of confidence or awkward movements
+      "feedback": "Brutally honest feedback based on what you observe in the images"
     }
   ],
   "nextSteps": [
-    "Specific actionable step 1",
-    "Specific actionable step 2",
-    "Specific actionable step 3",
-    "Specific actionable step 4"
+    "Critical actionable step 1",
+    "Critical actionable step 2",
+    "Critical actionable step 3",
+    "Critical actionable step 4"
   ]
 }
 
-IMPORTANT: Your scores and feedback MUST be based on what you actually observe in the images. Do not provide generic feedback. Be specific, constructive, and refer directly to what you can see in the performance. Scores should accurately reflect quality (85-100 excellent, 70-84 good, 60-69 average, below 60 needs work).`
-        : "Quick tip for this pose based only on what you can see?";
+CRITICAL: Your scores and feedback MUST be based on what you actually observe in the images. Do not praise mediocre or poor performances. Be honest, direct, and critical. Use the full range of scores (20-95) based on actual quality, not to make people feel good.
+
+Scoring Guidelines:
+- 90-95: Near perfect, professional-level performance (extremely rare)
+- 80-89: Excellent performance with only minor flaws
+- 70-79: Good performance with noticeable areas for improvement
+- 60-69: Average performance with significant technical issues
+- 50-59: Below average performance with major problems
+- 30-49: Poor performance requiring substantial work
+- Below 30: Critically flawed performance`
+        : "Provide one critical observation about this pose. Be direct and honest. Don't sugarcoat if you see problems.";
 
 
       // Prepare image content for OpenAI
@@ -651,6 +673,9 @@ IMPORTANT: Your scores and feedback MUST be based on what you actually observe i
           }
           
           parsedFeedback = JSON.parse(cleanResponse);
+          
+          // Apply score validation to prevent inflated scores
+          parsedFeedback = validateScores(parsedFeedback);
           
           // Validate that we have the required pageant criteria for authentic scoring
           if (!parsedFeedback || !parsedFeedback.pageantCriteria || !Array.isArray(parsedFeedback.pageantCriteria) || parsedFeedback.pageantCriteria.length < 3) {
@@ -886,6 +911,9 @@ Be specific, constructive, and supportive. Focus on performance quality, artisti
           }
           
           parsedFeedback = JSON.parse(cleanResponse);
+          
+          // Apply score validation to prevent inflated scores
+          parsedFeedback = validateScores(parsedFeedback);
           
           // Validate that we have the required pageant criteria for authentic scoring
           if (!parsedFeedback || !parsedFeedback.pageantCriteria || !Array.isArray(parsedFeedback.pageantCriteria) || parsedFeedback.pageantCriteria.length < 3) {

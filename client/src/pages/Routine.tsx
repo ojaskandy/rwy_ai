@@ -59,7 +59,7 @@ interface ChatMessage {
   isUser: boolean;
 }
 
-function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps) {
+function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProps): React.ReactElement {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -89,15 +89,25 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
 
       const data = await response.json();
       
-      const newMessage: ChatMessage = {
-        id: Date.now().toString(),
+      // First, add the user's message to the chat
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now().toString()}`,
         message: messageText,
-        reply: data.reply,
+        reply: '',
         timestamp: new Date(),
         isUser: true
       };
+      
+      // Then, add the AI's reply
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now().toString()}`,
+        message: '',
+        reply: data.reply,
+        timestamp: new Date(),
+        isUser: false
+      };
 
-      setChatMessages(prev => [...prev, newMessage]);
+      setChatMessages(prev => [...prev, userMessage, aiMessage]);
     } catch (error) {
       console.error('Chat error:', error);
     } finally {
@@ -114,13 +124,12 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
       );
     }
 
-    // Extract or generate a score - stricter pageant-style scoring
-    // Pageant scoring is typically more critical and precise
-    const performanceScore = feedbackData.score ? 
-      Math.min(95, Math.max(40, feedbackData.score - 10)) : // Adjust existing score to be stricter
-      65; // Default to 65 (mid-range) if no score provided
+    // Extract score from feedback if available
+    // We no longer generate random scores
+    const performanceScore = feedbackData.score || null;
     
-    const getScoreColor = (score: number) => {
+    const getScoreColor = (score: number | null) => {
+      if (score === null) return 'text-gray-500';
       if (score >= 90) return 'text-pink-600';
       if (score >= 80) return 'text-purple-600';
       if (score >= 70) return 'text-blue-600';
@@ -128,7 +137,8 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
       return 'text-red-500';
     };
     
-    const getScoreBgColor = (score: number) => {
+    const getScoreBgColor = (score: number | null) => {
+      if (score === null) return 'bg-gray-400';
       if (score >= 90) return 'bg-pink-600';
       if (score >= 80) return 'bg-purple-600';
       if (score >= 70) return 'bg-blue-600';
@@ -137,7 +147,8 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
     };
     
     // More specific pageant-style ratings
-    const getScoreLabel = (score: number) => {
+    const getScoreLabel = (score: number | null) => {
+      if (score === null) return 'Not Assessed';
       if (score >= 90) return 'Outstanding';
       if (score >= 85) return 'Excellent';
       if (score >= 80) return 'Very Good';
@@ -146,7 +157,10 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
       if (score >= 65) return 'Average';
       if (score >= 60) return 'Fair';
       if (score >= 50) return 'Needs Work';
-      return 'Significant Improvement Needed';
+      if (score >= 40) return 'Poor Performance';
+      if (score >= 30) return 'Very Poor';
+      if (score >= 20) return 'Extremely Poor';
+      return 'Critical Issues';
     };
 
     return (
@@ -154,22 +168,28 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
         {/* Score Display */}
         <div className="rounded-lg overflow-hidden">
           <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-pink-50 to-purple-50">
-            <h3 className="text-gray-700 mb-6 text-xl">Your Performance Score</h3>
-            <div className="relative mb-2">
-              <div className="w-36 h-36 rounded-full bg-white flex items-center justify-center border-4 border-pink-100 shadow-lg">
-                <div className="text-center">
-                  <div className={`text-6xl font-bold ${getScoreColor(performanceScore)}`}>
-                    {performanceScore}
+            <h3 className="text-gray-700 mb-6 text-xl">Your Performance Assessment</h3>
+            {performanceScore !== null ? (
+              <div className="relative mb-2">
+                <div className="w-36 h-36 rounded-full bg-white flex items-center justify-center border-4 border-pink-100 shadow-lg">
+                  <div className="text-center">
+                    <div className={`text-6xl font-bold ${getScoreColor(performanceScore)}`}>
+                      {performanceScore}
+                    </div>
+                    <div className="text-sm text-gray-500">out of 100</div>
                   </div>
-                  <div className="text-sm text-gray-500">out of 100</div>
+                </div>
+                <div className="absolute -top-2 right-0">
+                  <div className={`px-4 py-1 rounded-full text-white text-sm font-medium shadow-md ${getScoreBgColor(performanceScore)}`}>
+                    {getScoreLabel(performanceScore)}
+                  </div>
                 </div>
               </div>
-              <div className="absolute -top-2 right-0">
-                <div className={`px-4 py-1 rounded-full text-white text-sm font-medium shadow-md ${getScoreBgColor(performanceScore)}`}>
-                  {getScoreLabel(performanceScore)}
-                </div>
+            ) : (
+              <div className="mb-2 text-center">
+                <p className="text-gray-700 mb-2">Score unavailable. Please review the feedback text for assessment details.</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
         
@@ -177,76 +197,49 @@ function SummaryModal({ isOpen, onClose, feedback, isLoading }: SummaryModalProp
         <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg p-6 border border-pink-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🏆 Pageant Judge Scoring</h3>
           <div className="space-y-4">
-            {feedbackData.pageantCriteria ? 
+            {feedbackData.pageantCriteria ? (
               // Use existing criteria if available
               feedbackData.pageantCriteria.map((criteria: any, index: number) => (
                 <div key={index} className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-medium text-gray-800">{criteria.category}</h4>
-                    <div className="flex items-center">
-                      <span className={`text-lg font-bold ${getScoreColor(criteria.score)}`}>
-                        {criteria.score}
-                      </span>
-                      <span className="text-gray-500 text-sm ml-1">/100</span>
+                    {criteria.score !== null ? (
+                      <div className="flex items-center">
+                        <span className={`text-lg font-bold ${getScoreColor(criteria.score)}`}>
+                          {criteria.score}
+                        </span>
+                        <span className="text-gray-500 text-sm ml-1">/100</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <span className="text-gray-500 text-sm">No score</span>
+                      </div>
+                    )}
+                  </div>
+                  {criteria.score !== null ? (
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                      <div 
+                        className={`h-2 rounded-full ${getScoreBgColor(criteria.score)}`}
+                        style={{ width: `${criteria.score}%` }}
+                      ></div>
                     </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                    <div 
-                      className={`h-2 rounded-full ${getScoreBgColor(criteria.score)}`}
-                      style={{ width: `${criteria.score}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-gray-700 text-sm">{criteria.feedback}</p>
-                </div>
-              )) : 
-              // Generate default criteria if not available
-              [
-                {
-                  category: "Posture & Poise",
-                  score: Math.floor(Math.random() * 20) + 60, // 60-80 range
-                  feedback: "Your posture shows inconsistency. Work on maintaining shoulders back and chin parallel to the floor throughout your walk."
-                },
-                {
-                  category: "Stage Presence",
-                  score: Math.floor(Math.random() * 25) + 65, // 65-90 range
-                  feedback: "Your eye contact with the audience is good but could be more consistent. Work on maintaining engagement throughout your performance."
-                },
-                {
-                  category: "Movement Fluidity",
-                  score: Math.floor(Math.random() * 20) + 60, // 60-80 range
-                  feedback: "Your heel-to-toe technique needs refinement. Focus on smoother transitions between steps for a more elegant walk."
-                },
-                {
-                  category: "Timing & Rhythm",
-                  score: Math.floor(Math.random() * 20) + 65, // 65-85 range
-                  feedback: "Your pacing is inconsistent. Practice maintaining even timing throughout your routine for better presentation."
-                },
-                {
-                  category: "Overall Presentation",
-                  score: Math.floor(Math.random() * 20) + 70, // 70-90 range
-                  feedback: "Your confidence shows potential but needs consistency. Work on maintaining energy from start to finish."
-                }
-              ].map((criteria: any, index: number) => (
-                <div key={index} className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-gray-800">{criteria.category}</h4>
-                    <div className="flex items-center">
-                      <span className={`text-lg font-bold ${getScoreColor(criteria.score)}`}>
-                        {criteria.score}
-                      </span>
-                      <span className="text-gray-500 text-sm ml-1">/100</span>
+                  ) : (
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                      <div className="h-2 rounded-full bg-gray-400" style={{ width: '0%' }}></div>
                     </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                    <div 
-                      className={`h-2 rounded-full ${getScoreBgColor(criteria.score)}`}
-                      style={{ width: `${criteria.score}%` }}
-                    ></div>
-                  </div>
+                  )}
                   <p className="text-gray-700 text-sm">{criteria.feedback}</p>
                 </div>
               ))
-            }
+            ) : (
+              // No criteria available, show a message
+              <div className="bg-white rounded-lg p-4 shadow-sm text-center">
+                <div className="mb-2">
+                  <h4 className="font-medium text-gray-800">No Detailed Criteria Available</h4>
+                </div>
+                <p className="text-gray-700 text-sm">We couldn't generate specific criteria for this performance. Please refer to the overview section for feedback.</p>
+              </div>
+            )}
           </div>
         </div>
         
