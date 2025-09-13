@@ -767,72 +767,108 @@ export default function Routine() {
             };
           }
           
-          // We no longer use fake/random feedback - ensure we have the authentic AI feedback
-          if (!enhancedFeedback.pageantCriteria && typeof enhancedFeedback === 'object') {
-            console.log('Warning: AI did not return pageant criteria - using authentic feedback structure');
+          // Ensure we have the appropriate criteria based on mode
+          if (typeof enhancedFeedback === 'object') {
+            console.log('Processing feedback for mode:', mode);
             
-            // If the AI provided any analysis, use it to create proper criteria
-            if (enhancedFeedback.overview) {
-              const aiOverview = enhancedFeedback.overview;
+            // For talent mode, ensure we have talent-specific criteria
+            if (mode === 'talent') {
+              // Check if we already have talent criteria categories
+              const expectedTalentCategories = [
+                "Talent Selection", 
+                "Interpretive Ability", 
+                "Technical Skill", 
+                "Stage Presence", 
+                "Overall Impact", 
+                "Presentation Elements"
+              ];
               
-              // Create different criteria based on the mode
-              if (mode === 'talent') {
-                // For talent mode, use pageant talent judging criteria
-                enhancedFeedback.pageantCriteria = [
-                  {
-                    category: "Talent Selection",
-                    score: null,
-                    feedback: aiOverview
-                  },
-                  {
-                    category: "Interpretive Ability",
-                    score: null,
-                    feedback: "Assessment unavailable - please review the overall feedback"
-                  },
-                  {
-                    category: "Technical Skill",
-                    score: null,
-                    feedback: "Assessment unavailable - please review the overall feedback"
-                  },
-                  {
-                    category: "Stage Presence",
-                    score: null,
-                    feedback: "Assessment unavailable - please review the overall feedback"
-                  },
-                  {
-                    category: "Overall Impact",
-                    score: null,
-                    feedback: "Assessment unavailable - please review the overall feedback"
-                  },
-                  {
-                    category: "Presentation Elements",
-                    score: null,
-                    feedback: "Assessment unavailable - please review the overall feedback"
-                  }
-                ];
-              } else {
-                // For catwalk mode, use the original criteria
-                enhancedFeedback.pageantCriteria = [
-                  {
-                    category: "Overall Performance",
-                    score: null,
-                    feedback: aiOverview
-                  }
-                ];
+              // Create a set of existing categories
+              const existingCategories = new Set(
+                (enhancedFeedback.pageantCriteria || []).map((c: any) => c.category)
+              );
+              
+              // Check if we're missing any talent categories
+              const missingTalentCategories = expectedTalentCategories.some(
+                category => !existingCategories.has(category)
+              );
+              
+              // If we're missing talent categories or have catwalk categories, replace with talent categories
+              if (missingTalentCategories || existingCategories.has("Posture & Form") || existingCategories.has("Movement Quality")) {
+                console.log('Replacing with talent-specific criteria');
+                
+                // Get the overview from existing feedback
+                const aiOverview = enhancedFeedback.overview || "Performance assessment";
+                
+                // Create talent-specific criteria
+                enhancedFeedback.pageantCriteria = expectedTalentCategories.map(category => {
+                  // Try to find existing category data
+                  const existingData = (enhancedFeedback.pageantCriteria || []).find((c: any) => c.category === category);
+                  
+                  return {
+                    category,
+                    score: existingData?.score || null,
+                    feedback: existingData?.feedback || (category === "Talent Selection" ? aiOverview : "Assessment unavailable - please review the overall feedback")
+                  };
+                });
               }
+            } else {
+              // For catwalk mode, ensure we have catwalk-specific criteria
+              const expectedCatwalkCategories = [
+                "Posture & Form", 
+                "Movement Quality", 
+                "Overall Presentation"
+              ];
               
-              if (enhancedFeedback.sceneAnalysis && enhancedFeedback.sceneAnalysis.length > 0) {
-                // Use AI's actual analysis to generate criteria
-                enhancedFeedback.sceneAnalysis.forEach((scene: {scene: string, improvements: string[]}) => {
-                  if (scene.improvements && scene.improvements.length > 0) {
+              // Create a set of existing categories
+              const existingCategories = new Set(
+                (enhancedFeedback.pageantCriteria || []).map((c: any) => c.category)
+              );
+              
+              // Check if we're missing any catwalk categories
+              const missingCatwalkCategories = expectedCatwalkCategories.some(
+                category => !existingCategories.has(category)
+              );
+              
+              // If we're missing catwalk categories or have talent categories, replace with catwalk categories
+              if (missingCatwalkCategories || existingCategories.has("Talent Selection") || existingCategories.has("Stage Presence")) {
+                console.log('Replacing with catwalk-specific criteria');
+                
+                // Get the overview from existing feedback
+                const aiOverview = enhancedFeedback.overview || "Performance assessment";
+                
+                // Create catwalk-specific criteria
+                enhancedFeedback.pageantCriteria = expectedCatwalkCategories.map(category => {
+                  // Try to find existing category data
+                  const existingData = (enhancedFeedback.pageantCriteria || []).find((c: any) => c.category === category);
+                  
+                  return {
+                    category,
+                    score: existingData?.score || null,
+                    feedback: existingData?.feedback || (category === "Overall Presentation" ? aiOverview : "Assessment unavailable - please review the overall feedback")
+                  };
+                });
+              }
+            }
+            
+            // Add scene analysis as additional criteria if available
+            if (enhancedFeedback.sceneAnalysis && enhancedFeedback.sceneAnalysis.length > 0) {
+              enhancedFeedback.sceneAnalysis.forEach((scene: {scene: string, improvements: string[]}) => {
+                if (scene.improvements && scene.improvements.length > 0) {
+                  // Check if we already have this scene as a category
+                  const hasSceneCategory = (enhancedFeedback.pageantCriteria || []).some(
+                    (c: any) => c.category === scene.scene
+                  );
+                  
+                  if (!hasSceneCategory) {
                     enhancedFeedback.pageantCriteria.push({
                       category: scene.scene,
-                      score: null, // No more random scores
+                      score: null,
                       feedback: scene.improvements.join(". ")
                     });
                   }
-                });
-              }
+                }
+              });
             }
           }
           
