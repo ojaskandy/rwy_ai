@@ -621,7 +621,7 @@ export default function Routine() {
   
   // Summary modal state
   const [showSummary, setShowSummary] = useState(false);
-  const [summaryFeedback, setSummaryFeedback] = useState('');
+  const [summaryFeedback, setSummaryFeedback] = useState<any>({});
   const [summaryLoading, setSummaryLoading] = useState(false);
   
   // Timer state

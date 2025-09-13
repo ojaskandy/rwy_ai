@@ -843,14 +843,47 @@ Revised Scoring Guidelines (SCORE HARSHLY):
 
       // Prepare the prompt based on whether this is real-time or final summary
       const systemPrompt = isSequenceSummary 
-        ? `You are an expert talent coach providing comprehensive performance analysis. Structure your feedback clearly without using any bold text, headers, or markdown formatting. Write in flowing, natural paragraphs that are easy to read. Focus on being specific, actionable, and encouraging while maintaining professional coaching standards. This is for a pageant talent round.`
-        : "Talent coach for pageant. Max 10 words. One tip only.";
+        ? `You are an expert pageant judge evaluating talent round performances. You will provide comprehensive analysis based on standard pageant judging criteria. Structure your feedback clearly without using any bold text, headers, or markdown formatting. Write in flowing, natural paragraphs that are easy to read. Focus on being specific, actionable, and encouraging while maintaining professional judging standards. This is for a pageant talent round which makes up 20-35% of a contestant's total score.`
+        : "Talent judge for pageant. Max 10 words. One tip only.";
 
       const userPrompt = isSequenceSummary
-        ? `Analyze this complete talent performance for a pageant and provide structured feedback. Return your response as valid JSON with this exact structure:
+        ? `Analyze this talent performance for a pageant and provide structured feedback as a pageant judge would. Return your response as valid JSON with this exact structure:
 
 {
   "overview": "Overall impression and performance summary in 2-3 sentences",
+  "overallScore": 85,
+  "pageantCriteria": [
+    {
+      "category": "Talent Selection",
+      "score": 88,
+      "feedback": "Specific feedback on how well the talent choice fits the contestant's abilities and personality"
+    },
+    {
+      "category": "Interpretive Ability",
+      "score": 84,
+      "feedback": "Detailed assessment of expressiveness, storytelling, and emotional conveyance"
+    },
+    {
+      "category": "Technical Skill",
+      "score": 82,
+      "feedback": "Evaluation of technique, execution, accuracy, and mastery of the talent"
+    },
+    {
+      "category": "Stage Presence",
+      "score": 86,
+      "feedback": "Analysis of confidence, audience engagement, and performance personality"
+    },
+    {
+      "category": "Overall Impact",
+      "score": 87,
+      "feedback": "Assessment of entertainment value, memorability, and audience connection"
+    },
+    {
+      "category": "Presentation Elements",
+      "score": 83,
+      "feedback": "Evaluation of costume, props, choreography, and overall presentation"
+    }
+  ],
   "sceneAnalysis": [
     {
       "scene": "Opening/Beginning",
@@ -876,7 +909,7 @@ Revised Scoring Guidelines (SCORE HARSHLY):
   ]
 }
 
-Be specific, constructive, and supportive. Focus on performance quality, artistic expression, technique, stage presence, and audience engagement. Use plain language without formatting.`
+Be specific, constructive, and supportive in your judging. Use the standard pageant talent judging criteria: Talent Selection, Interpretive Ability, Technical Skill, Stage Presence, Overall Impact, and Presentation Elements. Scores should be on a scale of 1-100 with most scores falling between 70-95 for realistic judging. Use plain language without formatting.`
         : "Quick tip for this talent performance?";
 
       // Prepare image content for OpenAI
@@ -2935,7 +2968,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       let { action, amount = 1 } = req.body as { action?: string; amount?: number };
       // Normalize legacy names
       if (action === 'routine_minute') action = 'walk_routine';
-      if (!action || !['board_save', 'walk_routine', 'interview_question', 'dress_tryon'].includes(action)) {
+      if (!action || !['board_save', 'walk_routine', 'talent_routine', 'interview_question', 'dress_tryon'].includes(action)) {
         return res.status(400).json({ error: "Invalid action" });
       }
 

@@ -124,7 +124,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ action: action === 'routine_minute' ? 'walk_routine' : action, amount }),
+        body: JSON.stringify({ 
+          action: action === 'routine_minute' ? 'walk_routine' : 
+                 action === 'talent_routine' ? 'talent_routine' : action, 
+          amount 
+        }),
       });
       
       if (!response.ok) {
