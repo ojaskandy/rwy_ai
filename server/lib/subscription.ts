@@ -195,6 +195,38 @@ export async function canUserPerformAction(userId: string, action: ActionType, a
       }
     }
 
+    case 'talent_routine': {
+      // Talent routine uses the same limits as walk_routine
+      // Convert minutes to 15s quarters for limit check
+      const minutes = Math.max(0, Math.floor(amount || 0));
+      const quartersToAdd = Math.ceil(minutes * 4);
+
+      // Prefer monthly counters; fall back to weekly legacy fields
+      const hasMonthly = (usage as any).routineMinutesMonthStart != null;
+      if (hasMonthly) {
+        const monthStart = usage?.routineMinutesMonthStart || now;
+        if (now.getMonth() !== monthStart.getMonth() || now.getFullYear() !== monthStart.getFullYear()) {
+          await supabase.from('user_usage').update({ routine_minutes_this_month: 0, routine_minutes_month_start: now }).eq('user_id', userId);
+          return { allowed: quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+        }
+        const usedMinutes = usage?.routineMinutesThisMonth || 0;
+        const usedQuarters = Math.ceil(usedMinutes * 4);
+        return { allowed: usedQuarters + quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+      } else {
+        const { data } = await supabase
+          .from('user_usage')
+          .select('routine_minutes_this_week, routine_week_start')
+          .eq('user_id', userId)
+          .single();
+        const weekStart = data?.routine_week_start ? new Date(data.routine_week_start) : now;
+        const weekElapsedMs = now.getTime() - weekStart.getTime();
+        const reset = weekElapsedMs > 7 * 24 * 60 * 60 * 1000;
+        const usedMinutes = reset ? 0 : (data?.routine_minutes_this_week || 0);
+        const usedQuarters = Math.ceil(usedMinutes * 4);
+        return { allowed: usedQuarters + quartersToAdd <= USAGE_LIMITS.WALK_QUARTERS_MONTHLY };
+      }
+    }
+    
     case 'calendar_event': {
       // This is a simple total count of active events
       const { count, error } = await supabase
@@ -334,7 +366,8 @@ export function trackUsageAfterAction() {
               }
             }
           }
-        } else if (action === 'walk_routine') {
+        } else if (action === 'walk_routine' || action === 'talent_routine') {
+          // Both walk_routine and talent_routine use the same usage tracking
           const minutes = (usageInfo.minutes as number) || 1;
           const { data, error } = await supabase
             .from('user_usage')
