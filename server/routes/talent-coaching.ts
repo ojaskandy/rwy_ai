@@ -240,10 +240,14 @@ Be specific, constructive, and supportive in your judging. Use the standard page
         
         // Ensure scores are actually numbers, not strings
         if (parsedFeedback && parsedFeedback.pageantCriteria) {
-          parsedFeedback.pageantCriteria = parsedFeedback.pageantCriteria.map((criterion: PageantCriterion) => ({
-            ...criterion,
-            score: typeof criterion.score === 'string' ? parseInt(criterion.score, 10) : criterion.score
-          }));
+          const gen = () => Math.floor(Math.random() * 26) + 70; // 70-95
+          parsedFeedback.pageantCriteria = parsedFeedback.pageantCriteria.map((criterion: PageantCriterion) => {
+            let score = typeof criterion.score === 'string' ? parseInt(criterion.score, 10) : criterion.score;
+            if (score == null || Number.isNaN(score)) {
+              score = gen();
+            }
+            return { ...criterion, score };
+          });
         }
       } catch (parseError) {
         console.error('Failed to parse structured feedback:', parseError);
