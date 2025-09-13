@@ -723,91 +723,129 @@ export default function Routine() {
     return canvas.toDataURL('image/jpeg', 0.8);
   };
 
-  // Send frames to API for analysis
-  const sendFramesForAnalysis = async (frames: string[], isSequenceSummary = false, additionalData = {}) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Send frames to API for analysis
+    const sendFramesForAnalysis = async (frames: string[], isSequenceSummary = false, additionalData = {}) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-      const endpoint = mode === 'talent' ? '/api/talent-coaching' : '/api/pageant-coaching';
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
-        },
-        body: JSON.stringify({ 
-          frames, 
-          isSequenceSummary,
-          mode: mode, // Send the current mode to the backend
-          ...additionalData // Include any additional data like snaps
-        })
-      });
-
-      if (!response.ok) {
-        console.error('API error:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-      
-      if (isSequenceSummary) {
-        // Merge the additional data with the feedback
-        let enhancedFeedback;
+        const endpoint = mode === 'talent' ? '/api/talent-coaching' : '/api/pageant-coaching';
         
-        if (typeof data.feedback === 'string') {
-          enhancedFeedback = { 
-            overview: data.feedback,
-            ...additionalData 
-          };
-        } else {
-          enhancedFeedback = {
-            ...data.feedback,
-            ...additionalData
-          };
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+          },
+          body: JSON.stringify({ 
+            frames, 
+            isSequenceSummary,
+            mode: mode, // Send the current mode to the backend
+            ...additionalData // Include any additional data like snaps
+          })
+        });
+
+        if (!response.ok) {
+          console.error('API error:', response.status);
+          return;
         }
+
+        const data = await response.json();
         
-        // We no longer use fake/random feedback - ensure we have the authentic AI feedback
-        if (!enhancedFeedback.pageantCriteria && typeof enhancedFeedback === 'object') {
-          console.log('Warning: AI did not return pageant criteria - using authentic feedback structure');
+        if (isSequenceSummary) {
+          // Merge the additional data with the feedback
+          let enhancedFeedback;
           
-          // If the AI provided any analysis, use it to create proper criteria
-          if (enhancedFeedback.overview) {
-            const aiOverview = enhancedFeedback.overview;
+          if (typeof data.feedback === 'string') {
+            enhancedFeedback = { 
+              overview: data.feedback,
+              ...additionalData 
+            };
+          } else {
+            enhancedFeedback = {
+              ...data.feedback,
+              ...additionalData
+            };
+          }
+          
+          // We no longer use fake/random feedback - ensure we have the authentic AI feedback
+          if (!enhancedFeedback.pageantCriteria && typeof enhancedFeedback === 'object') {
+            console.log('Warning: AI did not return pageant criteria - using authentic feedback structure');
             
-            enhancedFeedback.pageantCriteria = [
-              {
-                category: "Overall Performance",
-                score: null, // No more random scores
-                feedback: aiOverview
+            // If the AI provided any analysis, use it to create proper criteria
+            if (enhancedFeedback.overview) {
+              const aiOverview = enhancedFeedback.overview;
+              
+              // Create different criteria based on the mode
+              if (mode === 'talent') {
+                // For talent mode, use pageant talent judging criteria
+                enhancedFeedback.pageantCriteria = [
+                  {
+                    category: "Talent Selection",
+                    score: null,
+                    feedback: aiOverview
+                  },
+                  {
+                    category: "Interpretive Ability",
+                    score: null,
+                    feedback: "Assessment unavailable - please review the overall feedback"
+                  },
+                  {
+                    category: "Technical Skill",
+                    score: null,
+                    feedback: "Assessment unavailable - please review the overall feedback"
+                  },
+                  {
+                    category: "Stage Presence",
+                    score: null,
+                    feedback: "Assessment unavailable - please review the overall feedback"
+                  },
+                  {
+                    category: "Overall Impact",
+                    score: null,
+                    feedback: "Assessment unavailable - please review the overall feedback"
+                  },
+                  {
+                    category: "Presentation Elements",
+                    score: null,
+                    feedback: "Assessment unavailable - please review the overall feedback"
+                  }
+                ];
+              } else {
+                // For catwalk mode, use the original criteria
+                enhancedFeedback.pageantCriteria = [
+                  {
+                    category: "Overall Performance",
+                    score: null,
+                    feedback: aiOverview
+                  }
+                ];
               }
-            ];
-            
-            if (enhancedFeedback.sceneAnalysis && enhancedFeedback.sceneAnalysis.length > 0) {
-              // Use AI's actual analysis to generate criteria
-              enhancedFeedback.sceneAnalysis.forEach((scene: {scene: string, improvements: string[]}) => {
-                if (scene.improvements && scene.improvements.length > 0) {
-                  enhancedFeedback.pageantCriteria.push({
-                    category: scene.scene,
-                    score: null, // No more random scores
-                    feedback: scene.improvements.join(". ")
-                  });
-                }
-              });
+              
+              if (enhancedFeedback.sceneAnalysis && enhancedFeedback.sceneAnalysis.length > 0) {
+                // Use AI's actual analysis to generate criteria
+                enhancedFeedback.sceneAnalysis.forEach((scene: {scene: string, improvements: string[]}) => {
+                  if (scene.improvements && scene.improvements.length > 0) {
+                    enhancedFeedback.pageantCriteria.push({
+                      category: scene.scene,
+                      score: null, // No more random scores
+                      feedback: scene.improvements.join(". ")
+                    });
+                  }
+                });
+              }
             }
           }
+          
+          setSummaryFeedback(enhancedFeedback);
+          setSummaryLoading(false);
         }
-        
-        setSummaryFeedback(enhancedFeedback);
-        setSummaryLoading(false);
+      } catch (error) {
+        console.error('Analysis failed:', error);
+        if (isSequenceSummary) {
+          setSummaryLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      if (isSequenceSummary) {
-        setSummaryLoading(false);
-      }
-    }
-  };
+    };
 
   // Plan chat functions
   const handleSendPlanMessage = async () => {

@@ -111,7 +111,7 @@ export async function getUserUsage(userId: string): Promise<UserUsage | null> {
 
 // --- Limit Enforcement Logic ---
 
-type ActionType = 'dress_tryon' | 'interview_question' | 'board_save' | 'walk_routine' | 'calendar_event';
+type ActionType = 'dress_tryon' | 'interview_question' | 'board_save' | 'walk_routine' | 'talent_routine' | 'calendar_event';
 
 export async function canUserPerformAction(userId: string, action: ActionType, amount: number = 0): Promise<{ allowed: boolean; message?: string }> {
   const subscription = await getUserSubscription(userId);
