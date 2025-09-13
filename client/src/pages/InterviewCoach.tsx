@@ -1079,7 +1079,7 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-xl overflow-hidden transform transition-all duration-300">
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden transform transition-all duration-300">
                   <CardHeader className="pb-4 pt-8">
                    <CardTitle className="text-gray-800 text-2xl font-bold text-center font-sora">
                       Pick Your Style
@@ -1088,17 +1088,21 @@ export default function InterviewCoach() {
                  <CardContent className="space-y-6 px-6 pb-8">
                   <Button
                     onClick={() => { setMode('question'); setCurrentStep('settings'); }}
-                    className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-md"
+                    className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105 hover:shadow-md"
                   >
-                    <MessageSquare className="w-6 h-6" />
+                    <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                      <MessageSquare className="w-5 h-5 text-white" />
+                    </div>
                     Rapid Fire (one at a time)
                   </Button>
                   <div className="relative">
                     <Button
                       onClick={() => { setMode('rounds'); setCurrentStep('settings'); }}
-                      className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-md"
+                      className="w-full bg-white hover:bg-pink-50 text-pink-600 border-2 border-pink-200 rounded-2xl py-8 font-medium text-lg shadow-sm flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105 hover:shadow-md"
                     >
-                      <Sparkles className="w-6 h-6" />
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-2">
+                        <Sparkles className="w-5 h-5 text-white" />
+                      </div>
                       Full Run (all at once)
                     </Button>
                     <span className="absolute top-0 right-4 bg-pink-100 text-pink-600 text-xs font-semibold px-3 py-1 rounded-full shadow-sm transform -translate-y-1/2">
@@ -1118,7 +1122,7 @@ export default function InterviewCoach() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl rounded-xl overflow-hidden transform transition-all duration-300">
+              <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden transform transition-all duration-300">
                  <CardHeader className="pb-4 pt-8">
                    <CardTitle className="text-gray-800 text-2xl font-bold text-center font-sora">
                     {mode === 'question' ? 'Rapid Fire Settings' : 'Full Run Settings'}
@@ -1126,8 +1130,11 @@ export default function InterviewCoach() {
                 </CardHeader>
                 <CardContent className="space-y-6 px-6 pb-8">
                   {mode === 'rounds' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-4 mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                          <MessageSquare className="w-4 h-4 text-white" />
+                        </div>
                         Number of questions:
                       </label>
                       <div className="flex gap-2 flex-wrap">
@@ -1135,10 +1142,10 @@ export default function InterviewCoach() {
                           <button
                             key={num}
                             onClick={() => setNumQuestions(num)}
-                            className={`px-3 py-1 rounded text-sm transition-colors ${
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                               numQuestions === num
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md transform scale-105'
+                                : 'bg-white text-pink-600 border border-pink-200 hover:bg-pink-50 hover:scale-105'
                             }`}
                           >
                             {num}
@@ -1147,8 +1154,11 @@ export default function InterviewCoach() {
                       </div>
                     </div>
                   )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                        <Clock className="w-4 h-4 text-white" />
+                      </div>
                       Time limit per question:
                     </label>
                     <div className="flex gap-2 flex-wrap">
@@ -1156,10 +1166,10 @@ export default function InterviewCoach() {
                         <button
                           key={time}
                           onClick={() => setTimeLimit(time)}
-                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                             timeLimit === time
-                              ? mode === 'question' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
-                              : mode === 'question' ? 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-100' : 'bg-white text-purple-600 border border-purple-300 hover:bg-purple-100'
+                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md transform scale-105'
+                              : 'bg-white text-pink-600 border border-pink-200 hover:bg-pink-50 hover:scale-105'
                           }`}
                         >
                           {time}s
@@ -1169,12 +1179,9 @@ export default function InterviewCoach() {
                   </div>
                   <Button
                     onClick={startPractice}
-                    className={`w-full py-3 text-white font-medium rounded-lg ${
-                      mode === 'question'
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-purple-600 hover:bg-purple-700'
-                    }`}
+                    className="w-full py-6 text-white font-medium text-lg rounded-2xl shadow-lg bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105"
                   >
+                    <Sparkles className="w-5 h-5 mr-2" />
                     Start {mode === 'question' ? 'Rapid Fire' : 'Full Run'}
                   </Button>
                 </CardContent>
@@ -1192,29 +1199,33 @@ export default function InterviewCoach() {
             >
               <div className="space-y-4">
                 {/* Progress */}
-                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">{questionDisplay}</span>
-                      <span className="text-sm text-gray-500">{Math.round(progressPercentage)}% Complete</span>
+                <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-700 flex items-center">
+                        <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                        {questionDisplay}
+                      </span>
+                      <span className="text-sm font-medium text-pink-600">{Math.round(progressPercentage)}% Complete</span>
                     </div>
-                    <div className="w-full bg-pink-200 rounded-full h-2 relative">
+                    <div className="w-full bg-pink-100 rounded-full h-3 relative">
                       <motion.div
-                        className="bg-pink-500 h-full rounded-full"
+                        className="bg-gradient-to-r from-pink-500 to-purple-500 h-full rounded-full"
                         style={{ width: `${progressPercentage}%` }}
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPercentage}%` }}
                         transition={{ duration: 0.5 }}
                       />
-                      {/* Fixed blue dot positioning - now properly aligned at end of pink bar */}
                       <motion.div
-                        className="absolute top-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm"
+                        className="absolute top-1/2 w-4 h-4 bg-white rounded-full border-2 border-purple-500 shadow-md"
                         style={{ 
-                          left: `calc(${progressPercentage}% - 6px)`,
+                          left: `calc(${progressPercentage}% - 8px)`,
                           transform: 'translateY(-50%)'
                         }}
                         initial={{ left: '0%' }}
-                        animate={{ left: `calc(${progressPercentage}% - 6px)` }}
+                        animate={{ left: `calc(${progressPercentage}% - 8px)` }}
                         transition={{ duration: 0.5 }}
                       />
                     </div>
@@ -1222,47 +1233,50 @@ export default function InterviewCoach() {
                 </Card>
 
                 {/* Current Question */}
-                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
-                  <CardHeader className="pb-4">
+                <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
+                  <CardHeader className="pb-4 pt-5">
                     <CardTitle className="flex items-center justify-between text-gray-800">
                       <div className="flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-pink-600" />
+                        <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <MessageSquare className="w-5 h-5 text-white" />
+                        </div>
                         Interview Question
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        mode === 'question' 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {mode === 'question' ? 'Questions Mode' : 'Rounds Mode'}
+                      <div className="px-4 py-1.5 bg-pink-100 text-pink-600 text-xs font-semibold rounded-full shadow-sm">
+                        {mode === 'question' ? 'Rapid Fire Mode' : 'Full Run Mode'}
                       </div>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-pink-50 p-4 rounded-lg border border-pink-100">
+                  <CardContent className="space-y-5 px-5 pb-6">
+                    <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-5 shadow-inner">
                       <p className="text-gray-800 font-medium text-lg leading-relaxed">
                         {currentQuestion}
                       </p>
                     </div>
 
                     {/* Mode-specific instructions */}
-                    <div className={`p-3 rounded-lg text-sm ${
-                      mode === 'question' 
-                        ? 'bg-blue-50 border border-blue-200 text-blue-800' 
-                        : 'bg-purple-50 border border-purple-200 text-purple-800'
-                    }`}>
-                      {mode === 'question' ? (
-                        <p><strong>Questions Mode:</strong> You'll get feedback after this question and can choose to continue or stop.</p>
-                      ) : (
-                        <p><strong>Rounds Mode:</strong> Answer all {numQuestions} questions, then get comprehensive feedback at the end.</p>
-                      )}
+                    <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          {mode === 'question' ? (
+                            <span><strong className="text-pink-600">Rapid Fire Mode:</strong> You'll get feedback after this question and can choose to continue or stop.</span>
+                          ) : (
+                            <span><strong className="text-pink-600">Full Run Mode:</strong> Answer all {numQuestions} questions, then get comprehensive feedback at the end.</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Timer and Recording Controls */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-pink-600" />
-                        <span className={`font-mono text-lg font-bold ${
+                    <div className="flex items-center justify-between bg-pink-50/50 border border-pink-100 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <span className={`font-mono text-xl font-bold ${
                           timeLeft <= 30 ? 'text-red-500' : 'text-pink-600'
                         }`}>
                           {formatTime(timeLeft)}
@@ -1271,8 +1285,8 @@ export default function InterviewCoach() {
                       
                       <div className="flex items-center gap-2">
                         {isRecording && (
-                          <div className="flex items-center gap-2 text-red-500">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <div className="flex items-center gap-2 text-red-500 bg-red-50 px-3 py-1.5 rounded-full border border-red-200">
+                            <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
                             <span className="text-sm font-medium">Recording</span>
                           </div>
                         )}
@@ -1280,34 +1294,47 @@ export default function InterviewCoach() {
                     </div>
 
                     {/* Recording Button */}
-                    <div className="flex justify-center">
+                    <div className="flex justify-center pt-4">
                       {!isRecording && !hasStarted ? (
                         <Button
                           onClick={handleStartRecording}
                           size="lg"
-                          className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-full shadow-lg"
+                          className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg px-12 py-6 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 border-0"
                         >
-                          <Mic className="w-5 h-5 mr-2" />
+                          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                            <Mic className="w-5 h-5" />
+                          </div>
                           Start Recording
                         </Button>
                       ) : isRecording ? (
                         <Button
                           onClick={handleStopRecording}
                           size="lg"
-                          className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full shadow-lg border-2 border-red-800 animate-pulse"
+                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg px-12 py-6 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 border-0 relative overflow-hidden"
                         >
-                          <MicOff className="w-5 h-5 mr-2" />
-                          Stop Recording
+                          <motion.div
+                            animate={{ 
+                              background: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']
+                            }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="absolute inset-0 z-0"
+                          />
+                          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative z-10">
+                            <MicOff className="w-5 h-5" />
+                          </div>
+                          <span className="relative z-10">Stop Recording</span>
                         </Button>
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
                             onClick={retryQuestion}
                             variant="outline"
-                            size="sm"
-                            className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                            size="lg"
+                            className="border-pink-200 text-pink-600 hover:bg-pink-50 hover:scale-105 transition-all duration-300 px-6 py-3 rounded-xl shadow-md"
                           >
-                            <RotateCcw className="w-4 h-4 mr-1" />
+                            <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center mr-2">
+                              <RotateCcw className="w-4 h-4 text-pink-600" />
+                            </div>
                             Retry
                           </Button>
                         </div>
@@ -1316,43 +1343,53 @@ export default function InterviewCoach() {
 
                     {/* Live Transcript Preview */}
                     {currentTranscript && (
-                      <div className={`p-4 rounded-lg border-2 ${
+                      <div className={`p-5 rounded-xl shadow-inner ${
                         isRecording 
-                          ? 'bg-green-50 border-green-300 border-dashed animate-pulse' 
-                          : 'bg-blue-50 border-blue-300'
+                          ? 'bg-pink-50/70 border border-pink-200 border-dashed animate-pulse' 
+                          : 'bg-pink-50/50 border border-pink-100'
                       }`}>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-3 mb-3">
                           {isRecording ? (
                             <>
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                              <p className="text-sm font-semibold text-green-700">Live transcript:</p>
+                              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                              </div>
+                              <p className="text-sm font-semibold text-pink-700">Live transcript:</p>
                             </>
                           ) : (
                             <>
-                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                              <p className="text-sm font-semibold text-blue-700">Transcript:</p>
+                              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                                <MessageSquare className="w-4 h-4 text-white" />
+                              </div>
+                              <p className="text-sm font-semibold text-pink-700">Your Answer:</p>
                             </>
                           )}
                         </div>
-                        <p className={`text-sm leading-relaxed ${
-                          isRecording ? 'text-green-800' : 'text-blue-800'
-                        }`}>
+                        <p className="text-sm leading-relaxed text-gray-800 bg-white/70 p-4 rounded-lg border border-pink-100">
                           {currentTranscript}
                         </p>
                         {isRecording && (
-                          <p className="text-xs text-green-600 mt-2 italic">
-                            ✨ Updating in real-time as you speak...
-                          </p>
+                          <div className="flex items-center gap-2 mt-3 text-pink-600">
+                            <Sparkles className="w-4 h-4" />
+                            <p className="text-xs font-medium">
+                              Updating in real-time as you speak...
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
 
                     {/* Processing Indicator */}
                     {isProcessing && (
-                      <div className="text-center">
-                        <div className="inline-flex items-center gap-2 text-pink-600">
-                          <div className="w-4 h-4 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-sm font-medium">
+                      <div className="text-center py-4">
+                        <div className="inline-flex items-center gap-3 px-6 py-3 bg-pink-50/70 border border-pink-100 rounded-full shadow-sm">
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Sparkles className="w-5 h-5 text-pink-600" />
+                          </motion.div>
+                          <span className="text-sm font-medium text-pink-700">
                             Processing your response...
                           </span>
                         </div>
