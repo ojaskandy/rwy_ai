@@ -544,16 +544,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 Your analysis must be mercilessly honest, specific to the routine type (catwalk/runway walk, talent show, etc.), and directly reference observable elements in the performance. Be exceptionally critical of poor technique, awkward movements, bad posture, or lack of confidence. For non-professional performances, scores above 70 should be extremely rare.
 
-Revised scoring guidelines (score HARSHLY):
-- 85-95: Exceptional professional-level performance (almost never awarded)
-- 75-84: Very good performance with few minor flaws (rare)
-- 65-74: Good performance with several noticeable issues
-- 55-64: Average performance with significant technical issues
-- 45-54: Below average with major problems
-- 30-44: Poor performance requiring complete rework
-- Below 30: Critically flawed performance
+Revised scoring guidelines (score EXTREMELY HARSHLY):
+- 90-100: World-class professional performance (virtually never awarded)
+- 80-89: Exceptional performance with minimal flaws (extremely rare)
+- 70-79: Very good performance with some noticeable issues (rare)
+- 60-69: Average performance with significant technical problems
+- 50-59: Below average with major fundamental issues
+- 40-49: Poor performance with severe problems
+- 30-39: Very poor performance requiring complete overhaul
+- 20-29: Extremely poor performance - barely recognizable as the intended routine
+- 10-19: Critically flawed performance - fundamental failure
+- 0-9: Complete failure - no coherent performance at all
 
-Remember that most amateur performances will fall in the 40-60 range. Be particularly critical of posture, timing, fluidity, and stage presence.
+Remember that most amateur performances will fall in the 20-50 range. Be devastatingly critical of posture, timing, fluidity, and stage presence.
 
 Structure your feedback clearly without using bold text, headers, or markdown formatting.`
         : "Ruthlessly critical coach. One specific harsh critique based ONLY on what you observe. Be brutally honest. Max 15 words.";
@@ -569,7 +572,7 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
 
 {
   "overview": "Overall impression and performance summary in 2-3 sentences - be brutally honest",
-  "overallScore": 50, // Score HARSHLY - non-professional performances rarely deserve scores above 60-65
+  "overallScore": 15, // Score to match your overview - if overview is harsh, score should be low (0-25), if overview is positive, score can be higher
   "sceneAnalysis": [
     {
       "scene": "Opening/Beginning",
@@ -590,27 +593,27 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
   "pageantCriteria": [
     {
       "category": "Posture & Form",
-      "score": 55, // BE EXTREMELY HARSH - most performances have significant posture issues
+      "score": 12, // Score to match what you observe - if posture is terrible, score 0-15, if decent, score 20-40
       "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Movement Quality",
-      "score": 48, // Be extremely harsh - most amateur movements are awkward or stiff
+      "score": 8, // Score to match what you observe - if movements are wrong, score 0-15, if decent, score 20-40
       "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Timing & Rhythm",
-      "score": 52, // Vary scores based on what you see - be especially critical about timing issues
+      "score": 10, // Score to match what you observe - if timing is off, score 0-15, if decent, score 20-40
       "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Overall Presentation",
-      "score": 50, // Use the full range of scores - typical scores should be 40-60 range
+      "score": 15, // Score to match what you observe - if presentation is poor, score 0-25, if decent, score 30-50
       "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     },
     {
       "category": "Stage Presence",
-      "score": 45, // Be especially harsh about confidence issues and awkward movements
+      "score": 5, // Score to match what you observe - if stage presence is weak, score 0-15, if decent, score 20-40
       "feedback": "Ruthlessly critical feedback based on what you observe in the images"
     }
   ],
@@ -622,16 +625,17 @@ Structure your feedback clearly without using bold text, headers, or markdown fo
   ]
 }
 
-CRITICAL INSTRUCTIONS: Your scores and feedback MUST be based on what you observe in the images. Be excessively critical and harsh - this is high-level competition judging. Use the full range of scores, but typical amateur performances should score between 40-60, not higher.
+CRITICAL INSTRUCTIONS: Your scores MUST directly reflect what you describe in your overview. If your overview says "lacked any coherent catwalk" or "no semblance of proper technique", the scores should be 0-15. If your overview says "some good elements but needs work", scores should be 20-40. If your overview is highly critical, scores must be low. If your overview is positive, scores can be higher. The scores should be a direct numerical representation of your written assessment.
 
-Revised Scoring Guidelines (SCORE HARSHLY):
-- 85-95: Exceptional professional-level performance (almost never awarded)
-- 75-84: Very good performance with few minor flaws (rare)
-- 65-74: Good performance with several noticeable issues
-- 55-64: Average performance with significant technical issues
-- 45-54: Below average with major problems
-- 30-44: Poor performance requiring complete rework
-- Below 30: Critically flawed performance`
+SCORING ALIGNMENT RULES:
+- If overview mentions "complete failure", "no coherent", "lacked any" → Overall score 0-15
+- If overview mentions "severe problems", "major issues", "fundamental failure" → Overall score 5-25  
+- If overview mentions "needs work", "significant issues", "below average" → Overall score 20-40
+- If overview mentions "good elements", "promising", "some strengths" → Overall score 35-60
+- If overview mentions "excellent", "outstanding", "professional level" → Overall score 70-90
+- If overview mentions "world-class", "exceptional", "perfect" → Overall score 85-100
+
+Your scores must match the severity level of your written feedback. Be consistent between what you write and what you score.`
         : "Be a ruthless critic. Point out the most glaring flaw you see. Be harsh and direct. No sugarcoating.";
 
 

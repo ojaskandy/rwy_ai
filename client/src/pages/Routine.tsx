@@ -6,7 +6,7 @@ import UsageAfterAction from '@/components/UsageAfterAction';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Copy, Check, X, ChevronDown, ChevronRight, Image, Share2 } from 'lucide-react';
+import { ArrowLeft, Play, Square, Camera, Send, MessageCircle, Sparkles, Copy, Check, X, ChevronDown, ChevronRight, Image, Share2, Upload } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -600,8 +600,14 @@ export default function Routine() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
   // Mode selection state
-  const [mode, setMode] = useState<'catwalk' | 'talent' | 'plan'>('catwalk');
+  const [mode, setMode] = useState<'catwalk' | 'talent' | 'plan' | 'upload'>('catwalk');
   const [showHelpModal, setShowHelpModal] = useState(false);
+  
+  // Upload mode state
+  const [uploadedVideo, setUploadedVideo] = useState<File | null>(null);
+  const [uploadVideoUrl, setUploadVideoUrl] = useState<string | null>(null);
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // Plan chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
@@ -675,12 +681,127 @@ export default function Routine() {
     }
   };
 
-  // Initialize camera on component mount and when mode changes (except for 'plan')
+  // Video upload functionality
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('video/')) {
+        alert('Please select a video file.');
+        return;
+      }
+      
+      // Validate file size (max 100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        alert('Video file must be smaller than 100MB.');
+        return;
+      }
+      
+      setUploadedVideo(file);
+      const url = URL.createObjectURL(file);
+      setUploadVideoUrl(url);
+    }
+  };
+
+  const extractFramesFromVideo = async (videoElement: HTMLVideoElement): Promise<string[]> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return [];
+    
+    const frames: string[] = [];
+    const duration = videoElement.duration;
+    const frameCount = Math.min(30, Math.floor(duration * 2)); // Max 30 frames, 2 fps sampling
+    
+    for (let i = 0; i < frameCount; i++) {
+      const time = (i / frameCount) * duration;
+      videoElement.currentTime = time;
+      
+      // Wait for seek to complete
+      await new Promise(resolve => {
+        videoElement.onseeked = resolve;
+      });
+      
+      // Set canvas dimensions to match video
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      
+      // Draw frame to canvas
+      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
+      // Convert to base64
+      const frameData = canvas.toDataURL('image/jpeg', 0.8);
+      frames.push(frameData);
+    }
+    
+    return frames;
+  };
+
+  const processUploadedVideo = async () => {
+    if (!uploadVideoUrl) return;
+    
+    // Check usage limits first
+    const usage = await checkUsage('walk_routine');
+    if (!usage.allowed) {
+      setIsLimitModalOpen(true);
+      return;
+    }
+    
+    setIsProcessingUpload(true);
+    setUploadProgress(0);
+    
+    try {
+      // Create video element to extract frames
+      const videoElement = document.createElement('video');
+      videoElement.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        videoElement.onloadedmetadata = resolve;
+        videoElement.onerror = reject;
+        videoElement.src = uploadVideoUrl;
+      });
+      
+      // Extract frames
+      setUploadProgress(50);
+      const frames = await extractFramesFromVideo(videoElement);
+      
+      if (frames.length === 0) {
+        throw new Error('Could not extract frames from video');
+      }
+      
+      setUploadProgress(75);
+      
+      // Show summary modal and set loading state
+      setSummaryLoading(true);
+      setShowSummary(true);
+      
+      // Switch back to catwalk mode so the upload modal closes
+      setMode('catwalk');
+      
+      // Send frames for analysis
+      await sendFramesForAnalysis(frames, true, { mode: 'catwalk' });
+      
+      setUploadProgress(100);
+      
+      // Clean up after analysis starts (don't wait for completion)
+      URL.revokeObjectURL(uploadVideoUrl);
+      setUploadVideoUrl(null);
+      setUploadedVideo(null);
+      
+    } catch (error) {
+      console.error('Error processing video:', error);
+      alert('Error processing video. Please try again.');
+    } finally {
+      setIsProcessingUpload(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Initialize camera on component mount and when mode changes (except for 'plan' and 'upload')
   useEffect(() => {
-    if (mode !== 'plan') {
+    if (mode !== 'plan' && mode !== 'upload') {
       requestCameraPermission();
     } else if (streamRef.current) {
-      // Stop camera when switching to plan mode
+      // Stop camera when switching to plan or upload mode
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
@@ -1225,6 +1346,14 @@ export default function Routine() {
         </button>
         
         <button 
+          onClick={() => setMode('upload')}
+          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'upload' ? 'bg-white' : 'bg-gray-300/70'}`}
+        >
+          <Upload className="w-3 h-3 mr-1 text-black" />
+          <span className="text-black text-sm">Upload</span>
+        </button>
+        
+        <button 
           onClick={() => setMode('plan')}
           className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
@@ -1256,6 +1385,132 @@ export default function Routine() {
       {/* Recording Indicator is now shown as a red circle in the capture button */}
 
       {/* We've replaced this with the new bottom UI */}
+      
+      {/* Upload Mode Content */}
+      {mode === 'upload' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ height: '600px' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-pink-200/50 bg-gradient-to-r from-pink-100 to-purple-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">Video Upload</h3>
+                  <p className="text-xs text-gray-600">Analyze your runway walk</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMode('catwalk')}
+                className="h-8 w-8 p-0 hover:bg-pink-100"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-6">
+              {!uploadedVideo ? (
+                <>
+                  <div className="w-24 h-24 bg-pink-100 rounded-full flex items-center justify-center">
+                    <Upload className="w-12 h-12 text-pink-500" />
+                  </div>
+                  
+                  <div className="text-center space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-800">Upload Your Video</h3>
+                    <p className="text-sm text-gray-600 max-w-sm">
+                      Upload a pre-recorded video of your runway walk for AI analysis. 
+                      The same detailed feedback as live practice sessions.
+                    </p>
+                  </div>
+                  
+                  <div className="w-full">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                      id="video-upload"
+                    />
+                    <label
+                      htmlFor="video-upload"
+                      className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 px-6 rounded-xl cursor-pointer hover:from-pink-600 hover:to-purple-600 transition-all duration-200 flex items-center justify-center space-x-2 font-medium"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span>Choose Video</span>
+                    </label>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 text-center">
+                    <p>Supported: MP4, MOV, AVI, WebM</p>
+                    <p>Max size: 100MB</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+                    <Check className="w-12 h-12 text-green-500" />
+                  </div>
+                  
+                  <div className="text-center space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-800">Video Ready</h3>
+                    <p className="text-sm text-gray-600">
+                      <strong>{uploadedVideo.name}</strong>
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(uploadedVideo.size / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  </div>
+                  
+                  {isProcessingUpload ? (
+                    <div className="w-full space-y-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-center text-sm text-gray-600">
+                        {uploadProgress < 50 ? 'Extracting frames...' : 
+                         uploadProgress < 75 ? 'Analyzing video...' : 
+                         'Finalizing results...'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-3">
+                      <Button
+                        onClick={processUploadedVideo}
+                        className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Analyze Video
+                      </Button>
+                      
+                      <Button
+                        onClick={() => {
+                          setUploadedVideo(null);
+                          setUploadVideoUrl(null);
+                        }}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        Choose Different Video
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Plan Mode Content - AI Pageant Coach */}
       {mode === 'plan' && (
@@ -1382,7 +1637,7 @@ export default function Routine() {
         <DialogContent className="bg-white rounded-xl p-6 max-w-md mx-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">
-              How to use {mode === 'catwalk' ? 'Catwalk' : mode === 'talent' ? 'Talent' : 'Plan'} Mode
+              How to use {mode === 'catwalk' ? 'Catwalk' : mode === 'talent' ? 'Talent' : mode === 'upload' ? 'Upload' : 'Plan'} Mode
             </DialogTitle>
           </DialogHeader>
           
@@ -1419,6 +1674,24 @@ export default function Routine() {
                 
                 <div className="mt-3 p-3 bg-gray-100 rounded-lg">
                   <p className="text-sm text-gray-700"><strong>Usage Information:</strong> Each minute costs 1 usage credit. If you practice for 3 minutes daily, that's 90 credits per month.</p>
+                </div>
+              </>
+            )}
+            
+            {mode === 'upload' && (
+              <>
+                <p>In <strong>Upload Mode</strong>, you can upload a pre-recorded video for AI analysis of your runway walk.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Click "Choose Video" to select a video file from your device</li>
+                  <li>Supported formats: MP4, MOV, AVI, and other common video formats</li>
+                  <li>Maximum file size: 100MB</li>
+                  <li>Click "Analyze Video" to start processing</li>
+                  <li>Wait for the AI to extract and analyze frames from your video</li>
+                  <li>You'll receive the same detailed feedback as live practice sessions</li>
+                </ul>
+                
+                <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-700"><strong>Usage Information:</strong> Each video analysis costs 1 usage credit. Perfect for analyzing practice videos you've recorded elsewhere!</p>
                 </div>
               </>
             )}

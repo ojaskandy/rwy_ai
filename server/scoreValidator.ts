@@ -39,10 +39,10 @@ export function validateScores(feedback: StructuredFeedback | null): StructuredF
   let validScoresCount = 0;
   let scoreSum = 0;
   
-  // Apply a general harshness factor - even stricter now
-  const HARSHNESS_FACTOR = 0.85; // 15% reduction across the board
+  // Apply minimal adjustment - let the AI's scores stand as they reflect the overview
+  const HARSHNESS_FACTOR = 0.98; // Only 2% reduction - let the AI's scoring be the primary factor
   
-  // Count criteria with suspiciously high scores (above 75 now - stricter threshold)
+  // Count criteria with suspiciously high scores (above 50 now - much stricter threshold)
   feedback.pageantCriteria = feedback.pageantCriteria.map(criterion => {
     if (criterion.score) {
       // Apply the harshness factor to all scores
@@ -52,8 +52,8 @@ export function validateScores(feedback: StructuredFeedback | null): StructuredF
       scoreSum += adjustedScore;
       validScoresCount++;
       
-      // Track high scores
-      if (adjustedScore > 75) {
+      // Track high scores - now much stricter for devastatingly harsh scoring
+      if (adjustedScore > 40) {
         highScoreCount++;
       }
       
@@ -65,17 +65,17 @@ export function validateScores(feedback: StructuredFeedback | null): StructuredF
     return criterion;
   });
   
-  // If still more than 40% of scores are suspiciously high, scale them down further
-  // Now using a stricter threshold of 40% instead of 50%
-  if (highScoreCount > totalCriteria * 0.4) {
+  // If still more than 30% of scores are suspiciously high, scale them down further
+  // Now using a much stricter threshold of 30% for devastatingly harsh scoring
+  if (highScoreCount > totalCriteria * 0.3) {
     console.warn('Detected inflated scores after initial adjustment - applying additional correction');
     // Scale down high scores further
     feedback.pageantCriteria = feedback.pageantCriteria.map(criterion => {
-      if (criterion.score && criterion.score > 75) {
+      if (criterion.score && criterion.score > 40) {
         // Apply a stronger reduction to high scores
         return {
           ...criterion,
-          score: Math.round(criterion.score * 0.85) // Further 15% reduction for high scores
+          score: Math.round(criterion.score * 0.8) // Further 20% reduction for high scores
         };
       }
       return criterion;
