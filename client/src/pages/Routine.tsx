@@ -1328,10 +1328,10 @@ export default function Routine() {
       )}
 
       {/* Bottom Mode Selection Buttons */}
-      <div className="absolute bottom-[170px] left-0 right-0 flex items-center justify-center space-x-3 z-30 px-4">
+      <div className="absolute bottom-[170px] left-0 right-0 flex items-center justify-center space-x-2 z-30 px-4">
         <button 
           onClick={() => setMode('catwalk')}
-          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-300/70'}`}
+          className={`px-3 py-1.5 rounded-full flex items-center justify-center ${mode === 'catwalk' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
           <Camera className="w-3 h-3 mr-1 text-black" />
           <span className="text-black text-sm">Catwalk</span>
@@ -1339,7 +1339,7 @@ export default function Routine() {
         
         <button 
           onClick={() => setMode('talent')}
-          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'talent' ? 'bg-white' : 'bg-gray-300/70'}`}
+          className={`px-3 py-1.5 rounded-full flex items-center justify-center ${mode === 'talent' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
           <Sparkles className="w-3 h-3 mr-1 text-black" />
           <span className="text-black text-sm">Talent</span>
@@ -1347,7 +1347,7 @@ export default function Routine() {
         
         <button 
           onClick={() => setMode('upload')}
-          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'upload' ? 'bg-white' : 'bg-gray-300/70'}`}
+          className={`px-3 py-1.5 rounded-full flex items-center justify-center ${mode === 'upload' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
           <Upload className="w-3 h-3 mr-1 text-black" />
           <span className="text-black text-sm">Upload</span>
@@ -1355,7 +1355,7 @@ export default function Routine() {
         
         <button 
           onClick={() => setMode('plan')}
-          className={`px-4 py-2 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-300/70'}`}
+          className={`px-3 py-1.5 rounded-full flex items-center justify-center ${mode === 'plan' ? 'bg-white' : 'bg-gray-300/70'}`}
         >
           <MessageCircle className="w-3 h-3 mr-1 text-black" />
           <span className="text-black text-sm">Plan</span>
