@@ -11,7 +11,7 @@ const app = express();
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://www.runwayai.com', 'https://runwayai.com'] 
-    : ['http://localhost:5001', 'http://localhost:3000'],
+    : ['http://localhost:5000', 'http://localhost:3000'],
   credentials: false, // No authentication, no credentials needed
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -74,8 +74,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use port 5001 for local development
-  const port = parseInt(process.env.PORT || '5001');
+  // Use port 5000 for local development
+  const port = parseInt(process.env.PORT || '5000');
   server.listen({
     port,
     host: "0.0.0.0" // Listen on all interfaces to make it accessible in deployment

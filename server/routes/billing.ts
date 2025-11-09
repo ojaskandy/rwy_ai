@@ -1,9 +1,8 @@
 import { type Request, type Response } from 'express';
 import { getAuthenticatedUser } from '../lib/auth';
-import { db, supabase } from '../db';
-import { oneTimeCodes, subscriptions, users } from '../../shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { supabase } from '../db';
 import { z } from 'zod';
+import { validatePremiumCode } from '../lib/subscription';
 
 // Zod schema for validating the request body
 const codeValidationSchema = z.object({
@@ -22,55 +21,50 @@ export async function verifyCode(req: Request, res: Response) {
   const userId = user.id;
 
   try {
-    // Check if the one-time code is valid and unused
-    const codeEntry = await db
-      .select()
-      .from(oneTimeCodes)
-      .where(and(eq(oneTimeCodes.code, code), eq(oneTimeCodes.isUsed, false)))
-      .get();
-
-    if (!codeEntry) {
-      return res.status(404).json({ error: 'Invalid or used code.' });
+    // Validate the premium code using Supabase premium_codes table
+    const validation = await validatePremiumCode(code);
+    
+    if (!validation.valid) {
+      return res.status(404).json({ error: validation.message || 'Invalid or expired code' });
     }
 
-    // Mark the code as used
-    await db
-      .update(oneTimeCodes)
-      .set({
-        isUsed: true,
-        usedAt: new Date(),
-        usedByUserId: userId,
-      })
-      .where(eq(oneTimeCodes.id, codeEntry.id));
+    // Get the code details from premium_codes table
+    const { data: codeData, error: codeError } = await supabase
+      .from('premium_codes')
+      .select('id, used_count, usage_limit')
+      .eq('code', code.toUpperCase())
+      .eq('is_active', true)
+      .single();
+
+    if (codeError || !codeData) {
+      return res.status(404).json({ error: 'Invalid or expired code' });
+    }
+
+    // Increment the used_count for the premium code
+    await supabase
+      .from('premium_codes')
+      .update({ used_count: (codeData.used_count || 0) + 1 })
+      .eq('id', codeData.id);
       
-    // Grant the user premium access by creating or updating their subscription
-    // This uses an "upsert" pattern.
-    await db
-      .insert(subscriptions)
-      .values({
-        userId: userId,
+    // Grant the user premium access by creating or updating their subscription in Supabase
+    await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: userId,
         status: 'premium_code',
-        planType: 'code',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: subscriptions.userId,
-        set: {
-          status: 'premium_code',
-          planType: 'code',
-          premiumCodeId: null, // Clear any previous premium code link if needed
-          updatedAt: new Date(),
-        },
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
       });
 
-    // Also update the user's main profile to indicate they have bypassed payment
-    if (user.email) {
-      await db
-          .update(users)
-          .set({ hasCodeBypass: true })
-          .where(eq(users.email, user.email));
-    }
+    // Also track which code was used in premium_code_usage table
+    await supabase
+      .from('premium_code_usage')
+      .insert({
+        premium_code_id: codeData.id,
+        user_id: userId,
+        used_at: new Date().toISOString(),
+      });
 
     // Track referral conversion for premium code usage
     try {
