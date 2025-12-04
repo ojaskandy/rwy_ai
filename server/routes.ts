@@ -3159,7 +3159,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
   });
 
   // Stripe webhook endpoint
-  app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+  app.post("/api/webhooks/stripe", async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -3171,7 +3171,8 @@ Focus on being helpful while maintaining that expert confidence that comes from 
     let event: any;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      const payload = (req as any).rawBody || req.body;
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
