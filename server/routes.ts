@@ -3090,23 +3090,23 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       const priceId = planType === 'monthly' ? STRIPE_PLANS.MONTHLY : STRIPE_PLANS.YEARLY;
 
       // Get user data from our database
-      const { data: userData } = await supabase
-        .from('users')
+      const { data: profileData } = await supabase
+        .from('profiles')
         .select('stripe_customer_id')
-        .eq('email', user.email)
+        .eq('user_id', user.id)
         .single();
 
       // Get or create Stripe customer
-      let stripeCustomerId = userData?.stripe_customer_id;
+      let stripeCustomerId = profileData?.stripe_customer_id;
       if (!stripeCustomerId) {
         const customer = await createCustomer(user.email!, (user.user_metadata as any)?.full_name || '');
         stripeCustomerId = customer.id;
         
         // Update user record with Stripe customer ID
         await supabase
-          .from('users')
+          .from('profiles')
           .update({ stripe_customer_id: stripeCustomerId })
-          .eq('email', user.email);
+          .eq('user_id', user.id);
       }
 
       // Create checkout session
@@ -3131,13 +3131,13 @@ Focus on being helpful while maintaining that expert confidence that comes from 
       const user = await getAuthenticatedUser(req);
       
       // Get user data from our database
-      const { data: userData } = await supabase
-        .from('users')
+      const { data: profileData } = await supabase
+        .from('profiles')
         .select('stripe_customer_id')
-        .eq('email', user.email)
+        .eq('user_id', user.id)
         .single();
 
-      const stripeCustomerId = userData?.stripe_customer_id;
+      const stripeCustomerId = profileData?.stripe_customer_id;
       if (!stripeCustomerId) {
         return res.status(401).json({ error: "No subscription found" });
       }
@@ -3185,28 +3185,28 @@ Focus on being helpful while maintaining that expert confidence that comes from 
           const subscription = event.data.object;
           
           // Find user by Stripe customer ID
-          const { data: userData } = await supabase
-            .from('users')
-            .select('id')
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('user_id')
             .eq('stripe_customer_id', subscription.customer)
             .single();
 
-          if (userData) {
+          if (profileData) {
             // Update user's payment status when subscription is active
             if (subscription.status === 'active') {
               await supabase
-                .from('users')
+                .from('profiles')
                 .update({ has_paid: true })
-                .eq('id', userData.id);
+                .eq('user_id', profileData.user_id);
 
               // Track referral conversion
-              const { data: authUser } = await supabase.auth.admin.getUserById(userData.id);
+              const { data: authUser } = await supabase.auth.admin.getUserById(profileData.user_id);
               if (authUser?.user) {
                 // Check if user has an attributed referral
                 const { data: referralData } = await supabase
                   .from('referral_conversions')
                   .select('*')
-                  .eq('user_id', userData.id)
+                  .eq('user_id', profileData.user_id)
                   .is('converted_at', null)
                   .single();
 
@@ -3237,7 +3237,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
             await supabase
               .from('subscriptions')
               .upsert([{
-                user_id: userData.id,
+                user_id: profileData.user_id,
                 status: subscription.status === 'active' ? 'premium' : 'basic',
                 plan_type: subscription.items.data[0]?.price.id === STRIPE_PLANS.YEARLY ? 'yearly' : 'monthly',
                 stripe_subscription_id: subscription.id,
@@ -3246,7 +3246,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
                 current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
                 cancel_at_period_end: subscription.cancel_at_period_end,
                 updated_at: new Date().toISOString(),
-              }]);
+              }], { onConflict: 'user_id' });
           }
           break;
         }
@@ -3255,18 +3255,18 @@ Focus on being helpful while maintaining that expert confidence that comes from 
           const subscription = event.data.object;
           
           // Find user by Stripe customer ID
-          const { data: userData } = await supabase
-            .from('users')
-            .select('id')
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('user_id')
             .eq('stripe_customer_id', subscription.customer)
             .single();
 
-          if (userData) {
+          if (profileData) {
             // Update user's payment status
             await supabase
-              .from('users')
+              .from('profiles')
               .update({ has_paid: false })
-              .eq('id', userData.id);
+              .eq('user_id', profileData.user_id);
 
             // Update subscription to basic
             await supabase
@@ -3279,7 +3279,7 @@ Focus on being helpful while maintaining that expert confidence that comes from 
                 cancel_at_period_end: false,
                 updated_at: new Date().toISOString(),
               })
-              .eq('user_id', userData.id);
+              .eq('user_id', profileData.user_id);
           }
           break;
         }
